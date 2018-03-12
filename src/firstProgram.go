@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/ccsdsmo/malgo/src/mal"
-	. "github.com/ccsdsmo/malgo/src/mal/api"
-	_ "github.com/ccsdsmo/malgo/src/mal/transport/tcp"
+	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/ccsdsmo/malgo/mal/api"
+	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
 // Constantes
@@ -40,6 +40,13 @@ type SubmitProvider struct {
 type RequestProvider struct {
 	ctx   *Context
 	cctx  *ClientContext
+	nbmsg int
+}
+
+// InvokeProvider :
+type InvokeProvider struct {
+	ctx *Context
+	cctx *ClientContext
 	nbmsg int
 }
 
@@ -134,6 +141,40 @@ func newRequestProvider() (*RequestProvider, error) {
 	return provider, nil
 }
 
+func newInvokeProvider () (*InvokeProvider, error) {
+	ctx, err := NewContext(providerURLPort)
+	if err != nil {
+		return nil, err
+	}
+
+	cctx, err := NewClientContext(ctx, "provider")
+	if err != nil {
+		return nil, err
+	}
+
+	provider := &InvokeProvider{ctx, cctx, 0}
+
+	// Register handler
+	invokeHandler := func(msg *Message, t Transaction) error {
+		if msg != nil {
+			transaction := t.(InvokeTransaction)
+			fmt.Println("\t>>> invokeHandler receives: ", string(msg.Body))
+
+			provider.nbmsg++
+			transaction.Ack(nil, false)
+			time.Sleep(250 * time.Millisecond)
+			transaction.Reply(msg.Body, false)
+		} else {
+			fmt.Println("receive: nil")
+		}
+
+		return nil
+	}
+	cctx.RegisterInvokeHandler(2, 1, 2, 0, invokeHandler)
+
+	return provider, nil
+}
+
 // Méthodes permettant de clôturer un provider
 func (provider *SendProvider) close() {
 	provider.ctx.Close()
@@ -144,6 +185,10 @@ func (provider *SubmitProvider) close() {
 }
 
 func (provider *RequestProvider) close() {
+	provider.ctx.Close()
+}
+
+func (provider *InvokeProvider) close() {
 	provider.ctx.Close()
 }
 
@@ -182,8 +227,8 @@ func send(msg ...[]byte) error {
 	// Waits for message reception
 	time.Sleep(250 * time.Millisecond)
 
-	if provider.nbmsg != 2 {
-		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, 2)
+	if provider.nbmsg != len(msg) {
+		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, len(msg))
 	}
 
 	return nil
@@ -231,7 +276,7 @@ func submit(msg ...[]byte) error {
 	// Waits for message reception
 	time.Sleep(250 * time.Millisecond)
 
-	if provider.nbmsg != 2 {
+	if provider.nbmsg != len(msg) {
 		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, len(msg))
 	}
 
@@ -277,7 +322,61 @@ func request(msg ...[]byte) error {
 	}
 	fmt.Println("\t>>> Request2: OK, ", string(ret2.Body))
 
-	if provider.nbmsg != 2 {
+	if provider.nbmsg != len(msg) {
+		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, len(msg))
+	}
+
+	return nil
+}
+
+func invoke(msg... []byte) error {
+	// Waiting for the previous socket to close
+	time.Sleep(250 * time.Millisecond)
+
+	provider, err := newInvokeProvider()
+	if err != nil {
+		return err
+	}
+	defer provider.close()
+
+	consumerCtx, err := NewContext(consumerURLPort)
+	if err != nil {
+		return err
+	}
+	defer consumerCtx.Close()
+
+	consumer, err := NewClientContext(consumerCtx, "consumer")
+	if err != nil {
+		return nil
+	}
+
+	firstOp := consumer.NewInvokeOperation(provider.cctx.Uri, 2, 1, 2, 0)
+	_, errFirstOp := firstOp.Invoke(msg[0])
+	if errFirstOp != nil {
+		return errFirstOp
+	}
+
+	respFirstOp, errRespFirstOp := firstOp.GetResponse()
+	if errRespFirstOp != nil {
+		return errRespFirstOp
+	}
+
+	fmt.Println("\t>>> Invoke1: OK, ", string(respFirstOp.Body))
+
+	secondOp := consumer.NewInvokeOperation(provider.cctx.Uri, 2, 1, 2, 0)
+	_, errSecondOp := secondOp.Invoke(msg[1])
+	if errSecondOp != nil {
+		return errSecondOp
+	}
+
+	respSecondOp, errRespSecondOp := secondOp.GetResponse()
+	if errRespSecondOp != nil {
+		return errRespSecondOp
+	}
+
+	fmt.Println("\t>>> Invoke2: OK, ", string(respSecondOp.Body))
+
+	if provider.nbmsg != len(msg) {
 		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, len(msg))
 	}
 
@@ -324,10 +423,21 @@ func main() {
 	var msgRequest1 = []byte("request_test_1")
 	var msgRequest2 = []byte("request_test_2")
 
-	// Call request mathod
+	// Call request method
 	errRequest := request(msgRequest1, msgRequest2)
 	if errRequest != nil {
 		fmt.Println("Error: problem with request function -> ", errRequest)
+	}
+
+	// -- INVOKE --
+	// Invoke variables
+	var msgInvoke1 = []byte("invoke_test_1")
+	var msgInvoke2 = []byte("invoke_test_2")
+
+	// Call invoke method
+	errInvoke := invoke(msgInvoke1, msgInvoke2)
+	if errInvoke != nil {
+		fmt.Println("Error: problem with invoke function -> ", errInvoke)
 	}
 
 }

@@ -50,6 +50,14 @@ type InvokeProvider struct {
 	nbmsg int
 }
 
+// ProgressProvider :
+type ProgressProvider struct {
+	ctx *Context
+	cctx *ClientContext
+	uri *URI
+	nbmsg int
+}
+
 // Création du provider en fonction du moyen de communication
 func newSendProvider() (*SendProvider, error) {
 	ctx, err := NewContext(providerURLPort)
@@ -175,6 +183,69 @@ func newInvokeProvider () (*InvokeProvider, error) {
 	return provider, nil
 }
 
+func newProgressProvider () (*ProgressProvider, error) {
+	ctx, err := NewContext(providerURLPort)
+	if err != nil {
+		return nil, err
+	}
+
+	cctx, err := NewClientContext(ctx, "provider")
+	if err != nil {
+		return nil, err
+	}
+
+	provider := &ProgressProvider{ctx, cctx, cctx.Uri, 0}
+
+	// Register handler
+	// Handler 1
+	progressHandler1 := func (msg *Message, t Transaction) error {
+		provider.nbmsg++
+		if msg != nil {
+			fmt.Println("\t>>> progressHandler1 receives: ", string(msg.Body))
+
+			transaction := t.(ProgressTransaction)
+
+			transaction.Ack(nil, false)
+			for i := 0; i < 10; i++ {
+				transaction.Update([]byte(fmt.Sprintf("message1.#%d", i)), false)
+			}
+			transaction.Reply([]byte("last message1"), false)
+		} else {
+			fmt.Println("receive: nil")
+		}
+
+		return nil
+	}
+
+	// Register Progress handler 1
+	cctx.RegisterProgressHandler(2, 1, 2, 0, progressHandler1)
+
+	// Handler 2
+	progressHandler2 := func (msg *Message, t Transaction) error {
+		provider.nbmsg++
+		if msg != nil {
+			fmt.Println("\t>>> progressHandler2 receives: ", string(msg.Body))
+
+			transaction := t.(ProgressTransaction)
+
+			transaction.Ack(nil, false)
+			for i := 0; i < 5; i++ {
+				transaction.Update([]byte(fmt.Sprintf("message2.#%d", i)), false)
+			}
+			transaction.Reply([]byte("last message2"), false)
+		} else {
+			fmt.Println("receive: nil")
+		}
+
+		return nil
+	}
+
+	// Register Progress handler 2
+	cctx.RegisterProgressHandler(2, 1, 2, 1, progressHandler2)
+
+	return provider, nil
+}
+
 // Méthodes permettant de clôturer un provider
 func (provider *SendProvider) close() {
 	provider.ctx.Close()
@@ -190,6 +261,10 @@ func (provider *RequestProvider) close() {
 
 func (provider *InvokeProvider) close() {
 	provider.ctx.Close()
+}
+
+func (provider *ProgressProvider) close() {
+	provider.cctx.Close()
 }
 
 //
@@ -322,6 +397,9 @@ func request(msg ...[]byte) error {
 	}
 	fmt.Println("\t>>> Request2: OK, ", string(ret2.Body))
 
+	// Waits for message reception
+	time.Sleep(250 * time.Millisecond)
+
 	if provider.nbmsg != len(msg) {
 		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, len(msg))
 	}
@@ -376,8 +454,106 @@ func invoke(msg... []byte) error {
 
 	fmt.Println("\t>>> Invoke2: OK, ", string(respSecondOp.Body))
 
+	// Waits for message reception
+	time.Sleep(250 * time.Millisecond)
+
 	if provider.nbmsg != len(msg) {
 		fmt.Printf("Error: Received %d messages, expected %d.\n", provider.nbmsg, len(msg))
+	}
+
+	return nil
+}
+
+func progress(msg... []byte) error {
+	// Waiting for the previous socket to close
+	time.Sleep(250 * time.Millisecond)
+
+	provider, err := newProgressProvider()
+	if err != nil {
+		return err
+	}
+	defer provider.close()
+
+	consumer_ctx, err := NewContext(consumerURLPort)
+	if err != nil {
+		return err
+	}
+	defer consumer_ctx.Close()
+
+	consumer, err := NewClientContext(consumer_ctx, "consumer")
+	if err != nil {
+		return err
+	}
+
+	nbmsg := 0
+
+	// Call first progress operation
+	firstOp := consumer.NewProgressOperation(provider.cctx.Uri, 2, 1, 2, 0)
+	firstOp.Progress(msg[0])
+
+	fmt.Println("\t>>> Progress1: OK")
+
+	updt, err := firstOp.GetUpdate()
+	if err != nil {
+		return err
+	}
+
+	for updt != nil {
+		nbmsg++
+		fmt.Println("\t>>> Progress1: Update -> ", string(updt.Body))
+		updt, err = firstOp.GetUpdate()
+		if err != nil {
+			return err
+		}
+	}
+
+	resp, err := firstOp.GetResponse()
+	if err != nil {
+		return err
+	}
+	nbmsg++
+	fmt.Println("\t>>> Progress1: Response -> ", string(resp.Body))
+
+	if nbmsg != 11 {
+		fmt.Printf("Error: Received %d messages, expected %d.\n", nbmsg, 11)
+	}
+
+	// Call second progress operation
+	secondOp := consumer.NewProgressOperation(provider.cctx.Uri, 2, 1, 2, 1)
+	secondOp.Progress(msg[0])
+
+	fmt.Println("\t>>> Progress2: OK")
+
+	updt, err = secondOp.GetUpdate()
+	if err != nil {
+		return err
+	}
+
+	for updt != nil {
+		nbmsg++
+		fmt.Println("\t>>> Progress2: Update -> ", string(updt.Body))
+		updt, err = secondOp.GetUpdate()
+		if err != nil {
+			return err
+		}
+	}
+
+	resp, err = secondOp.GetResponse()
+	if err != nil {
+		return err
+	}
+	nbmsg++
+	fmt.Println("\t>>> Progress2: Response -> ", string(resp.Body))
+
+	if nbmsg != 17 {
+		fmt.Printf("Error: Received %d messages, expected %d.\n", nbmsg, 17)
+	}
+
+	// Waits for message reception
+	time.Sleep(250 * time.Millisecond)
+
+	if provider.nbmsg != len(msg) {
+		fmt.Printf("Error: Received %d, expected %d.\n", provider.nbmsg, len(msg))
 	}
 
 	return nil
@@ -438,6 +614,17 @@ func main() {
 	errInvoke := invoke(msgInvoke1, msgInvoke2)
 	if errInvoke != nil {
 		fmt.Println("Error: problem with invoke function -> ", errInvoke)
+	}
+
+	// -- PROGRESS
+	// Progress variables
+	var msgProgress1 = []byte("progress_test_1")
+	var msgProgress2 = []byte("progress_test_2")
+
+	// Call progress method
+	errProgress := progress(msgProgress1, msgProgress2)
+	if errProgress != nil {
+		fmt.Println("Error: problem with progress function -> ", errProgress)
 	}
 
 }

@@ -2,11 +2,11 @@ package main
 
 // Imports
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
-	"errors"
 
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -15,15 +15,19 @@ import (
 
 // Constantes
 const (
-	consumerURL string = "maltcp://127.0.0.1:"
-	providerURL string = "maltcp://127.0.0.1:"
-	brokerURL string = "maltcp://127.0.0.1:"
+	consumerURL   string = "maltcp://127.0.0.1:"
+	providerURL   string = "maltcp://127.0.0.1:"
+	brokerURL     string = "maltcp://127.0.0.1:"
+	subscriberURL string = "maltcp://127.0.0.1:"
+	publisherURL  string = "maltcp://127.0.0.1:"
 )
 
 // Variables globales
 var consumerURLPort = consumerURL
 var providerURLPort = providerURL
 var brokerURLPort = brokerURL
+var subscriberURLPort = subscriberURL
+var publisherURLPort = publisherURL
 
 // SendProvider :
 type SendProvider struct {
@@ -48,22 +52,22 @@ type RequestProvider struct {
 
 // InvokeProvider :
 type InvokeProvider struct {
-	ctx *Context
-	cctx *ClientContext
+	ctx   *Context
+	cctx  *ClientContext
 	nbmsg int
 }
 
 // ProgressProvider :
 type ProgressProvider struct {
-	ctx *Context
-	cctx *ClientContext
-	uri *URI
+	ctx   *Context
+	cctx  *ClientContext
+	uri   *URI
 	nbmsg int
 }
 
 // PubSubProvider :
 type PubSubProvider struct {
-	ctx *Context
+	ctx  *Context
 	cctx *ClientContext
 	subs SubscriberTransaction
 }
@@ -159,7 +163,7 @@ func newRequestProvider() (*RequestProvider, error) {
 	return provider, nil
 }
 
-func newInvokeProvider () (*InvokeProvider, error) {
+func newInvokeProvider() (*InvokeProvider, error) {
 	ctx, err := NewContext(providerURLPort)
 	if err != nil {
 		return nil, err
@@ -193,7 +197,7 @@ func newInvokeProvider () (*InvokeProvider, error) {
 	return provider, nil
 }
 
-func newProgressProvider () (*ProgressProvider, error) {
+func newProgressProvider() (*ProgressProvider, error) {
 	ctx, err := NewContext(providerURLPort)
 	if err != nil {
 		return nil, err
@@ -208,7 +212,7 @@ func newProgressProvider () (*ProgressProvider, error) {
 
 	// Register handler
 	// Handler 1
-	progressHandler1 := func (msg *Message, t Transaction) error {
+	progressHandler1 := func(msg *Message, t Transaction) error {
 		provider.nbmsg++
 		if msg != nil {
 			fmt.Println("\t>>> progressHandler1 receives: ", string(msg.Body))
@@ -231,7 +235,7 @@ func newProgressProvider () (*ProgressProvider, error) {
 	cctx.RegisterProgressHandler(2, 1, 2, 0, progressHandler1)
 
 	// Handler 2
-	progressHandler2 := func (msg *Message, t Transaction) error {
+	progressHandler2 := func(msg *Message, t Transaction) error {
 		provider.nbmsg++
 		if msg != nil {
 			fmt.Println("\t>>> progressHandler2 receives: ", string(msg.Body))
@@ -256,7 +260,7 @@ func newProgressProvider () (*ProgressProvider, error) {
 	return provider, nil
 }
 
-func newPubSubProvider () (*PubSubProvider, error) {
+func newPubSubProvider() (*PubSubProvider, error) {
 	ctx, err := NewContext(brokerURLPort)
 	if err != nil {
 		return nil, err
@@ -267,7 +271,7 @@ func newPubSubProvider () (*PubSubProvider, error) {
 		return nil, err
 	}
 
-	broker :=  &PubSubProvider{ctx, cctx, nil}
+	broker := &PubSubProvider{ctx, cctx, nil}
 
 	// Register broker handler
 	brokerHandler := func(msg *Message, t Transaction) error {
@@ -317,6 +321,40 @@ func (provider *ProgressProvider) close() {
 
 func (provider *PubSubProvider) close() {
 	provider.cctx.Close()
+}
+
+func (broker *PubSubProvider) OnRegister(msg *Message, tx SubscriberTransaction) error {
+	fmt.Println("\t>>>\n\t> OnRegister:")
+	broker.subs = tx
+	tx.AckRegister(nil, false)
+	return nil
+}
+
+func (broker *PubSubProvider) OnDeregister(msg *Message, tx SubscriberTransaction) error {
+	fmt.Println("\t>>>\n\t> OnDeregister:")
+	broker.subs = nil
+	tx.AckDeregister(nil, false)
+	return nil
+}
+
+func (broker *PubSubProvider) OnPublishRegister(msg *Message, tx PublisherTransaction) error {
+	fmt.Println("\t>>>\n\t> OnPublishRegister:")
+	tx.AckRegister(nil, false)
+	return nil
+}
+
+func (broker *PubSubProvider) OnPublish(msg *Message, tx PublisherTransaction) error {
+	fmt.Println("\t>>>\n\t> OnPublish:")
+	if broker.subs != nil {
+		broker.subs.Notify(msg.Body, false)
+	}
+	return nil
+}
+
+func (broker *PubSubProvider) OnPublishDeregister(msg *Message, tx PublisherTransaction) error {
+	fmt.Println("\t>>>\n\t> OnPublishDeregister:")
+	tx.AckDeregister(nil, false)
+	return nil
 }
 
 //
@@ -459,7 +497,7 @@ func request(msg ...[]byte) error {
 	return nil
 }
 
-func invoke(msg... []byte) error {
+func invoke(msg ...[]byte) error {
 	// Waiting for the previous socket to close
 	time.Sleep(250 * time.Millisecond)
 
@@ -516,7 +554,7 @@ func invoke(msg... []byte) error {
 	return nil
 }
 
-func progress(msg... []byte) error {
+func progress(msg ...[]byte) error {
 	// Waiting for the previous socket to close
 	time.Sleep(250 * time.Millisecond)
 
@@ -615,17 +653,53 @@ func pubSub() error {
 	// Waiting for the previous socket to close
 	time.Sleep(250 * time.Millisecond)
 
+	// -- Broker --
 	broker, err := newPubSubProvider()
 	if err != nil {
 		return err
 	}
 	defer broker.close()
 
+	// -- Publisher --
+	// Publisher Context
+	pubCtx, err := NewContext(publisherURLPort)
+	if err != nil {
+		return err
+	}
+	defer pubCtx.Close()
 
+	// Publisher
+	publisher, err := NewClientContext(pubCtx, "publisher")
+	if err != nil {
+		return err
+	}
+
+	// Create publisher operation
+	pubop := publisher.NewPublisherOperation(broker.cctx.Uri, 2, 1, 2, 0)
+	// Call register method
+	pubop.Register([]byte("register"))
+
+	// -- Subscriber
+	// Subscriber Context
+	subCtx, err := NewContext(subscriberURLPort)
+	if err != nil {
+		return err
+	}
+	defer subCtx.Close()
+
+	// Subscriber
+	subscriber, err := NewClientContext(subCtx, "subscriber")
+	if err != nil {
+		return err
+	}
+
+	// Create subscriber operation
+	subop := subscriber.NewSubscriberOperation(broker.cctx.Uri, 2, 1, 2, 0)
+	// Call register operation
+	subop.Register([]byte("register"))
 
 	return nil
 }
-
 
 // Fonction principale: lancement des échanges entre différents acteurs à l'aide de différents moyens
 func main() {

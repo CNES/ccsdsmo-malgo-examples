@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+	"errors"
 
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -16,11 +17,13 @@ import (
 const (
 	consumerURL string = "maltcp://127.0.0.1:"
 	providerURL string = "maltcp://127.0.0.1:"
+	brokerURL string = "maltcp://127.0.0.1:"
 )
 
 // Variables globales
 var consumerURLPort = consumerURL
 var providerURLPort = providerURL
+var brokerURLPort = brokerURL
 
 // SendProvider :
 type SendProvider struct {
@@ -56,6 +59,13 @@ type ProgressProvider struct {
 	cctx *ClientContext
 	uri *URI
 	nbmsg int
+}
+
+// PubSubProvider :
+type PubSubProvider struct {
+	ctx *Context
+	cctx *ClientContext
+	subs SubscriberTransaction
 }
 
 // Création du provider en fonction du moyen de communication
@@ -246,6 +256,44 @@ func newProgressProvider () (*ProgressProvider, error) {
 	return provider, nil
 }
 
+func newPubSubProvider () (*PubSubProvider, error) {
+	ctx, err := NewContext(brokerURLPort)
+	if err != nil {
+		return nil, err
+	}
+
+	cctx, err := NewClientContext(ctx, "broker")
+	if err != nil {
+		return nil, err
+	}
+
+	broker :=  &PubSubProvider{ctx, cctx, nil}
+
+	// Register broker handler
+	brokerHandler := func(msg *Message, t Transaction) error {
+		if msg.InteractionStage == MAL_IP_STAGE_PUBSUB_PUBLISH_REGISTER {
+			broker.OnPublishRegister(msg, t.(PublisherTransaction))
+		} else if msg.InteractionStage == MAL_IP_STAGE_PUBSUB_PUBLISH {
+			broker.OnPublish(msg, t.(PublisherTransaction))
+		} else if msg.InteractionStage == MAL_IP_STAGE_PUBSUB_PUBLISH_DEREGISTER {
+			broker.OnPublishDeregister(msg, t.(PublisherTransaction))
+		} else if msg.InteractionStage == MAL_IP_STAGE_PUBSUB_REGISTER {
+			broker.OnRegister(msg, t.(SubscriberTransaction))
+		} else if msg.InteractionStage == MAL_IP_STAGE_PUBSUB_DEREGISTER {
+			broker.OnDeregister(msg, t.(SubscriberTransaction))
+		} else {
+			return errors.New("Bad stage")
+		}
+
+		return nil
+	}
+
+	// Register Broker handler
+	cctx.RegisterBrokerHandler(2, 1, 2, 0, brokerHandler)
+
+	return broker, nil
+}
+
 // Méthodes permettant de clôturer un provider
 func (provider *SendProvider) close() {
 	provider.ctx.Close()
@@ -264,6 +312,10 @@ func (provider *InvokeProvider) close() {
 }
 
 func (provider *ProgressProvider) close() {
+	provider.cctx.Close()
+}
+
+func (provider *PubSubProvider) close() {
 	provider.cctx.Close()
 }
 
@@ -559,18 +611,38 @@ func progress(msg... []byte) error {
 	return nil
 }
 
+func pubSub() error {
+	// Waiting for the previous socket to close
+	time.Sleep(250 * time.Millisecond)
+
+	broker, err := newPubSubProvider()
+	if err != nil {
+		return err
+	}
+	defer broker.close()
+
+
+
+	return nil
+}
+
+
 // Fonction principale: lancement des échanges entre différents acteurs à l'aide de différents moyens
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	var consumerPort = 1023 + rand.Intn(15000)
-	var providerPort = 1023 + rand.Intn(15000)
+	var port = 1023 + rand.Intn(15000)
+	var consumerPort = port + 1 + rand.Intn(1000)
+	var providerPort = consumerPort + 1 + rand.Intn(1000)
+	var brokerPort = providerPort + 1 + rand.Intn(1000)
 
 	consumerURLPort += strconv.Itoa(consumerPort)
 	providerURLPort += strconv.Itoa(providerPort)
+	brokerURLPort += strconv.Itoa(brokerPort)
 
 	fmt.Println("consumer port = ", consumerPort)
 	fmt.Println("provider port = ", providerPort)
+	fmt.Println("broker port = ", brokerPort)
 
 	// -- SEND --
 	// Send variables
@@ -627,4 +699,9 @@ func main() {
 		fmt.Println("Error: problem with progress function -> ", errProgress)
 	}
 
+	// -- PubSub --
+	errPubSub := pubSub()
+	if errPubSub != nil {
+		fmt.Println("Error: problem with pubSub function -> ", errPubSub)
+	}
 }

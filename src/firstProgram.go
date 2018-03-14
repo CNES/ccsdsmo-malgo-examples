@@ -323,28 +323,29 @@ func (provider *PubSubProvider) close() {
 	provider.cctx.Close()
 }
 
+// Méthodes utiles pour le publisher et le subscriber de la fonction pubSub
 func (broker *PubSubProvider) OnRegister(msg *Message, tx SubscriberTransaction) error {
-	fmt.Println("\t>>>\n\t> OnRegister:")
+	fmt.Println("\t> OnRegister: ", string(msg.Body))
 	broker.subs = tx
 	tx.AckRegister(nil, false)
 	return nil
 }
 
 func (broker *PubSubProvider) OnDeregister(msg *Message, tx SubscriberTransaction) error {
-	fmt.Println("\t>>>\n\t> OnDeregister:")
+	fmt.Println("\t> OnDeregister:", string(msg.Body))
 	broker.subs = nil
 	tx.AckDeregister(nil, false)
 	return nil
 }
 
 func (broker *PubSubProvider) OnPublishRegister(msg *Message, tx PublisherTransaction) error {
-	fmt.Println("\t>>>\n\t> OnPublishRegister:")
+	fmt.Println("\t> OnPublishRegister:", string(msg.Body))
 	tx.AckRegister(nil, false)
 	return nil
 }
 
 func (broker *PubSubProvider) OnPublish(msg *Message, tx PublisherTransaction) error {
-	fmt.Println("\t>>>\n\t> OnPublish:")
+	fmt.Println("\t> OnPublish:", string(msg.Body))
 	if broker.subs != nil {
 		broker.subs.Notify(msg.Body, false)
 	}
@@ -352,7 +353,7 @@ func (broker *PubSubProvider) OnPublish(msg *Message, tx PublisherTransaction) e
 }
 
 func (broker *PubSubProvider) OnPublishDeregister(msg *Message, tx PublisherTransaction) error {
-	fmt.Println("\t>>>\n\t> OnPublishDeregister:")
+	fmt.Println("\t> OnPublishDeregister:", string(msg.Body))
 	tx.AckDeregister(nil, false)
 	return nil
 }
@@ -698,6 +699,22 @@ func pubSub() error {
 	// Call register operation
 	subop.Register([]byte("register"))
 
+	// Publish messages
+	for i := 1; i <= 2; i++ {
+		pubop.Publish([]byte(fmt.Sprintf("publish #%d", i)))
+	}
+
+	// Try to get notify by first publish
+	resp1, err := subop.GetNotify()
+	fmt.Println("\t>>> Subscriber notified: OK, ", string(resp1.Body))
+
+	// Try to get notify by second publish
+	resp2, err := subop.GetNotify()
+	fmt.Println("\t>>> Subscriber notified: OK, ", string(resp2.Body))
+
+	pubop.Deregister([]byte("deregister"))
+	subop.Deregister([]byte("deregister"))
+
 	return nil
 }
 
@@ -709,14 +726,20 @@ func main() {
 	var consumerPort = port + 1 + rand.Intn(1000)
 	var providerPort = consumerPort + 1 + rand.Intn(1000)
 	var brokerPort = providerPort + 1 + rand.Intn(1000)
+	var subscriberPort = brokerPort + 1 + rand.Intn(1000)
+	var publisherPort = subscriberPort + 1 + rand.Intn(1000)
 
 	consumerURLPort += strconv.Itoa(consumerPort)
 	providerURLPort += strconv.Itoa(providerPort)
 	brokerURLPort += strconv.Itoa(brokerPort)
+	subscriberURLPort += strconv.Itoa(subscriberPort)
+	publisherURLPort += strconv.Itoa(publisherPort)
 
-	fmt.Println("consumer port = ", consumerPort)
-	fmt.Println("provider port = ", providerPort)
-	fmt.Println("broker port = ", brokerPort)
+	fmt.Println("consumer port   = ", consumerPort)
+	fmt.Println("provider port   = ", providerPort)
+	fmt.Println("broker port     = ", brokerPort)
+	fmt.Println("subscriber port = ", subscriberPort)
+	fmt.Println("publisher port  = ", publisherPort)
 
 	// -- SEND --
 	// Send variables

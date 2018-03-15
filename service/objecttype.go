@@ -5,10 +5,10 @@ import (
 )
 
 type ObjectType struct {
-	area *UShort
-	service *UShort
-	version *UOctet
-	number *UShort
+	area    UShort
+	service UShort
+	version UOctet
+	number  UShort
 }
 
 var (
@@ -17,15 +17,15 @@ var (
 
 const (
 	MAL_OBJECT_TYPE_TYPE_SHORT_FORM Integer = 0x01
-	MAL_OBJECT_TYPE_SHORT_FORM Long = 0x1000001000001
+	MAL_OBJECT_TYPE_SHORT_FORM      Long    = 0x1000001000001
 )
 
 func NewObjectType(area UShort, service UShort, version UOctet, number UShort) *ObjectType {
 	objectType := &ObjectType{
-		&area,
-		&service,
-		&version,
-		&number,
+		area,
+		service,
+		version,
+		number,
 	}
 	return objectType
 }
@@ -43,17 +43,17 @@ func (*ObjectType) GetShortForm() Long {
 
 // Returns the number of the area this element type belongs to.
 func (o *ObjectType) GetAreaNumber() UShort {
-	return *o.area
+	return o.area
 }
 
 // Returns the version of the area this element type belongs to.
 func (o *ObjectType) GetAreaVersion() UOctet {
-	return *o.version
+	return o.version
 }
 
 // Returns the number of the service this element type belongs to.
 func (o *ObjectType) GetServiceNumber() UShort {
-	return *o.service
+	return o.service
 }
 
 // Returns the relative short form of the element type.
@@ -61,26 +61,25 @@ func (*ObjectType) GetTypeShortForm() Integer {
 	return MAL_OBJECT_TYPE_TYPE_SHORT_FORM
 }
 
-
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder.
 func (o *ObjectType) Encode(encoder Encoder) error {
-	err := encoder.EncodeUShort(o.area)
+	err := encoder.EncodeUShort(&o.area)
 	if err != nil {
 		return err
 	}
 
-	err = encoder.EncodeUShort(o.service)
+	err = encoder.EncodeUShort(&o.service)
 	if err != nil {
 		return err
 	}
 
-	err = encoder.EncodeUOctet(o.version)
+	err = encoder.EncodeUOctet(&o.version)
 	if err != nil {
 		return err
 	}
 
-	return encoder.EncodeUShort(o.number)
+	return encoder.EncodeUShort(&o.number)
 }
 
 // Decodes an instance of this element type using the supplied decoder.
@@ -111,10 +110,10 @@ func DecodeObjectType(decoder Decoder) (*ObjectType, error) {
 	}
 
 	objectType := &ObjectType{
-		area,
-		service,
-		version,
-		number,
+		*area,
+		*service,
+		*version,
+		*number,
 	}
 
 	return objectType, nil

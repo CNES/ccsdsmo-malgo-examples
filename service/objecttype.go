@@ -83,7 +83,7 @@ func (o *ObjectType) Encode(encoder Encoder) error {
 }
 
 // Decodes an instance of this element type using the supplied decoder.
-func (o *ObjectType) Decode(decoder Decoder) (Element, error) {
+func (*ObjectType) Decode(decoder Decoder) (Element, error) {
 	return DecodeObjectType(decoder)
 }
 

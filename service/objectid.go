@@ -39,17 +39,17 @@ func (*ObjectId) GetShortForm() Long {
 
 // Returns the number of the area this element type belongs to
 func (o *ObjectId) GetAreaNumber() UShort {
-	return o.Type.area
+	return o.Type.GetAreaNumber()
 }
 
 // Returns the version of the area this element belongs to
 func (o *ObjectId) GetAreaVersion() UOctet {
-	return o.Type.version
+	return o.Type.GetAreaVersion()
 }
 
 // Returns the number of the service this element belongs to
 func (o *ObjectId) GetServiceNumber() UShort {
-	return o.Key.service
+	return o.Key.GetServiceNumber()
 }
 
 // Returns the relative short form of the elemennt type

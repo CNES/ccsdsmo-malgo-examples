@@ -5,8 +5,11 @@ import (
 )
 
 type ArchiveDetails struct {
-	domain IdentifierList
 	instId Long
+	details ObjectDetails
+	network *Identifier
+	timestamp *FineTime
+	provider *URI
 }
 
 var (
@@ -14,85 +17,133 @@ var (
 )
 
 const (
-	MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x02
-	MAL_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x1000001000002
+        MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x01
+	MAL_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x10000010000001
+
 )
 
-func NewArchiveDetails(domain IdentifierList, instId Long) *ArchiveDetails {
-	var archiveDetails = &ArchiveDetails{
-		domain,
+func NewArchiveDetails(instId Long, details ObjectDetails, network *Identifier, timestamp *FineTime, provider *URI) *ArchiveDetails {
+	archiveDetails := &ArchiveDetails {
 		instId,
+		details,
+		network,
+		timestamp,
+		provider,
 	}
 	return archiveDetails
 }
 
 // ----- Defines COM ArchiveDetails as a MAL Composite -----
-func (archiveDetails *ArchiveDetails) Composite() Composite {
-	return archiveDetails
+func (a *ArchiveDetails) Composite() Composite {
+	return a
 }
 
 // ----- Defines COM ArchiveDetails as a MAL Element -----
-// Returns the absolute short form of the element type.
+// Returns the absolute short form of the element type
 func (*ArchiveDetails) GetShortForm() Long {
 	return MAL_ARCHIVE_DETAILS_SHORT_FORM
 }
 
-// Returns the number of the area this element type belongs to.
+// Returns the number of the area this element belongs to
 func (*ArchiveDetails) GetAreaNumber() UShort {
-	return MAL_ATTRIBUTE_AREA_NUMBER
+	return o.details.GetAreaNumber()
 }
 
-// Returns the version of the area this element type belongs to.
+// Returns the version of the area this element belongs to
 func (*ArchiveDetails) GetAreaVersion() UOctet {
-	return MAL_ATTRIBUTE_AREA_VERSION
+	return o.details.GetAreaVersion()
 }
 
-// Returns the number of the service this element type belongs to.
 func (*ArchiveDetails) GetServiceNumber() UShort {
-	return MAL_ATTRIBUTE_AREA_SERVICE_NUMBER
+	return o.details.GetServiceNumber()
 }
 
-// Returns the relative short form of the element type.
+// Returns the relative short form of the element type
 func (*ArchiveDetails) GetTypeShortForm() Integer {
 	return MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM
 }
 
 // ----- Encoding and Decoding -----
-// Encodes this element using the supplied encoder.
+// Encodes this element using the supplied encoder
 func (a *ArchiveDetails) Encode(encoder Encoder) error {
-	err := a.domain.Encode(encoder)
+	// Encode instId
+	err := encoder.EncodeLong(&a.instId)
 	if err != nil {
 		return err
 	}
-	return encoder.EncodeLong(&a.instId)
+
+	// Encode details
+	err = a.details.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode network
+	err = encoder.EncodeNullableIdentifier(a.network)
+	if err != nil {
+		return err
+	}
+
+	// Encode timestamp
+	err = encoder.EncodeNullableFineTime(a.timestamp)
+	if err != nil {
+		return err
+	}
+
+	// Encode provider
+	return encoder.EncodeNullableURI(a.provider)
 }
 
-// Decodes an instance of this element type using the supplied decoder.
+// Decodes and instance of ArchiveDetails using the supplied decoder
 func (*ArchiveDetails) Decode(decoder Decoder) (Element, error) {
 	return DecodeArchiveDetails(decoder)
 }
 
 func DecodeArchiveDetails(decoder Decoder) (*ArchiveDetails, error) {
-	var domain *IdentifierList
-	element, err := domain.Decode(decoder)
-	if err != nil {
-		return nil, err
-	}
-	domain = element.(*IdentifierList)
-
+	// Decode instId
 	instId, err := decoder.DecodeLong()
 	if err != nil {
 		return nil, err
 	}
 
-	archiveDetails := &ArchiveDetails{
-		*domain,
-		*instId,
+	// Decode details
+	var details *ObjectDetails
+	element, err := details.Decode(decoder)
+	if err != nil {
+		return nil, err
 	}
-	return archiveDetails, nil
+	details = element.(*ObjectDetails)
+
+	// Decode network
+	network, err := decoder.DecodeNullableIdentifier()
+	if err != nil {
+		return nil, err
+	}
+
+	// Decode timestamp
+	timestamp, err := decoder.DecodeNullableFineTime()
+	if err != nil {
+		return nil, err
+	}
+
+	// Decode provider
+	provider, err := decoder.DecodeNullableURI()
+	if err != nil {
+		return nil, err
+	}
+
+	archiveDetails := &ArchiveDetails {
+		*instId,
+		*details,
+		network,
+		timestamp,
+		provider,
+	}
+
+	return archiveDetails
 }
 
-// The method allows the creation of an element in a generic way, i.e., using the MAL Element polymorphism.
+// The methods allows the creation of an element in a generic way, i.e., using     the MAL Element polymorphism
 func (*ArchiveDetails) CreateElement() Element {
 	return new(ArchiveDetails)
 }
@@ -101,6 +152,6 @@ func (a *ArchiveDetails) IsNull() bool {
 	return a == nil
 }
 
-func (*ArchiveDetails) Null() Element {
+func (*ArchiveDetails) NUll() Element {
 	return NullArchiveDetails
 }

@@ -26,12 +26,12 @@ func NewArchiveDetails(domain IdentifierList, instId Long) *ArchiveDetails {
 	return archiveDetails
 }
 
-// ----- Defines MAL ArchiveDetails as a MAL Composite -----
+// ----- Defines COM ArchiveDetails as a MAL Composite -----
 func (archiveDetails *ArchiveDetails) Composite() Composite {
 	return archiveDetails
 }
 
-// ----- Defines MAL ArchiveDetails as a MAL Element -----
+// ----- Defines COM ArchiveDetails as a MAL Element -----
 // Returns the absolute short form of the element type.
 func (*ArchiveDetails) GetShortForm() Long {
 	return MAL_ARCHIVE_DETAILS_SHORT_FORM
@@ -57,6 +57,8 @@ func (*ArchiveDetails) GetTypeShortForm() Integer {
 	return MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM
 }
 
+// ----- Encoding and Decoding -----
+// Encodes this element using the supplied encoder.
 func (a *ArchiveDetails) Encode(encoder Encoder) error {
 	err := a.domain.Encode(encoder)
 	if err != nil {
@@ -66,13 +68,13 @@ func (a *ArchiveDetails) Encode(encoder Encoder) error {
 }
 
 // Decodes an instance of this element type using the supplied decoder.
-func (o *ArchiveDetails) Decode(decoder Decoder) (Element, error) {
+func (*ArchiveDetails) Decode(decoder Decoder) (Element, error) {
 	return DecodeArchiveDetails(decoder)
 }
 
 func DecodeArchiveDetails(decoder Decoder) (*ArchiveDetails, error) {
 	var domain *IdentifierList
-	element, err := decoder.DecodeElement(domain)
+	element, err := domain.Decode(decoder)
 	if err != nil {
 		return nil, err
 	}
@@ -91,14 +93,12 @@ func DecodeArchiveDetails(decoder Decoder) (*ArchiveDetails, error) {
 }
 
 // The method allows the creation of an element in a generic way, i.e., using the MAL Element polymorphism.
-func (request *ArchiveDetails) CreateElement() Element {
-	// TODO (AF):
-	//	return new(EntityRequest)
-	return NewEntityRequest()
+func (*ArchiveDetails) CreateElement() Element {
+	return new(ArchiveDetails)
 }
 
-func (o *ArchiveDetails) IsNull() bool {
-	return o == nil
+func (a *ArchiveDetails) IsNull() bool {
+	return a == nil
 }
 
 func (*ArchiveDetails) Null() Element {

@@ -64,22 +64,26 @@ func (*ObjectType) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder.
 func (o *ObjectType) Encode(encoder Encoder) error {
-	err := encoder.EncodeUShort(&o.area)
+	// Encode area (UShort)
+	err := encoder.EncodeElement(&o.area)
 	if err != nil {
 		return err
 	}
 
-	err = encoder.EncodeUShort(&o.service)
+	// Encode service (UShort)
+	err = encoder.EncodeElement(&o.service)
 	if err != nil {
 		return err
 	}
 
-	err = encoder.EncodeUOctet(&o.version)
+	// Encode version (UOctet)
+	err = encoder.EncodeElement(&o.version)
 	if err != nil {
 		return err
 	}
 
-	return encoder.EncodeUShort(&o.number)
+	// Encode number (UShort)
+	return encoder.EncodeElement(&o.number)
 }
 
 // Decodes an instance of this element type using the supplied decoder.
@@ -89,25 +93,33 @@ func (*ObjectType) Decode(decoder Decoder) (Element, error) {
 
 // Decodes an instance of ObjectType using the supplied decoder
 func DecodeObjectType(decoder Decoder) (*ObjectType, error) {
-	area, err := decoder.DecodeUShort()
+	// Decode area (UShort)
+	element, err := decoder.DecodeElement(NullUShort)
 	if err != nil {
 		return nil, err
 	}
+	area := element.(*UShort)
 
-	service, err := decoder.DecodeUShort()
+	// Decode service (UShort)
+	element, err = decoder.DecodeElement(NullUShort)
 	if err != nil {
 		return nil, err
 	}
+	service := element.(*UShort)
 
-	version, err := decoder.DecodeUOctet()
+	// Decode version (UOctet)
+	element, err = decoder.DecodeElement(NullOctet)
 	if err != nil {
 		return nil, err
 	}
+	version := element.(*UOctet)
 
-	number, err := decoder.DecodeUShort()
+	// Decode number (UShort)
+	element, err = decoder.DecodeElement(NullShort)
 	if err != nil {
 		return nil, err
 	}
+	number := element.(*UShort)
 
 	objectType := &ObjectType{
 		*area,

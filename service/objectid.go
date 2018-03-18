@@ -6,7 +6,7 @@ import (
 
 type ObjectId struct {
 	Type ObjectType
-	Key ObjectKey
+	Key  ObjectKey
 }
 
 var (
@@ -15,11 +15,11 @@ var (
 
 const (
 	MAL_OBJECT_ID_TYPE_SHORT_FORM Integer = 0x03
-	MAL_OBJECT_ID_SHORT_FORM	      = 0x1000001000003
+	MAL_OBJECT_ID_SHORT_FORM              = 0x1000001000003
 )
 
 func NewObjectId(t ObjectType, k ObjectKey) *ObjectId {
-	var objectId = &ObjectId {
+	var objectId = &ObjectId{
 		t,
 		k,
 	}
@@ -34,7 +34,7 @@ func (objectId *ObjectId) Composite() Composite {
 // ----- Defines COM ObjectId as a MAL Element -----
 // Returns the absolute short form of the element type
 func (*ObjectId) GetShortForm() Long {
-	return MAL_OBJECT_ID_TYPE_SHORT_FORM
+	return MAL_OBJECT_ID_SHORT_FORM
 }
 
 // Returns the number of the area this element type belongs to
@@ -60,11 +60,14 @@ func (*ObjectId) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (o *ObjectId) Encode(encoder Encoder) error {
-	err := o.Type.Encode(encoder)
+	// Encode Type (ObjectType)
+	err := encoder.EncodeElement(&o.Type)
 	if err != nil {
 		return err
 	}
-	return o.Key.Encode(err)
+
+	// Encode Key (ObjectKey)
+	return encoder.EncodeElement(&o.Key)
 }
 
 // Decodes an instance of this eleùent type using the supplied decoder
@@ -73,23 +76,21 @@ func (o *ObjectId) Decode(decoder Decoder) (Element, error) {
 }
 
 func DecodeObjectId(decoder Decoder) (*ObjectId, error) {
-	// Decode Type
-	var Type *ObjectType
-	element, err := Type.Decode(decoder)
+	// Decode Type (ObjectType)
+	element, err := decoder.DecodeElement(NullObjectType)
 	if err != nil {
 		return nil, err
 	}
-	Type = element.(*ObjectType)
+	Type := element.(*ObjectType)
 
-	// Decode Key
-	var Key *ObjectKey
-	element, err = Key.Decode(decoder)
+	// Decode Key (ObjectKey)
+	element, err = decoder.DecodeElement(NullObjectKey)
 	if err != nil {
 		return nil, err
 	}
-	Key = element.(*ObjectType)
+	Key := element.(*ObjectKey)
 
-	objectId := &ObjectId {
+	objectId := &ObjectId{
 		*Type,
 		*Key,
 	}
@@ -106,6 +107,6 @@ func (o *ObjectId) IsNull() bool {
 	return o == nil
 }
 
-func (*ObjectId) NUll() Element {
+func (*ObjectId) Null() Element {
 	return NullObjectId
 }

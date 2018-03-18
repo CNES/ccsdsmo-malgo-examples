@@ -6,7 +6,7 @@ import (
 
 type ObjectDetails struct {
 	related Long
-	source ObjectId
+	source  ObjectId
 }
 
 var (
@@ -15,11 +15,11 @@ var (
 
 const (
 	MAL_OBJECT_DETAILS_TYPE_SHORT_FORM Integer = 0x04
-	MAL_OBJECT_DETAILS_SHORT_FORM	   Long    = 0x1000001000004
+	MAL_OBJECT_DETAILS_SHORT_FORM      Long    = 0x1000001000004
 )
 
 func NewObjectDetails(related Long, source ObjectId) *ObjectDetails {
-	objectDetails := &ObjectDetails {
+	objectDetails := &ObjectDetails{
 		related,
 		source,
 	}
@@ -60,11 +60,14 @@ func (*ObjectDetails) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (o *ObjectDetails) Encode(encoder Encoder) error {
-	err := encoder.EncodeLong(&o.related)
+	// Encode related (NullableLong)
+	err := encoder.EncodeNullableElement(&o.related)
 	if err != nil {
 		return err
 	}
-	return o.source.Encode(encoder)
+
+	// Encode source (NullableObjectId)
+	return encoder.EncodeNullableElement(&o.source)
 }
 
 // Decodes an instance of ObjectDetails using the supplied decoder
@@ -73,22 +76,26 @@ func (*ObjectDetails) Decode(decoder Decoder) (Element, error) {
 }
 
 func DecodeObjectDetails(decoder Decoder) (*ObjectDetails, error) {
-	related, err := decoder.DecodeLong()
+	// Decode related (NullableLong)
+	element, err := decoder.DecodeNullableElement(NullLong)
 	if err != nil {
 		return nil, err
 	}
+	related := element.(*Long)
 
-	var source *ObjectId
-	element, err := source.Decode(decoder)
+	// Decode source (NullableObjectId)
+	element, err = decoder.DecodeNullableElement(NullObjectId)
 	if err != nil {
 		return nil, err
 	}
-	source = element.(*ObjectId)
+	source := element.(*ObjectId)
 
-	objectDetails := &ObjectDetails {
+	objectDetails := &ObjectDetails{
 		*related,
 		*source,
 	}
+
+	return objectDetails, nil
 }
 
 // The methods allows the creation of an element in a generic way, i.e., using the MAL Element polymorphism

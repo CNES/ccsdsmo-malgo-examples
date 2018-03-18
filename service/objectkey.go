@@ -60,11 +60,14 @@ func (*ObjectKey) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder.
 func (o *ObjectKey) Encode(encoder Encoder) error {
-	err := o.domain.Encode(encoder)
+	// Encode domain (IdentifierList)
+	err := encoder.EncodeElement(&o.domain)
 	if err != nil {
 		return err
 	}
-	return encoder.EncodeLong(&o.instId)
+
+	// Encode instId (Long)
+	return encoder.EncodeElement(&o.instId)
 }
 
 // Decodes an instance of this element type using the supplied decoder.
@@ -73,17 +76,19 @@ func (*ObjectKey) Decode(decoder Decoder) (Element, error) {
 }
 
 func DecodeObjectKey(decoder Decoder) (*ObjectKey, error) {
-	var domain *IdentifierList
-	element, err := domain.Decode(decoder)
+	// Decode domain (IdentifierList)
+	element, err := decoder.DecodeElement(NullIdentifierList)
 	if err != nil {
 		return nil, err
 	}
-	domain = element.(*IdentifierList)
+	domain := element.(*IdentifierList)
 
-	instId, err := decoder.DecodeLong()
+	// Decode instId (Long)
+	element, err = decoder.DecodeElement(NullLong)
 	if err != nil {
 		return nil, err
 	}
+	instId := element.(*Long)
 
 	objectKey := &ObjectKey{
 		*domain,

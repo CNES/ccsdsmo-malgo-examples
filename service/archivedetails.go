@@ -5,11 +5,11 @@ import (
 )
 
 type ArchiveDetails struct {
-	instId Long
-	details ObjectDetails
-	network *Identifier
+	instId    Long
+	details   ObjectDetails
+	network   *Identifier
 	timestamp *FineTime
-	provider *URI
+	provider  *URI
 }
 
 var (
@@ -17,13 +17,12 @@ var (
 )
 
 const (
-        MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x01
+	MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x01
 	MAL_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x10000010000001
-
 )
 
 func NewArchiveDetails(instId Long, details ObjectDetails, network *Identifier, timestamp *FineTime, provider *URI) *ArchiveDetails {
-	archiveDetails := &ArchiveDetails {
+	archiveDetails := &ArchiveDetails{
 		instId,
 		details,
 		network,
@@ -45,17 +44,17 @@ func (*ArchiveDetails) GetShortForm() Long {
 }
 
 // Returns the number of the area this element belongs to
-func (*ArchiveDetails) GetAreaNumber() UShort {
-	return o.details.GetAreaNumber()
+func (a *ArchiveDetails) GetAreaNumber() UShort {
+	return a.details.GetAreaNumber()
 }
 
 // Returns the version of the area this element belongs to
-func (*ArchiveDetails) GetAreaVersion() UOctet {
-	return o.details.GetAreaVersion()
+func (a *ArchiveDetails) GetAreaVersion() UOctet {
+	return a.details.GetAreaVersion()
 }
 
-func (*ArchiveDetails) GetServiceNumber() UShort {
-	return o.details.GetServiceNumber()
+func (a *ArchiveDetails) GetServiceNumber() UShort {
+	return a.details.GetServiceNumber()
 }
 
 // Returns the relative short form of the element type
@@ -66,32 +65,32 @@ func (*ArchiveDetails) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (a *ArchiveDetails) Encode(encoder Encoder) error {
-	// Encode instId
-	err := encoder.EncodeLong(&a.instId)
+	// Encode instId (Long)
+	err := encoder.EncodeElement(&a.instId)
 	if err != nil {
 		return err
 	}
 
-	// Encode details
-	err = a.details.Encode(encoder)
+	// Encode details (ObjectDetails)
+	err = encoder.EncodeElement(&a.details)
 	if err != nil {
 		return err
 	}
 
-	// Encode network
-	err = encoder.EncodeNullableIdentifier(a.network)
+	// Encode network (NullableIdentifier)
+	err = encoder.EncodeNullableElement(a.network)
 	if err != nil {
 		return err
 	}
 
-	// Encode timestamp
-	err = encoder.EncodeNullableFineTime(a.timestamp)
+	// Encode timestamp (NullableFineTime)
+	err = encoder.EncodeNullableElement(a.timestamp)
 	if err != nil {
 		return err
 	}
 
-	// Encode provider
-	return encoder.EncodeNullableURI(a.provider)
+	// Encode provider (NullableURI)
+	return encoder.EncodeNullableElement(a.provider)
 }
 
 // Decodes and instance of ArchiveDetails using the supplied decoder
@@ -100,39 +99,42 @@ func (*ArchiveDetails) Decode(decoder Decoder) (Element, error) {
 }
 
 func DecodeArchiveDetails(decoder Decoder) (*ArchiveDetails, error) {
-	// Decode instId
-	instId, err := decoder.DecodeLong()
+	// Decode instId (Long)
+	element, err := decoder.DecodeElement(NullLong)
 	if err != nil {
 		return nil, err
 	}
+	instId := element.(*Long)
 
-	// Decode details
-	var details *ObjectDetails
-	element, err := details.Decode(decoder)
+	// Decode details (ObjectDetails)
+	element, err = decoder.DecodeElement(NullObjectDetails)
 	if err != nil {
 		return nil, err
 	}
-	details = element.(*ObjectDetails)
+	details := element.(*ObjectDetails)
 
-	// Decode network
-	network, err := decoder.DecodeNullableIdentifier()
+	// Decode network (NullableIdentifier)
+	element, err = decoder.DecodeNullableElement(NullIdentifier)
 	if err != nil {
 		return nil, err
 	}
+	network := element.(*Identifier)
 
-	// Decode timestamp
-	timestamp, err := decoder.DecodeNullableFineTime()
+	// Decode timestamp (NullableFineTime)
+	element, err = decoder.DecodeNullableElement(NullFineTime)
 	if err != nil {
 		return nil, err
 	}
+	timestamp := element.(*FineTime)
 
-	// Decode provider
-	provider, err := decoder.DecodeNullableURI()
+	// Decode provider (NullableURI)
+	element, err = decoder.DecodeNullableElement(NullURI)
 	if err != nil {
 		return nil, err
 	}
+	provider := element.(*URI)
 
-	archiveDetails := &ArchiveDetails {
+	archiveDetails := &ArchiveDetails{
 		*instId,
 		*details,
 		network,
@@ -140,7 +142,7 @@ func DecodeArchiveDetails(decoder Decoder) (*ArchiveDetails, error) {
 		provider,
 	}
 
-	return archiveDetails
+	return archiveDetails, nil
 }
 
 // The methods allows the creation of an element in a generic way, i.e., using     the MAL Element polymorphism
@@ -152,6 +154,6 @@ func (a *ArchiveDetails) IsNull() bool {
 	return a == nil
 }
 
-func (*ArchiveDetails) NUll() Element {
+func (*ArchiveDetails) Null() Element {
 	return NullArchiveDetails
 }

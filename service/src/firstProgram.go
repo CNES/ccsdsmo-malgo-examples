@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
+	"github.com/ccsdsmo/malgo/mal/encoding/binary"
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
@@ -296,6 +298,49 @@ func newPubSubProvider() (*PubSubProvider, error) {
 	cctx.RegisterBrokerHandler(2, 1, 2, 0, brokerHandler)
 
 	return broker, nil
+}
+
+func newTestRequestProvider() (*RequestProvider, error) {
+	ctx, err := NewContext(providerURLPort)
+	if err != nil {
+		return nil, err
+	}
+
+	cctx, err := NewClientContext(ctx, "provider")
+	if err != nil {
+		return nil, err
+	}
+	provider := &RequestProvider{ctx, cctx, 0}
+
+	// Register requestHandler
+	testRequestHandler := func(msg *Message, t Transaction) error {
+		if msg != nil {
+			transaction := t.(RequestTransaction)
+
+			// Create decoder
+			decoder := binary.NewBinaryDecoder(msg.Body, true)
+
+			// Decode Integer element
+			element, err := decoder.DecodeElement(NullInteger)
+			if err != nil {
+				return err
+			}
+			value := element.(*Integer)
+
+			fmt.Println("\t>>> progressHandler2 receives: ", *value)
+			provider.nbmsg++
+			transaction.Reply([]byte("reply message"), false)
+		} else {
+			fmt.Println("Receive nil")
+		}
+
+		return nil
+	}
+
+	// Register request handler
+	cctx.RegisterRequestHandler(2, 1, 2, 0, testRequestHandler)
+
+	return provider, nil
 }
 
 // Méthodes permettant de clôturer un provider
@@ -718,87 +763,152 @@ func pubSub() error {
 	return nil
 }
 
+// Test: Request/Reponse avec passage d'un objet en paramètres
+func testRequest() error {
+	// Waiting for the previous socket to close
+	time.Sleep(250 * time.Millisecond)
+
+	provider, err := newTestRequestProvider()
+	if err != nil {
+		return err
+	}
+	defer provider.close()
+
+	consumerCtx, err := NewContext(consumerURLPort)
+	if err != nil {
+		return err
+	}
+	defer consumerCtx.Close()
+
+	consumer, err := NewClientContext(consumerCtx, "consumer")
+	if err != nil {
+		return err
+	}
+
+	// Create Integer value
+	value := NewInteger(21)
+
+	// Create encoder
+	encoder := binary.NewBinaryEncoder(make([]byte, 0, 8192), true)
+
+	// Encode value
+	value.Encode(encoder)
+
+	// Create first request operation
+	op := consumer.NewRequestOperation(provider.cctx.Uri, 2, 1, 2, 0)
+
+	// Call request operation
+	retour, err := op.Request(encoder.Body())
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("\t>>> Request2: OK, ", string(retour.Body))
+
+	// Waits for message reception
+	time.Sleep(250 * time.Millisecond)
+
+	return nil
+}
+
 // Fonction principale: lancement des échanges entre différents acteurs à l'aide de différents moyens
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	args := os.Args[1:]
+
+	if len(args) != 1 {
+		fmt.Println("ERROR: You must use this program like this: go run firstProgram.go [function]")
+		return
+	}
+
 	var port = 1023 + rand.Intn(15000)
 	var consumerPort = port + 1 + rand.Intn(1000)
 	var providerPort = consumerPort + 1 + rand.Intn(1000)
-	var brokerPort = providerPort + 1 + rand.Intn(1000)
-	var subscriberPort = brokerPort + 1 + rand.Intn(1000)
-	var publisherPort = subscriberPort + 1 + rand.Intn(1000)
 
 	consumerURLPort += strconv.Itoa(consumerPort)
 	providerURLPort += strconv.Itoa(providerPort)
-	brokerURLPort += strconv.Itoa(brokerPort)
-	subscriberURLPort += strconv.Itoa(subscriberPort)
-	publisherURLPort += strconv.Itoa(publisherPort)
 
 	fmt.Println("consumer port   = ", consumerPort)
 	fmt.Println("provider port   = ", providerPort)
-	fmt.Println("broker port     = ", brokerPort)
-	fmt.Println("subscriber port = ", subscriberPort)
-	fmt.Println("publisher port  = ", publisherPort)
 
-	// -- SEND --
-	// Send variables
-	var msgSend1 = []byte("send_test_1")
-	var msgSend2 = []byte("send_test_2")
+	if args[0] == "normal" {
+		var brokerPort = providerPort + 1 + rand.Intn(1000)
+		var subscriberPort = brokerPort + 1 + rand.Intn(1000)
+		var publisherPort = subscriberPort + 1 + rand.Intn(1000)
 
-	// Call send method
-	errSend := send(msgSend1, msgSend2)
-	if errSend != nil {
-		fmt.Println("Error: problem with send function -> ", errSend)
-	}
+		brokerURLPort += strconv.Itoa(brokerPort)
+		subscriberURLPort += strconv.Itoa(subscriberPort)
+		publisherURLPort += strconv.Itoa(publisherPort)
 
-	// -- SUBMIT --
-	// Submit variables
-	var msgSubmit1 = []byte("submit_test_1")
-	var msgSubmit2 = []byte("submit_test_2")
+		fmt.Println("broker port     = ", brokerPort)
+		fmt.Println("subscriber port = ", subscriberPort)
+		fmt.Println("publisher port  = ", publisherPort)
 
-	// Call sumbit method
-	errSubmit := submit(msgSubmit1, msgSubmit2)
-	if errSubmit != nil {
-		fmt.Println("Error: problem with submit function -> ", errSubmit)
-	}
+		// -- SEND --
+		// Send variables
+		var msgSend1 = []byte("send_test_1")
+		var msgSend2 = []byte("send_test_2")
 
-	// -- REQUEST --
-	// Request variables
-	var msgRequest1 = []byte("request_test_1")
-	var msgRequest2 = []byte("request_test_2")
+		// Call send method
+		errSend := send(msgSend1, msgSend2)
+		if errSend != nil {
+			fmt.Println("Error: problem with send function -> ", errSend)
+		}
 
-	// Call request method
-	errRequest := request(msgRequest1, msgRequest2)
-	if errRequest != nil {
-		fmt.Println("Error: problem with request function -> ", errRequest)
-	}
+		// -- SUBMIT --
+		// Submit variables
+		var msgSubmit1 = []byte("submit_test_1")
+		var msgSubmit2 = []byte("submit_test_2")
 
-	// -- INVOKE --
-	// Invoke variables
-	var msgInvoke1 = []byte("invoke_test_1")
-	var msgInvoke2 = []byte("invoke_test_2")
+		// Call sumbit method
+		errSubmit := submit(msgSubmit1, msgSubmit2)
+		if errSubmit != nil {
+			fmt.Println("Error: problem with submit function -> ", errSubmit)
+		}
 
-	// Call invoke method
-	errInvoke := invoke(msgInvoke1, msgInvoke2)
-	if errInvoke != nil {
-		fmt.Println("Error: problem with invoke function -> ", errInvoke)
-	}
+		// -- REQUEST --
+		// Request variables
+		var msgRequest1 = []byte("request_test_1")
+		var msgRequest2 = []byte("request_test_2")
 
-	// -- PROGRESS
-	// Progress variables
-	var msgProgress1 = []byte("progress_test_1")
-	var msgProgress2 = []byte("progress_test_2")
+		// Call request method
+		errRequest := request(msgRequest1, msgRequest2)
+		if errRequest != nil {
+			fmt.Println("Error: problem with request function -> ", errRequest)
+		}
 
-	// Call progress method
-	errProgress := progress(msgProgress1, msgProgress2)
-	if errProgress != nil {
-		fmt.Println("Error: problem with progress function -> ", errProgress)
-	}
+		// -- INVOKE --
+		// Invoke variables
+		var msgInvoke1 = []byte("invoke_test_1")
+		var msgInvoke2 = []byte("invoke_test_2")
 
-	// -- PubSub --
-	errPubSub := pubSub()
-	if errPubSub != nil {
-		fmt.Println("Error: problem with pubSub function -> ", errPubSub)
+		// Call invoke method
+		errInvoke := invoke(msgInvoke1, msgInvoke2)
+		if errInvoke != nil {
+			fmt.Println("Error: problem with invoke function -> ", errInvoke)
+		}
+
+		// -- PROGRESS
+		// Progress variables
+		var msgProgress1 = []byte("progress_test_1")
+		var msgProgress2 = []byte("progress_test_2")
+
+		// Call progress method
+		errProgress := progress(msgProgress1, msgProgress2)
+		if errProgress != nil {
+			fmt.Println("Error: problem with progress function -> ", errProgress)
+		}
+
+		// -- PubSub --
+		errPubSub := pubSub()
+		if errPubSub != nil {
+			fmt.Println("Error: problem with pubSub function -> ", errPubSub)
+		}
+	} else if args[0] == "test" {
+		errTestRequest := testRequest()
+		if errTestRequest != nil {
+			fmt.Println("Error: problem with testRequest function -> ", errTestRequest)
+		}
 	}
 }

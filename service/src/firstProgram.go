@@ -24,7 +24,7 @@ const (
 	publisherURL  string = "maltcp://127.0.0.1:"
 )
 
-// Variables globales
+// Variables globaless
 var consumerURLPort = consumerURL
 var providerURLPort = providerURL
 var brokerURLPort = brokerURL

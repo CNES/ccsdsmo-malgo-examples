@@ -1,6 +1,7 @@
 package service
 
 import (
+	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 )
 

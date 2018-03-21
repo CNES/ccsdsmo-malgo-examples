@@ -317,6 +317,10 @@ func newTestRequestProvider() (*RequestProvider, error) {
 		if msg != nil {
 			transaction := t.(RequestTransaction)
 
+			if msg.InteractionType == MAL_INTERACTIONTYPE_REQUEST {
+				fmt.Println("OKKKKKKKKKKKKKKKKKKKKKKKKK")
+			}
+
 			// Create decoder
 			decoder := binary.NewBinaryDecoder(msg.Body, true)
 

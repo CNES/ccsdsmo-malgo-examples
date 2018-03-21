@@ -63,7 +63,6 @@ type InvokeProvider struct {
 type ProgressProvider struct {
 	ctx   *Context
 	cctx  *ClientContext
-	uri   *URI
 	nbmsg int
 }
 
@@ -210,7 +209,7 @@ func newProgressProvider() (*ProgressProvider, error) {
 		return nil, err
 	}
 
-	provider := &ProgressProvider{ctx, cctx, cctx.Uri, 0}
+	provider := &ProgressProvider{ctx, cctx, 0}
 
 	// Register handler
 	// Handler 1

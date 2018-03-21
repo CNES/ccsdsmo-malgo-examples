@@ -1,4 +1,4 @@
-package service
+package data
 
 import (
 	. "github.com/ccsdsmo/malgo/mal"

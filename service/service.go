@@ -3,5 +3,7 @@ package service
 type Service interface {
 	CreateService() Service
 
-	Start() error
+	StartConsumer() error
+
+	StartProvider() error
 }

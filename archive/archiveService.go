@@ -8,7 +8,10 @@ import (
 	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/consumer"
 	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/provider"
 	. "github.com/EtienneLndr/MAL_API_Go_Project/service"
+	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
+	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
 type ArchiveService struct {
@@ -22,15 +25,16 @@ type ArchiveService struct {
 // Constant for the provider url
 const (
 	providerURL = "maltcp://127.0.0.1:12400"
+	consumerURL = "maltcp://127.0.0.1:15400"
 )
 
 func (*ArchiveService) CreateService() Service {
 	archiveService := &ArchiveService{
 		ARCHIVE_SERVICE_AREA_IDENTIFIER,
 		ARCHIVE_SERVICE_SERVICE_IDENTIFIER,
-		ARCHIVE_SERVICE_AREA_NUMBER,
+		SERVICE_AREA_NUMBER,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
-		ARCHIVE_SERVICE_AREA_VERSION,
+		SERVICE_AREA_VERSION,
 	}
 
 	return archiveService
@@ -40,17 +44,46 @@ func (*ArchiveService) CreateService() Service {
  * Operation        : Retrieve
  * Operation number : 1
  */
-func (archiveService *ArchiveService) Retrieve() error {
+func (archiveService *ArchiveService) RetrieveProvider() (*RetrieveProvider, error) {
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve")
+	fmt.Println("Creation : Retrieve Provider")
 
-	provider, err := CreateRetrieveProvider(providerURL)
+	transport := new(FixedBinaryEncoding)
+	provider, err := StartProvider(providerURL, transport)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer provider.Close()
 
-	return nil
+	// TODO (AF): do sthg with these objects
+	fmt.Println("RetrieveProvider received:\n\t>>>",
+		provider)
+
+	return provider, nil
+}
+
+func (archiveService *ArchiveService) RetrieveConsumer() (*RetrieveConsumer, error) {
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Retrieve Consumer")
+
+	transport := new(FixedBinaryEncoding)
+	// IN
+	var objectType ObjectType
+	var identifierList IdentifierList
+	var longList LongList
+	var providerURI = NewURI(providerURL + "/providerRetrieve")
+	// OUT
+	consumer, archiveDetailsList, elementList, err := StartConsumer(consumerURL, transport, providerURI, objectType, identifierList, longList)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO (AF): do sthg with these objects
+	fmt.Println("RetrieveConsumer received:\n\t>>>",
+		consumer, "\n\t>>>",
+		archiveDetailsList, "\n\t>>>",
+		elementList)
+
+	return consumer, nil
 }
 
 /**
@@ -103,19 +136,46 @@ func (archiveService *ArchiveService) Delete() error {
 	return nil
 }
 
-func (archiveService *ArchiveService) Start() error {
+func (archiveService *ArchiveService) StartConsumer() error {
 	// Start Operations
-	go archiveService.Retrieve()
-	go archiveService.Query()
-	go archiveService.Count()
-	go archiveService.Store()
-	go archiveService.Update()
-	go archiveService.Delete()
+	consumer, err := archiveService.RetrieveConsumer()
+	if err != nil {
+		return err
+	}
+	defer consumer.Close()
+	/*archiveService.QueryProvider()
+	archiveService.CountProvider()
+	archiveService.StoreProvider()
+	archiveService.UpdateProvider()
+	archiveService.DeleteProvider()*/
 
 	// Start communication
 	var running bool = true
 	for running == true {
 		time.Sleep(10 * time.Second)
+		running = false
+	}
+
+	return nil
+}
+
+func (archiveService *ArchiveService) StartProvider() error {
+	// Start Operations
+	provider, err := archiveService.RetrieveProvider()
+	if err != nil {
+		return err
+	}
+	defer provider.Close()
+	/*archiveService.QueryConsumer()
+	archiveService.CountConsumer()
+	archiveService.StoreConsumer()
+	archiveService.UpdateConsumer()
+	archiveService.DeleteConsumer()*/
+
+	// Start communication
+	var running bool = true
+	for running == true {
+		time.Sleep(120 * time.Second)
 		running = false
 	}
 

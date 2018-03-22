@@ -19,7 +19,7 @@ var (
 
 const (
 	MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x01
-	MAL_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x10000010000001
+	MAL_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x20000010000001
 )
 
 func NewArchiveDetails(instId Long, details ObjectDetails, network *Identifier, timestamp *FineTime, provider *URI) *ArchiveDetails {

@@ -1,6 +1,9 @@
 package provider
 
 import (
+	"fmt"
+	"time"
+
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -15,7 +18,6 @@ import (
 type RetrieveProvider struct {
 	ctx     *Context
 	cctx    *ClientContext
-	op      InvokeOperation
 	factory EncodingFactory
 }
 
@@ -24,8 +26,62 @@ func (provider *RetrieveProvider) Close() {
 	provider.ctx.Close()
 }
 
+func (provider *RetrieveProvider) retrieveAck(transaction InvokeTransaction) error {
+	fmt.Println("Provider: retrieveAck")
+	err := transaction.Ack(nil, false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (provider *RetrieveProvider) retrieveResponse(archiveDetailsList *ArchiveDetailsList, elementList ElementList, transaction InvokeTransaction) error {
+	fmt.Println("Provider: retrieveResponse")
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	err := archiveDetailsList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	err = elementList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	transaction.Reply(encoder.Body(), false)
+
+	return nil
+}
+
+func (provider *RetrieveProvider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
+	fmt.Println("Provider: retrieveInvoke")
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	fmt.Println("Provider: retrieveInvoke -> ok")
+	element, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	objectType := element.(*ObjectType)
+
+	element, err = decoder.DecodeElement(NullIdentifierList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	identifierList := element.(*IdentifierList)
+
+	element, err = decoder.DecodeElement(NullLongList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	longList := element.(*LongList)
+
+	return objectType, identifierList, longList, nil
+}
+
 // Create a provider
-func CreateRetrieveProvider(url string, factory EncodingFactory) (*RetrieveProvider, error) {
+func createRetrieveProvider(url string, factory EncodingFactory) (*RetrieveProvider, error) {
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -36,25 +92,71 @@ func CreateRetrieveProvider(url string, factory EncodingFactory) (*RetrieveProvi
 		return nil, err
 	}
 
-	op := cctx.NewInvokeOperation(cctx.Uri,
-		ARCHIVE_SERVICE_AREA_NUMBER,
-		ARCHIVE_SERVICE_AREA_VERSION,
-		ARCHIVE_SERVICE_SERVICE_NUMBER,
-		OPERATION_IDENTIFIER_RETRIEVE)
-
-	provider := &RetrieveProvider{ctx, cctx, op, factory}
+	provider := &RetrieveProvider{ctx, cctx, factory}
 
 	return provider, nil
 }
 
-func (provider *RetrieveProvider) retrieveAck() error {
+// Create retrieve handler
+func (provider *RetrieveProvider) retrieveHandler() error {
+	fmt.Println("Provider: retrieveHandler")
+	retrieveHandler := func(msg *Message, t Transaction) error {
+		if msg != nil {
+			// Create Invoke Transaction
+			transaction := t.(InvokeTransaction)
+
+			// Call invoke operation and store objects
+			objectType, identifierList, longList, err := provider.retrieveInvoke(msg)
+			if err != nil {
+				return err
+			}
+
+			// Hold on, wait a little
+			time.Sleep(250 * time.Millisecond)
+
+			// Call Ack operation
+			provider.retrieveAck(transaction)
+
+			// TODO (AF): do sthg with these objects
+			fmt.Println("RetrieveHandler received:\n\t>>>",
+				objectType, "\n\t>>>",
+				identifierList, "\n\t>>>",
+				longList)
+
+			var archiveDetailsList = new(ArchiveDetailsList)
+			var elementList = new(ElementList)
+			// Call Response operation
+			provider.retrieveResponse(archiveDetailsList, *elementList, transaction)
+		}
+
+		return nil
+	}
+
+	err := provider.cctx.RegisterInvokeHandler(SERVICE_AREA_NUMBER,
+		SERVICE_AREA_VERSION,
+		ARCHIVE_SERVICE_SERVICE_NUMBER,
+		OPERATION_IDENTIFIER_RETRIEVE,
+		retrieveHandler)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (provider *RetrieveProvider) retrieveResponse(archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
-	return nil
-}
+// Start :
+func StartProvider(url string, factory EncodingFactory) (*RetrieveProvider, error) {
+	// Create the provider
+	provider, err := createRetrieveProvider(url, factory)
+	if err != nil {
+		return nil, err
+	}
 
-func (provider *RetrieveProvider) retrieveInvoke() (*ObjectType, *IdentifierList, *LongList, error) {
-	return NullObjectType, NullIdentifierList, NullLongList, nil
+	// Create and launch the handler
+	err = provider.retrieveHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }

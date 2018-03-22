@@ -2,11 +2,15 @@ package archive
 
 // Constants for the Archive Service
 const (
-	ARCHIVE_SERVICE_AREA_IDENTIFIER    = "COM"
 	ARCHIVE_SERVICE_SERVICE_IDENTIFIER = "Archive"
-	ARCHIVE_SERVICE_AREA_NUMBER        = 2
 	ARCHIVE_SERVICE_SERVICE_NUMBER     = 2
-	ARCHIVE_SERVICE_AREA_VERSION       = 1
+)
+
+const (
+	ARCHIVE_SERVICE_AREA_IDENTIFIER = "COM"
+	DEFAULT_SERVICE_NUMBER          = 0
+	SERVICE_AREA_NUMBER             = 2
+	SERVICE_AREA_VERSION            = 1
 )
 
 // Constants for the operations

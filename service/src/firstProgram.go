@@ -821,7 +821,7 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) != 1 {
-		fmt.Println("ERROR: You must use this program like this: go run firstProgram.go [function]")
+		fmt.Println("ERROR: You must use this program like this: go run firstProgram.go [normal|test]")
 		return
 	}
 
@@ -913,5 +913,8 @@ func main() {
 		if errTestRequest != nil {
 			fmt.Println("Error: problem with testRequest function -> ", errTestRequest)
 		}
+	} else {
+		fmt.Println("ERROR: You must use this program like this: go run firstProgram.go [normal|test]")
+		return
 	}
 }

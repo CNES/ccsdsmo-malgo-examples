@@ -35,6 +35,10 @@ func (list *ArchiveQueryList) Size() int {
 	return -1
 }
 
+func (*ArchiveQueryList) Composite() Composite {
+	return new(ArchiveQueryList)
+}
+
 // ================================================================================
 // Defines COM ArchiveQueryList type as a MAL Element
 // ================================================================================

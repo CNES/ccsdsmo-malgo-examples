@@ -35,6 +35,10 @@ func (list *ArchiveDetailsList) Size() int {
 	return -1
 }
 
+func (*ArchiveDetailsList) Composite() Composite {
+	return new(ArchiveDetailsList)
+}
+
 // ================================================================================
 // Defines COM ArchiveDetailsList type as a MAL Element
 // ================================================================================

@@ -124,9 +124,9 @@ func (provider *RetrieveProvider) retrieveHandler() error {
 				longList)
 
 			var archiveDetailsList = new(ArchiveDetailsList)
-			var elementList = new(ElementList)
+			var elementList = new(ArchiveQueryList)
 			// Call Response operation
-			provider.retrieveResponse(archiveDetailsList, *elementList, transaction)
+			provider.retrieveResponse(archiveDetailsList, elementList, transaction)
 		}
 
 		return nil

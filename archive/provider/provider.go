@@ -42,7 +42,7 @@ func (provider *RetrieveProvider) retrieveResponse(archiveDetailsList *ArchiveDe
 		return err
 	}
 
-	err = elementList.Encode(encoder)
+	err = encoder.EncodeAbstractElement(elementList)
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (provider *RetrieveProvider) retrieveResponse(archiveDetailsList *ArchiveDe
 	return nil
 }
 
-func (provider *RetrieveProvider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
+func (provider *RetrieveProvider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, ElementList, error) {
 	fmt.Println("Provider: retrieveInvoke")
 	decoder := provider.factory.NewDecoder(msg.Body)
 
@@ -63,19 +63,22 @@ func (provider *RetrieveProvider) retrieveInvoke(msg *Message) (*ObjectType, *Id
 	}
 	objectType := element.(*ObjectType)
 
+	fmt.Println(objectType)
+
 	element, err = decoder.DecodeElement(NullIdentifierList)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	identifierList := element.(*IdentifierList)
 
-	element, err = decoder.DecodeElement(NullLongList)
+	fmt.Println(identifierList)
+
+	elementList, err := decoder.DecodeAbstractElement()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	longList := element.(*LongList)
 
-	return objectType, identifierList, longList, nil
+	return objectType, identifierList, elementList.(ElementList), nil
 }
 
 // Create a provider

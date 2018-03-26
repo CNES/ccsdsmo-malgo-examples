@@ -21,10 +21,16 @@ type ArchiveService struct {
 	areaVersion       Integer
 }
 
-// Constant for the provider url
+// Constants for the providers and consumers
 const (
-	providerURL = "maltcp://127.0.0.1:12400"
-	consumerURL = "maltcp://127.0.0.1:15400"
+	providerURL         = "maltcp://127.0.0.1:12400"
+	providerURLRetrieve = providerURL + "/providerRetrieve"
+	providerURLQuery    = providerURL + "/providerQuery"
+	providerURLCount    = providerURL + "/providerCount"
+	providerURLStore    = providerURL + "/providerStore"
+	providerURLUpdate   = providerURL + "/providerUpdate"
+	providerURLDelete   = providerURL + "/providerDelete"
+	consumerURL         = "maltcp://127.0.0.1:14200"
 )
 
 func (*ArchiveService) CreateService() Service {
@@ -68,10 +74,10 @@ func (archiveService *ArchiveService) RetrieveConsumer() (*RetrieveConsumer, err
 	// IN
 	var objectType ObjectType
 	var identifierList IdentifierList
-	var longList LongList
-	var providerURI = NewURI(providerURL + "/providerRetrieve")
+	var elementList ElementList = NewLongList(10)
+	var providerURI = NewURI(providerURLRetrieve)
 	// OUT
-	consumer, archiveDetailsList, elementList, err := StartConsumer(consumerURL, transport, providerURI, objectType, identifierList, longList)
+	consumer, archiveDetailsList, elementList, err := StartConsumer(consumerURL, transport, providerURI, objectType, identifierList, elementList)
 	if err != nil {
 		return nil, err
 	}

@@ -47,12 +47,17 @@ func createConsumer(url string, factory EncodingFactory, providerURI *URI) (*Ret
 	return consumer, nil
 }
 
-func (consumer *RetrieveConsumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, longList LongList) error {
+func (consumer *RetrieveConsumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, elementList ElementList) error {
 	fmt.Println("Consumer: retrieveInvoke")
+
+	fmt.Println(objectType)
+	fmt.Println(identifierList)
+	fmt.Println(elementList)
+
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 	objectType.Encode(encoder)
 	identifierList.Encode(encoder)
-	longList.Encode(encoder)
+	encoder.EncodeAbstractElement(elementList)
 
 	_, err := consumer.op.Invoke(encoder.Body())
 	if err != nil {
@@ -84,7 +89,7 @@ func (consumer *RetrieveConsumer) retrieveResponse() (*ArchiveDetailsList, Eleme
 	return archiveDetails.(*ArchiveDetailsList), elementList.(ElementList), nil
 }
 
-func StartConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*RetrieveConsumer, *ArchiveDetailsList, ElementList, error) {
+func StartConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, identifierList IdentifierList, elementList ElementList) (*RetrieveConsumer, *ArchiveDetailsList, ElementList, error) {
 	// Create the consumer
 	consumer, err := createConsumer(url, factory, providerURI)
 	if err != nil {
@@ -92,7 +97,7 @@ func StartConsumer(url string, factory EncodingFactory, providerURI *URI, object
 	}
 
 	// Call Invoke operation
-	err = consumer.retrieveInvoke(objectType, identifierList, longList)
+	err = consumer.retrieveInvoke(objectType, identifierList, elementList)
 	if err != nil {
 		return nil, nil, nil, err
 	}

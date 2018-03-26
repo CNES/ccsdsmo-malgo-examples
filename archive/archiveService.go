@@ -11,7 +11,6 @@ import (
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
-	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
 type ArchiveService struct {

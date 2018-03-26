@@ -9,8 +9,6 @@ import (
 
 	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/constants"
 	. "github.com/EtienneLndr/MAL_API_Go_Project/data"
-
-	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
 type RetrieveConsumer struct {
@@ -69,13 +67,15 @@ func (consumer *RetrieveConsumer) retrieveResponse() (*ArchiveDetailsList, Eleme
 	if err != nil {
 		return nil, nil, err
 	}
-
 	decoder := consumer.factory.NewDecoder(resp.Body)
+
+	println("archivedetails")
 	archiveDetails, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	println("elementlist")
 	elementList, err := decoder.DecodeAbstractElement()
 	if err != nil {
 		return nil, nil, err

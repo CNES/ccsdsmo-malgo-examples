@@ -10,8 +10,6 @@ import (
 
 	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/constants"
 	. "github.com/EtienneLndr/MAL_API_Go_Project/data"
-
-	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
 // Define Provider's structure

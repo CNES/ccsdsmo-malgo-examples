@@ -5,6 +5,7 @@ import (
 	"os"
 
 	. "github.com/EtienneLndr/MAL_API_Go_Project/archive"
+	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 )
 
 func main() {

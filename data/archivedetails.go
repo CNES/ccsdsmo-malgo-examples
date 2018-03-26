@@ -18,8 +18,8 @@ var (
 )
 
 const (
-	MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x01
-	MAL_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x20000010000001
+	COM_ARCHIVE_DETAILS_TYPE_SHORT_FORM Integer = 0x01
+	COM_ARCHIVE_DETAILS_SHORT_FORM      Long    = 0x2000002000001
 )
 
 func NewArchiveDetails(instId Long, details ObjectDetails, network *Identifier, timestamp *FineTime, provider *URI) *ArchiveDetails {
@@ -38,10 +38,18 @@ func (a *ArchiveDetails) Composite() Composite {
 	return a
 }
 
+// ================================================================================
+// Defines COM ArchiveDetails type as a MAL Element
+// ================================================================================
+// Registers COM ArchiveDetails type for polymorpsism handling
+func init() {
+	RegisterMALElement(COM_ARCHIVE_DETAILS_SHORT_FORM, NullArchiveDetails)
+}
+
 // ----- Defines COM ArchiveDetails as a MAL Element -----
 // Returns the absolute short form of the element type
 func (*ArchiveDetails) GetShortForm() Long {
-	return MAL_ARCHIVE_DETAILS_SHORT_FORM
+	return COM_ARCHIVE_DETAILS_SHORT_FORM
 }
 
 // Returns the number of the area this element belongs to
@@ -60,7 +68,7 @@ func (a *ArchiveDetails) GetServiceNumber() UShort {
 
 // Returns the relative short form of the element type
 func (*ArchiveDetails) GetTypeShortForm() Integer {
-	return MAL_ARCHIVE_DETAILS_TYPE_SHORT_FORM
+	return COM_ARCHIVE_DETAILS_TYPE_SHORT_FORM
 }
 
 // ----- Encoding and Decoding -----

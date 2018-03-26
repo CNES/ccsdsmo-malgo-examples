@@ -17,7 +17,7 @@ var (
 
 const (
 	COM_ARCHIVE_QUERY_LIST_TYPE_SHORT_FORM Integer = -0x02
-	COM_ARCHIVE_QUERY_LIST_SHORT_FORM      Long    = 0x2000001FFFFFE
+	COM_ARCHIVE_QUERY_LIST_SHORT_FORM      Long    = 0x2000002FFFFFE
 )
 
 func NewArchiveQueryList(size int) *ArchiveQueryList {
@@ -42,7 +42,7 @@ func (*ArchiveQueryList) Composite() Composite {
 // ================================================================================
 // Defines COM ArchiveQueryList type as a MAL Element
 // ================================================================================
-// Registers COM InstanceBooleanPairList type for polymorpsism handling
+// Registers COM ArchiveQueryList type for polymorpsism handling
 func init() {
 	RegisterMALElement(COM_ARCHIVE_QUERY_LIST_SHORT_FORM, NullArchiveQueryList)
 }

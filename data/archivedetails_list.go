@@ -17,7 +17,7 @@ var (
 
 const (
 	COM_ARCHIVE_DETAILS_LIST_TYPE_SHORT_FORM Integer = -0x01
-	COM_ARCHIVE_DETAILS_LIST_SHORT_FORM      Long    = 0x2000001FFFFFF
+	COM_ARCHIVE_DETAILS_LIST_SHORT_FORM      Long    = 0x2000002FFFFFF
 )
 
 func NewArchiveDetailsList(size int) *ArchiveDetailsList {
@@ -42,14 +42,14 @@ func (*ArchiveDetailsList) Composite() Composite {
 // ================================================================================
 // Defines COM ArchiveDetailsList type as a MAL Element
 // ================================================================================
-// Registers COM InstanceBooleanPairList type for polymorpsism handling
+// Registers COM ArchiveDetailsList type for polymorpsism handling
 func init() {
-	RegisterMALElement(COM_ARCHIVE_QUERY_LIST_SHORT_FORM, NullArchiveDetailsList)
+	RegisterMALElement(COM_ARCHIVE_DETAILS_LIST_SHORT_FORM, NullArchiveDetailsList)
 }
 
 // Returns the absolute short form of the element type.
 func (*ArchiveDetailsList) GetShortForm() Long {
-	return COM_ARCHIVE_QUERY_LIST_SHORT_FORM
+	return COM_ARCHIVE_DETAILS_LIST_SHORT_FORM
 }
 
 // Returns the number of the area this element type belongs to.

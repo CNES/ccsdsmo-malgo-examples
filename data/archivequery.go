@@ -22,8 +22,8 @@ var (
 )
 
 const (
-	MAL_ARCHIVE_QUERY_TYPE_SHORT_FORM Integer = 0x02
-	MAL_ARCHIVE_QUERY_SHORT_FORM      Long    = 0x2000001000002
+	COM_ARCHIVE_QUERY_TYPE_SHORT_FORM Integer = 0x02
+	COM_ARCHIVE_QUERY_SHORT_FORM      Long    = 0x2000002000002
 )
 
 func NewArchiveQuery(domain IdentifierList,
@@ -54,10 +54,18 @@ func (a *ArchiveQuery) Composite() Composite {
 	return a
 }
 
+// ================================================================================
+// Defines COM ArchiveQuery type as a MAL Element
+// ================================================================================
+// Registers COM ArchiveQuery type for polymorpsism handling
+func init() {
+	RegisterMALElement(COM_ARCHIVE_QUERY_SHORT_FORM, NullArchiveQuery)
+}
+
 // ----- Defines COM ArchiveQuery as a MAL Element -----
 // Returns the absolute short form of the element type
 func (*ArchiveQuery) GetShortForm() Long {
-	return MAL_ARCHIVE_QUERY_SHORT_FORM
+	return COM_ARCHIVE_QUERY_SHORT_FORM
 }
 
 // Returns the number of the area this element belongs to
@@ -77,7 +85,7 @@ func (a *ArchiveQuery) GetServiceNumber() UShort {
 
 // Returns the relative short form of the element type
 func (*ArchiveQuery) GetTypeShortForm() Integer {
-	return MAL_ARCHIVE_QUERY_TYPE_SHORT_FORM
+	return COM_ARCHIVE_QUERY_TYPE_SHORT_FORM
 }
 
 // ----- Encoding and Decoding -----

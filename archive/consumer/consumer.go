@@ -70,7 +70,7 @@ func createConsumer(url string, factory EncodingFactory, providerURI *URI, typeO
 //======================================================================//
 //								RETRIEVE								//
 //======================================================================//
-func (consumer *Consumer) retrieveInvoke(objectType *ObjectType, identifierList *IdentifierList, longList *LongList) error {
+func (consumer *Consumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, longList LongList) error {
 	println("yooooooooooooooo")
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 	objectType.Encode(encoder)
@@ -105,7 +105,7 @@ func (consumer *Consumer) retrieveResponse() (*ArchiveDetailsList, ElementList, 
 }
 
 // StartRetrieveConsumer : TODO
-func StartRetrieveConsumer(url string, factory EncodingFactory, providerURI *URI, objectType *ObjectType, identifierList *IdentifierList, longList *LongList) (*Consumer, *ArchiveDetailsList, ElementList, error) {
+func StartRetrieveConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*Consumer, *ArchiveDetailsList, ElementList, error) {
 	// Create the consumer
 	consumer, err := createConsumer(url, factory, providerURI, "consumerRetrieve", OPERATION_IDENTIFIER_RETRIEVE)
 	if err != nil {

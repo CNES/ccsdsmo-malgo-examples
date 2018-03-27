@@ -49,21 +49,17 @@ func main() {
 
 	if args[0] == "provider" {
 		// Start the provider
-		archiveService.StartProvider(OPERATION_IDENTIFIER_RETRIEVE)
+		archiveService.LaunchProvider(OPERATION_IDENTIFIER_RETRIEVE)
 	} else if args[0] == "consumer" {
 		// Create parameters
-		var objectType *ObjectType
-		var identifierList *IdentifierList
+		var objectType ObjectType
+		var identifierList IdentifierList
 		var longList = NewLongList(10)
 
 		// Start the consumer
-		archiveService.StartConsumer(OPERATION_IDENTIFIER_RETRIEVE, objectType, identifierList, longList)
+		archiveService.LaunchRetrieveConsumer(objectType, identifierList, *longList)
 
 	} else {
-		var bidule Integer
-		if bidule == nil {
-			println("yoloooooooooooo")
-		}
 		fmt.Println("ERROR: You must use this program like this: go run start.go [provider|consumer]")
 		return
 	}

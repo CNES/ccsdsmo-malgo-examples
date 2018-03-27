@@ -30,5 +30,5 @@ import (
 type Service interface {
 	CreateService() Service
 
-	StartProvider(operation UShort) error
+	LaunchProvider(operation UShort) error
 }

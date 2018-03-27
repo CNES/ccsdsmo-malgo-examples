@@ -90,7 +90,7 @@ func (archiveService *ArchiveService) retrieveProvider() (*Provider, error) {
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) retrieveConsumer(objectType *ObjectType, identifierList *IdentifierList, longList *LongList) (*Consumer, error) {
+func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*Consumer, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
 
@@ -195,41 +195,10 @@ func (archiveService *ArchiveService) deleteConsumer() (*Consumer, error) {
 //======================================================================//
 //							START: Consumer								//
 //======================================================================//
-// StartConsumer : TODO
-func (archiveService *ArchiveService) StartConsumer(operation UShort, elements ...Element) error {
-	// Declare variables
-	var consumer *Consumer
-	var err error
-
+// LaunchRetrieveConsumer : TODO
+func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) error {
 	// Start Operation
-	switch operation {
-	case OPERATION_IDENTIFIER_RETRIEVE:
-		// Type assertion
-		objectType := elements[0].(*ObjectType)
-		identifierList := elements[1].(*IdentifierList)
-		longList := elements[2].(*LongList)
-
-		// Start Operation
-		consumer, err = archiveService.retrieveConsumer(objectType, identifierList, longList)
-		break
-	case OPERATION_IDENTIFIER_QUERY:
-		consumer, err = archiveService.queryConsumer()
-		break
-	case OPERATION_IDENTIFIER_COUNT:
-		consumer, err = archiveService.countConsumer()
-		break
-	case OPERATION_IDENTIFIER_STORE:
-		consumer, err = archiveService.storeConsumer()
-		break
-	case OPERATION_IDENTIFIER_UPDATE:
-		consumer, err = archiveService.updateConsumer()
-		break
-	case OPERATION_IDENTIFIER_DELETE:
-		consumer, err = archiveService.deleteConsumer()
-		break
-	default:
-		return errors.New("Unknown operation")
-	}
+	consumer, err := archiveService.retrieveConsumer(objectType, identifierList, longList)
 
 	if err != nil {
 		return err
@@ -244,8 +213,8 @@ func (archiveService *ArchiveService) StartConsumer(operation UShort, elements .
 //======================================================================//
 //							START: Provider								//
 //======================================================================//
-// StartProvider : TODO
-func (archiveService *ArchiveService) StartProvider(operation UShort) error {
+// LaunchProvider : TODO
+func (archiveService *ArchiveService) LaunchProvider(operation UShort) error {
 	// Declare variables
 	var provider *Provider
 	var err error

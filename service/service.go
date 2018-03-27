@@ -23,8 +23,12 @@
  */
 package service
 
+import (
+	. "github.com/ccsdsmo/malgo/mal"
+)
+
 type Service interface {
 	CreateService() Service
 
-	StartProvider() error
+	StartProvider(operation UShort) error
 }

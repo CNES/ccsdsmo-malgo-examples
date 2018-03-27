@@ -28,6 +28,7 @@ import (
 	"os"
 
 	. "github.com/EtienneLndr/MAL_API_Go_Project/archive"
+	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/constants"
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
@@ -48,17 +49,21 @@ func main() {
 
 	if args[0] == "provider" {
 		// Start the provider
-		archiveService.StartProvider()
+		archiveService.StartProvider(OPERATION_IDENTIFIER_RETRIEVE)
 	} else if args[0] == "consumer" {
 		// Create parameters
-		var objectType ObjectType
-		var identifierList IdentifierList
-		var elementList ElementList = NewLongList(10)
+		var objectType *ObjectType
+		var identifierList *IdentifierList
+		var longList = NewLongList(10)
 
 		// Start the consumer
-		archiveService.StartConsumer(objectType, identifierList, elementList)
+		archiveService.StartConsumer(OPERATION_IDENTIFIER_RETRIEVE, objectType, identifierList, longList)
 
 	} else {
+		var bidule Integer
+		if bidule == nil {
+			println("yoloooooooooooo")
+		}
 		fmt.Println("ERROR: You must use this program like this: go run start.go [provider|consumer]")
 		return
 	}

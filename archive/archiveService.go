@@ -24,6 +24,7 @@
 package archive
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -89,7 +90,7 @@ func (archiveService *ArchiveService) retrieveProvider() (*Provider, error) {
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, elementList ElementList) (*Consumer, error) {
+func (archiveService *ArchiveService) retrieveConsumer(objectType *ObjectType, identifierList *IdentifierList, longList *LongList) (*Consumer, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
 
@@ -102,7 +103,7 @@ func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, id
 		providerURI,
 		objectType,
 		identifierList,
-		elementList)
+		longList)
 	if err != nil {
 		return nil, err
 	}
@@ -123,12 +124,12 @@ func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, id
  * Operation        : Query
  * Operation number : 2
  */
-func (archiveService *ArchiveService) queryProvider() error {
-	return nil
+func (archiveService *ArchiveService) queryProvider() (*Provider, error) {
+	return nil, nil
 }
 
-func (archiveService *ArchiveService) queryConsumer() error {
-	return nil
+func (archiveService *ArchiveService) queryConsumer() (*Consumer, error) {
+	return nil, nil
 }
 
 //======================================================================//
@@ -138,12 +139,12 @@ func (archiveService *ArchiveService) queryConsumer() error {
  * Operation        : Count
  * Operation number : 3
  */
-func (archiveService *ArchiveService) countProvider() error {
-	return nil
+func (archiveService *ArchiveService) countProvider() (*Provider, error) {
+	return nil, nil
 }
 
-func (archiveService *ArchiveService) countConsumer() error {
-	return nil
+func (archiveService *ArchiveService) countConsumer() (*Consumer, error) {
+	return nil, nil
 }
 
 //======================================================================//
@@ -153,12 +154,12 @@ func (archiveService *ArchiveService) countConsumer() error {
  * Operation        : Store
  * Operation number : 4
  */
-func (archiveService *ArchiveService) storeProvider() error {
-	return nil
+func (archiveService *ArchiveService) storeProvider() (*Provider, error) {
+	return nil, nil
 }
 
-func (archiveService *ArchiveService) storeConsumer() error {
-	return nil
+func (archiveService *ArchiveService) storeConsumer() (*Consumer, error) {
+	return nil, nil
 }
 
 //======================================================================//
@@ -168,12 +169,12 @@ func (archiveService *ArchiveService) storeConsumer() error {
  * Operation        : Update
  * Operation number : 5
  */
-func (archiveService *ArchiveService) updateProvider() error {
-	return nil
+func (archiveService *ArchiveService) updateProvider() (*Provider, error) {
+	return nil, nil
 }
 
-func (archiveService *ArchiveService) updateConsumer() error {
-	return nil
+func (archiveService *ArchiveService) updateConsumer() (*Consumer, error) {
+	return nil, nil
 }
 
 //======================================================================//
@@ -183,18 +184,53 @@ func (archiveService *ArchiveService) updateConsumer() error {
  * Operation        : Delete
  * Operation number : 6
  */
-func (archiveService *ArchiveService) deleteProvider() error {
-	return nil
+func (archiveService *ArchiveService) deleteProvider() (*Provider, error) {
+	return nil, nil
 }
 
-func (archiveService *ArchiveService) deleteConsumer() error {
-	return nil
+func (archiveService *ArchiveService) deleteConsumer() (*Consumer, error) {
+	return nil, nil
 }
 
+//======================================================================//
+//							START: Consumer								//
+//======================================================================//
 // StartConsumer : TODO
-func (archiveService *ArchiveService) StartConsumer(objectType ObjectType, identifierList IdentifierList, elementList ElementList) error {
-	// Start Operations
-	consumer, err := archiveService.retrieveConsumer(objectType, identifierList, elementList)
+func (archiveService *ArchiveService) StartConsumer(operation UShort, elements ...Element) error {
+	// Declare variables
+	var consumer *Consumer
+	var err error
+
+	// Start Operation
+	switch operation {
+	case OPERATION_IDENTIFIER_RETRIEVE:
+		// Type assertion
+		objectType := elements[0].(*ObjectType)
+		identifierList := elements[1].(*IdentifierList)
+		longList := elements[2].(*LongList)
+
+		// Start Operation
+		consumer, err = archiveService.retrieveConsumer(objectType, identifierList, longList)
+		break
+	case OPERATION_IDENTIFIER_QUERY:
+		consumer, err = archiveService.queryConsumer()
+		break
+	case OPERATION_IDENTIFIER_COUNT:
+		consumer, err = archiveService.countConsumer()
+		break
+	case OPERATION_IDENTIFIER_STORE:
+		consumer, err = archiveService.storeConsumer()
+		break
+	case OPERATION_IDENTIFIER_UPDATE:
+		consumer, err = archiveService.updateConsumer()
+		break
+	case OPERATION_IDENTIFIER_DELETE:
+		consumer, err = archiveService.deleteConsumer()
+		break
+	default:
+		return errors.New("Unknown operation")
+	}
+
 	if err != nil {
 		return err
 	}
@@ -205,10 +241,39 @@ func (archiveService *ArchiveService) StartConsumer(objectType ObjectType, ident
 	return nil
 }
 
+//======================================================================//
+//							START: Provider								//
+//======================================================================//
 // StartProvider : TODO
-func (archiveService *ArchiveService) StartProvider() error {
-	// Start Operations
-	provider, err := archiveService.retrieveProvider()
+func (archiveService *ArchiveService) StartProvider(operation UShort) error {
+	// Declare variables
+	var provider *Provider
+	var err error
+
+	// Start Operation
+	switch operation {
+	case OPERATION_IDENTIFIER_RETRIEVE:
+		provider, err = archiveService.retrieveProvider()
+		break
+	case OPERATION_IDENTIFIER_QUERY:
+		provider, err = archiveService.queryProvider()
+		break
+	case OPERATION_IDENTIFIER_COUNT:
+		provider, err = archiveService.countProvider()
+		break
+	case OPERATION_IDENTIFIER_STORE:
+		provider, err = archiveService.storeProvider()
+		break
+	case OPERATION_IDENTIFIER_UPDATE:
+		provider, err = archiveService.updateProvider()
+		break
+	case OPERATION_IDENTIFIER_DELETE:
+		provider, err = archiveService.deleteProvider()
+		break
+	default:
+		return errors.New("Unknown operation")
+	}
+
 	if err != nil {
 		return err
 	}

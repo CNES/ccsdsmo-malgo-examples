@@ -93,7 +93,7 @@ func (provider *Provider) retrieveResponse(archiveDetailsList *ArchiveDetailsLis
 	return nil
 }
 
-func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, ElementList, error) {
+func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
 	decoder := provider.factory.NewDecoder(msg.Body)
 
 	element, err := decoder.DecodeElement(NullObjectType)
@@ -108,12 +108,13 @@ func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *Identifier
 	}
 	identifierList := element.(*IdentifierList)
 
-	elementList, err := decoder.DecodeAbstractElement()
+	element, err = decoder.DecodeElement(NullLongList)
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	longList := element.(*LongList)
 
-	return objectType, identifierList, elementList.(ElementList), nil
+	return objectType, identifierList, longList, nil
 }
 
 // Create retrieve handler

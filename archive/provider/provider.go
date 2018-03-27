@@ -1,3 +1,26 @@
+/**
+ * MIT License
+ *
+ * Copyright (c) 2018 CNES
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package provider
 
 import (
@@ -13,19 +36,38 @@ import (
 )
 
 // Define Provider's structure
-type RetrieveProvider struct {
+type Provider struct {
 	ctx     *Context
 	cctx    *ClientContext
 	factory EncodingFactory
 }
 
 // Allow to close the context of a specific provider
-func (provider *RetrieveProvider) Close() {
+func (provider *Provider) Close() {
 	provider.ctx.Close()
 }
 
-func (provider *RetrieveProvider) retrieveAck(transaction InvokeTransaction) error {
-	fmt.Println("Provider: retrieveAck")
+// Create a provider
+func createProvider(url string, factory EncodingFactory, typeOfProvider string) (*Provider, error) {
+	ctx, err := NewContext(url)
+	if err != nil {
+		return nil, err
+	}
+
+	cctx, err := NewClientContext(ctx, typeOfProvider)
+	if err != nil {
+		return nil, err
+	}
+
+	provider := &Provider{ctx, cctx, factory}
+
+	return provider, nil
+}
+
+//======================================================================//
+//								RETRIEVE								//
+//======================================================================//
+func (provider *Provider) retrieveAck(transaction InvokeTransaction) error {
 	err := transaction.Ack(nil, false)
 	if err != nil {
 		return err
@@ -33,8 +75,7 @@ func (provider *RetrieveProvider) retrieveAck(transaction InvokeTransaction) err
 	return nil
 }
 
-func (provider *RetrieveProvider) retrieveResponse(archiveDetailsList *ArchiveDetailsList, elementList ElementList, transaction InvokeTransaction) error {
-	fmt.Println("Provider: retrieveResponse")
+func (provider *Provider) retrieveResponse(archiveDetailsList *ArchiveDetailsList, elementList ElementList, transaction InvokeTransaction) error {
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
 	err := archiveDetailsList.Encode(encoder)
@@ -52,26 +93,20 @@ func (provider *RetrieveProvider) retrieveResponse(archiveDetailsList *ArchiveDe
 	return nil
 }
 
-func (provider *RetrieveProvider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, ElementList, error) {
-	fmt.Println("Provider: retrieveInvoke")
+func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, ElementList, error) {
 	decoder := provider.factory.NewDecoder(msg.Body)
 
-	fmt.Println("Provider: retrieveInvoke -> ok")
 	element, err := decoder.DecodeElement(NullObjectType)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	objectType := element.(*ObjectType)
 
-	fmt.Println(objectType)
-
 	element, err = decoder.DecodeElement(NullIdentifierList)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 	identifierList := element.(*IdentifierList)
-
-	fmt.Println(identifierList)
 
 	elementList, err := decoder.DecodeAbstractElement()
 	if err != nil {
@@ -81,26 +116,8 @@ func (provider *RetrieveProvider) retrieveInvoke(msg *Message) (*ObjectType, *Id
 	return objectType, identifierList, elementList.(ElementList), nil
 }
 
-// Create a provider
-func createRetrieveProvider(url string, factory EncodingFactory) (*RetrieveProvider, error) {
-	ctx, err := NewContext(url)
-	if err != nil {
-		return nil, err
-	}
-
-	cctx, err := NewClientContext(ctx, "providerRetrieve")
-	if err != nil {
-		return nil, err
-	}
-
-	provider := &RetrieveProvider{ctx, cctx, factory}
-
-	return provider, nil
-}
-
 // Create retrieve handler
-func (provider *RetrieveProvider) retrieveHandler() error {
-	fmt.Println("Provider: retrieveHandler")
+func (provider *Provider) retrieveHandler() error {
 	retrieveHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
 			// Create Invoke Transaction
@@ -145,10 +162,10 @@ func (provider *RetrieveProvider) retrieveHandler() error {
 	return nil
 }
 
-// Start :
-func StartProvider(url string, factory EncodingFactory) (*RetrieveProvider, error) {
+// StartRetrieveProvider :
+func StartRetrieveProvider(url string, factory EncodingFactory) (*Provider, error) {
 	// Create the provider
-	provider, err := createRetrieveProvider(url, factory)
+	provider, err := createProvider(url, factory, "providerRetrieve")
 	if err != nil {
 		return nil, err
 	}
@@ -161,3 +178,23 @@ func StartProvider(url string, factory EncodingFactory) (*RetrieveProvider, erro
 
 	return provider, nil
 }
+
+//======================================================================//
+//								QUERY									//
+//======================================================================//
+
+//======================================================================//
+//								COUNT									//
+//======================================================================//
+
+//======================================================================//
+//								STORE									//
+//======================================================================//
+
+//======================================================================//
+//								UPDATE									//
+//======================================================================//
+
+//======================================================================//
+//								DELETE									//
+//======================================================================//

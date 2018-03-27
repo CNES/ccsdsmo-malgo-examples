@@ -1,3 +1,26 @@
+/**
+ * MIT License
+ *
+ * Copyright (c) 2018 CNES
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package archive
 
 import (
@@ -33,6 +56,7 @@ const (
 	consumerURL         = "maltcp://127.0.0.1:14200"
 )
 
+// CreateService : TODO
 func (*ArchiveService) CreateService() Service {
 	archiveService := &ArchiveService{
 		ARCHIVE_SERVICE_AREA_IDENTIFIER,
@@ -45,39 +69,40 @@ func (*ArchiveService) CreateService() Service {
 	return archiveService
 }
 
+//======================================================================//
+//								RETRIEVE								//
+//======================================================================//
 /**
  * Operation        : Retrieve
  * Operation number : 1
  */
-func (archiveService *ArchiveService) RetrieveProvider() (*RetrieveProvider, error) {
+func (archiveService *ArchiveService) retrieveProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Provider")
 
 	transport := new(FixedBinaryEncoding)
-	provider, err := StartProvider(providerURL, transport)
+	provider, err := StartRetrieveProvider(providerURL, transport)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO (AF): do sthg with these objects
-	fmt.Println("RetrieveProvider received:\n\t>>>",
-		provider)
-
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) RetrieveConsumer() (*RetrieveConsumer, error) {
+func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, elementList ElementList) (*Consumer, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
 
-	transport := new(FixedBinaryEncoding)
 	// IN
-	var objectType ObjectType
-	var identifierList IdentifierList
-	var elementList ElementList = NewLongList(10)
+	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLRetrieve)
 	// OUT
-	consumer, archiveDetailsList, elementList, err := StartConsumer(consumerURL, transport, providerURI, objectType, identifierList, elementList)
+	consumer, archiveDetailsList, elementList, err := StartRetrieveConsumer(consumerURL,
+		transport,
+		providerURI,
+		objectType,
+		identifierList,
+		elementList)
 	if err != nil {
 		return nil, err
 	}
@@ -91,91 +116,105 @@ func (archiveService *ArchiveService) RetrieveConsumer() (*RetrieveConsumer, err
 	return consumer, nil
 }
 
+//======================================================================//
+//								QUERY									//
+//======================================================================//
 /**
  * Operation        : Query
  * Operation number : 2
  */
-func (archiveService *ArchiveService) Query() error {
-	fmt.Println("Creation : Query")
-
+func (archiveService *ArchiveService) queryProvider() error {
 	return nil
 }
 
+func (archiveService *ArchiveService) queryConsumer() error {
+	return nil
+}
+
+//======================================================================//
+//								COUNT									//
+//======================================================================//
 /**
  * Operation        : Count
  * Operation number : 3
  */
-func (archiveService *ArchiveService) Count() error {
-	fmt.Println("Creation : Count")
-
+func (archiveService *ArchiveService) countProvider() error {
 	return nil
 }
 
+func (archiveService *ArchiveService) countConsumer() error {
+	return nil
+}
+
+//======================================================================//
+//								STORE									//
+//======================================================================//
 /**
  * Operation        : Store
  * Operation number : 4
  */
-func (archiveService *ArchiveService) Store() error {
-	fmt.Println("Creation : Store")
-
+func (archiveService *ArchiveService) storeProvider() error {
 	return nil
 }
 
+func (archiveService *ArchiveService) storeConsumer() error {
+	return nil
+}
+
+//======================================================================//
+//								UPDATE									//
+//======================================================================//
 /**
  * Operation        : Update
  * Operation number : 5
  */
-func (archiveService *ArchiveService) Update() error {
-	fmt.Println("Creation : Update")
-
+func (archiveService *ArchiveService) updateProvider() error {
 	return nil
 }
 
+func (archiveService *ArchiveService) updateConsumer() error {
+	return nil
+}
+
+//======================================================================//
+//								DELETE									//
+//======================================================================//
 /**
  * Operation        : Delete
  * Operation number : 6
  */
-func (archiveService *ArchiveService) Delete() error {
-	fmt.Println("Creation : Delete")
-
+func (archiveService *ArchiveService) deleteProvider() error {
 	return nil
 }
 
-func (archiveService *ArchiveService) StartConsumer() error {
+func (archiveService *ArchiveService) deleteConsumer() error {
+	return nil
+}
+
+// StartConsumer : TODO
+func (archiveService *ArchiveService) StartConsumer(objectType ObjectType, identifierList IdentifierList, elementList ElementList) error {
 	// Start Operations
-	consumer, err := archiveService.RetrieveConsumer()
+	consumer, err := archiveService.retrieveConsumer(objectType, identifierList, elementList)
 	if err != nil {
 		return err
 	}
-	defer consumer.Close()
-	/*archiveService.QueryProvider()
-	archiveService.CountProvider()
-	archiveService.StoreProvider()
-	archiveService.UpdateProvider()
-	archiveService.DeleteProvider()*/
 
-	// Start communication
-	var running bool = true
-	for running == true {
-		time.Sleep(10 * time.Second)
-		running = false
-	}
+	// Close the consumer
+	consumer.Close()
 
 	return nil
 }
 
+// StartProvider : TODO
 func (archiveService *ArchiveService) StartProvider() error {
 	// Start Operations
-	provider, err := archiveService.RetrieveProvider()
+	provider, err := archiveService.retrieveProvider()
 	if err != nil {
 		return err
 	}
+
+	// Close the provider at the end of the function
 	defer provider.Close()
-	/*archiveService.QueryConsumer()
-	archiveService.CountConsumer()
-	archiveService.StoreConsumer()
-	archiveService.UpdateConsumer()
-	archiveService.DeleteConsumer()*/
 
 	// Start communication
 	var running bool = true

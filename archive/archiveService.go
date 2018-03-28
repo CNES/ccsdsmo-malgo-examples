@@ -125,7 +125,16 @@ func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, id
  * Operation number : 2
  */
 func (archiveService *ArchiveService) queryProvider() (*Provider, error) {
-	return nil, nil
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Query Provider")
+
+	transport := new(FixedBinaryEncoding)
+	provider, err := StartQueryProvider(providerURL, transport)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }
 
 func (archiveService *ArchiveService) queryConsumer() (*Consumer, error) {

@@ -451,12 +451,12 @@ func send(msg ...[]byte) error {
 		return err
 	}
 
-	// Create submit operation
+	// Create send operation
 	firstOp := consumer.NewSendOperation(provider.cctx.Uri, 2, 1, 2, 0)
 	// Call send method
 	firstOp.Send(msg[0])
 
-	// Create submit operation
+	// Create send operation
 	secondOp := consumer.NewSendOperation(provider.cctx.Uri, 2, 1, 2, 0)
 	// Call send method
 	secondOp.Send(msg[1])

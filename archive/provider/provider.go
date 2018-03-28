@@ -94,14 +94,19 @@ func (provider *Provider) retrieveHandler() error {
 			// Call invoke operation and store objects
 			objectType, identifierList, longList, err := provider.retrieveInvoke(msg)
 			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// Call Ack operation
+			err = provider.retrieveAck(transaction)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
 				return err
 			}
 
 			// Hold on, wait a little
 			time.Sleep(250 * time.Millisecond)
-
-			// Call Ack operation
-			provider.retrieveAck(transaction)
 
 			// TODO (AF): do sthg with these objects
 			fmt.Println("RetrieveHandler received:\n\t>>>",
@@ -112,7 +117,11 @@ func (provider *Provider) retrieveHandler() error {
 			var archiveDetailsList = new(ArchiveDetailsList)
 			var elementList = new(ArchiveQueryList)
 			// Call Response operation
-			provider.retrieveResponse(transaction, archiveDetailsList, elementList)
+			err = provider.retrieveResponse(transaction, archiveDetailsList, elementList)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
 		}
 
 		return nil
@@ -207,7 +216,55 @@ func StartQueryProvider(url string, factory EncodingFactory) (*Provider, error) 
 func (provider *Provider) queryHandler() error {
 	queryHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
-			// TODO
+			transaction := t.(ProgressTransaction)
+
+			// Retrieve the objects thanks to the progress operation
+			boolean, objectType, archiveQueryList, queryFilter, err := provider.queryProgress(msg)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// TODO: do sthg with these objects
+			fmt.Println("QueryHandler received:\n\t>>>",
+				boolean, "\n\t>>>",
+				objectType, "\n\t>>>",
+				archiveQueryList, "\n\t>>>",
+				queryFilter)
+
+			// Call Ack operation
+			err = provider.queryAck(transaction)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// Hold on buddy, wait a little
+			time.Sleep(250 * time.Millisecond)
+
+			// This value will depend in the future of the number of objects to send to the consumer
+			var nbObjects = 10
+			// These variables will be created automatically in the future
+			var objType = new(ObjectType)
+			var idList = new(IdentifierList)
+			var archDetList = new(ArchiveDetailsList)
+			var elementList = new(ArchiveQueryList)
+			for i := 0; i < nbObjects; i++ {
+				// Call Update operation
+				err = provider.queryUpdate(transaction, objType, idList, archDetList, elementList)
+				if err != nil {
+					// TODO: we're (maybe) supposed to say to consumer that an error occured
+					return err
+				}
+			}
+
+			// Call Response operation
+			err = provider.queryResponse(transaction, objType, idList, archDetList, elementList)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
 		}
 
 		return nil
@@ -269,7 +326,39 @@ func StartCountProvider(url string, factory EncodingFactory) (*Provider, error) 
 func (provider *Provider) countHandler() error {
 	countHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
-			// TODO
+			transaction := t.(InvokeTransaction)
+
+			// Call Invoke operation
+			objectType, archiveQueryList, queryFilterList, err := provider.countInvoke(msg)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// Call Ack operation
+			err = provider.retrieveAck(transaction)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// Hold on, wait a little
+			time.Sleep(250 * time.Millisecond)
+
+			// TODO (AF): do sthg with these objects
+			fmt.Println("RetrieveHandler received:\n\t>>>",
+				objectType, "\n\t>>>",
+				archiveQueryList, "\n\t>>>",
+				queryFilterList)
+
+			// This variable will be created automatically in the future
+			var longList = new(LongList)
+			// Call Response operation
+			err = provider.countResponse(transaction, longList)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
 		}
 
 		return nil
@@ -326,7 +415,35 @@ func StartStoreProvider(url string, factory EncodingFactory) (*Provider, error) 
 func (provider *Provider) storeHandler() error {
 	storeHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
-			// TODO
+			transaction := t.(RequestTransaction)
+
+			// Call Request operation
+			boolean, objectType, identifierList, archiveDetailsList, elementList, err := provider.storeRequest(msg)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// Hold on, wait a little
+			time.Sleep(250 * time.Millisecond)
+
+			// TODO (AF): do sthg with these objects
+			fmt.Println("RetrieveHandler received:\n\t>>>",
+				boolean, "\n\t>>>",
+				objectType, "\n\t>>>",
+				identifierList, "\n\t>>>",
+				archiveDetailsList, "\n\t>>>",
+				elementList)
+
+			// This variable will be created automatically in the future
+			var longList = new(LongList)
+			// Call Response operation
+			err = provider.storeResponse(transaction, longList)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
 		}
 
 		return nil
@@ -378,7 +495,29 @@ func StartUpdateProvider(url string, factory EncodingFactory) (*Provider, error)
 func (provider *Provider) updateHandler() error {
 	updateHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
-			// TODO
+			transaction := t.(SubmitTransaction)
+
+			// Call Submit operation
+			objectType, identifierList, archiveDetailsList, elementList, err := provider.updateSubmit(msg)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// Call Ack operation
+			err = provider.updateAck(transaction)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// TODO (AF): do sthg with these objects
+			fmt.Println("RetrieveHandler received:\n\t>>>",
+				objectType, "\n\t>>>",
+				identifierList, "\n\t>>>",
+				archiveDetailsList, "\n\t>>>",
+				elementList)
+
 		}
 
 		return nil
@@ -430,7 +569,32 @@ func StartDeleteProvider(url string, factory EncodingFactory) (*Provider, error)
 func (provider *Provider) deleteHandler() error {
 	deleteHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
-			// TODO
+			transaction := t.(RequestTransaction)
+
+			// Call Request operation
+			objectType, identifierList, longListRequest, err := provider.deleteRequest(msg)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
+
+			// TODO (AF): do sthg with these objects
+			fmt.Println("RetrieveHandler received:\n\t>>>",
+				objectType, "\n\t>>>",
+				identifierList, "\n\t>>>",
+				longListRequest)
+
+			// Hold on dude, wait a little
+			time.Sleep(250 * time.Millisecond)
+
+			// This variable will be created automatically in the future
+			var longListResponse = new(LongList)
+			// Call Response operation
+			err = provider.deleteResponse(transaction, longListResponse)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				return err
+			}
 		}
 
 		return nil
@@ -454,6 +618,6 @@ func (provider *Provider) deleteRequest(msg *Message) (*ObjectType, *IdentifierL
 }
 
 // RESPONSE
-func (provider *Provider) deleteResponse(longList *LongList) error {
+func (provider *Provider) deleteResponse(transaction RequestTransaction, longList *LongList) error {
 	return nil
 }

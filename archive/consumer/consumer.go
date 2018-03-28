@@ -62,6 +62,22 @@ type SubmitConsumer struct {
 	factory EncodingFactory
 }
 
+func (i *InvokeConsumer) Close() {
+	i.ctx.Close()
+}
+
+func (p *ProgressConsumer) Close() {
+	p.ctx.Close()
+}
+
+func (r *RequestConsumer) Close() {
+	r.ctx.Close()
+}
+
+func (s *SubmitConsumer) Close() {
+	s.ctx.Close()
+}
+
 //======================================================================//
 //								CONSUMERS								//
 //======================================================================//

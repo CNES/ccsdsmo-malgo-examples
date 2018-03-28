@@ -90,7 +90,7 @@ func (archiveService *ArchiveService) retrieveProvider() (*Provider, error) {
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*Consumer, error) {
+func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
 
@@ -137,7 +137,7 @@ func (archiveService *ArchiveService) queryProvider() (*Provider, error) {
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) queryConsumer() (*Consumer, error) {
+func (archiveService *ArchiveService) queryConsumer() (*ProgressConsumer, error) {
 	return nil, nil
 }
 
@@ -152,7 +152,7 @@ func (archiveService *ArchiveService) countProvider() (*Provider, error) {
 	return nil, nil
 }
 
-func (archiveService *ArchiveService) countConsumer() (*Consumer, error) {
+func (archiveService *ArchiveService) countConsumer() (*InvokeConsumer, error) {
 	return nil, nil
 }
 
@@ -167,7 +167,7 @@ func (archiveService *ArchiveService) storeProvider() (*Provider, error) {
 	return nil, nil
 }
 
-func (archiveService *ArchiveService) storeConsumer() (*Consumer, error) {
+func (archiveService *ArchiveService) storeConsumer() (*RequestConsumer, error) {
 	return nil, nil
 }
 
@@ -182,7 +182,7 @@ func (archiveService *ArchiveService) updateProvider() (*Provider, error) {
 	return nil, nil
 }
 
-func (archiveService *ArchiveService) updateConsumer() (*Consumer, error) {
+func (archiveService *ArchiveService) updateConsumer() (*SubmitConsumer, error) {
 	return nil, nil
 }
 
@@ -197,7 +197,7 @@ func (archiveService *ArchiveService) deleteProvider() (*Provider, error) {
 	return nil, nil
 }
 
-func (archiveService *ArchiveService) deleteConsumer() (*Consumer, error) {
+func (archiveService *ArchiveService) deleteConsumer() (*RequestConsumer, error) {
 	return nil, nil
 }
 

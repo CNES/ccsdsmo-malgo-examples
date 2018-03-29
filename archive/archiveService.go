@@ -28,13 +28,13 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/EtienneLndr/archiveservice/archive/constants"
-	. "github.com/EtienneLndr/archiveservice/archive/consumer"
-	. "github.com/EtienneLndr/archiveservice/archive/provider"
-	. "github.com/EtienneLndr/archiveservice/service"
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
+	. "github.com/etiennelndr/archiveservice/archive/constants"
+	. "github.com/etiennelndr/archiveservice/archive/consumer"
+	. "github.com/etiennelndr/archiveservice/archive/provider"
+	. "github.com/etiennelndr/archiveservice/service"
 )
 
 type ArchiveService struct {

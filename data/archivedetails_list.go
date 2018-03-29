@@ -24,8 +24,8 @@
 package data
 
 import (
-	. "github.com/EtienneLndr/archiveservice/archive/constants"
 	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/etiennelndr/archiveservice/archive/constants"
 )
 
 // ################################################################################

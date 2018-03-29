@@ -28,8 +28,8 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
 
-	. "github.com/EtienneLndr/archiveservice/archive/constants"
-	. "github.com/EtienneLndr/archiveservice/data"
+	. "github.com/etiennelndr/archiveservice/archive/constants"
+	. "github.com/etiennelndr/archiveservice/data"
 )
 
 // InvokeConsumer :

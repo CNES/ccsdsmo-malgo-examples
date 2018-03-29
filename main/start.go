@@ -27,11 +27,11 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/EtienneLndr/archiveservice/archive"
-	. "github.com/EtienneLndr/archiveservice/archive/constants"
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
+	. "github.com/etiennelndr/archiveservice/archive"
+	. "github.com/etiennelndr/archiveservice/archive/constants"
 )
 
 func main() {

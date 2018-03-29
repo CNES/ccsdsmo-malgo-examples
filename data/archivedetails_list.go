@@ -24,7 +24,7 @@
 package data
 
 import (
-	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/constants"
+	. "github.com/EtienneLndr/archiveservice/archive/constants"
 	. "github.com/ccsdsmo/malgo/mal"
 )
 

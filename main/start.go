@@ -27,8 +27,8 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/EtienneLndr/MAL_API_Go_Project/archive"
-	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/constants"
+	. "github.com/EtienneLndr/archiveservice/archive"
+	. "github.com/EtienneLndr/archiveservice/archive/constants"
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"

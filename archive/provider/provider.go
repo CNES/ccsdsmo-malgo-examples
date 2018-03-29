@@ -31,8 +31,8 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
 
-	. "github.com/EtienneLndr/MAL_API_Go_Project/archive/constants"
-	. "github.com/EtienneLndr/MAL_API_Go_Project/data"
+	. "github.com/EtienneLndr/archiveservice/archive/constants"
+	. "github.com/EtienneLndr/archiveservice/data"
 )
 
 // Define Provider's structure

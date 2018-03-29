@@ -437,6 +437,34 @@ func StartCountConsumer(url string, factory EncodingFactory, providerURI *URI) (
 
 // Invoke & Ack
 func (consumer *InvokeConsumer) countInvoke(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) error {
+	// Create the encoder
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode ObjectType
+	err := objectType.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode ArchiveQueryList
+	err = archiveQueryList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode QueryFilterList
+	err = encoder.EncodeAbstractElement(queryFilterList)
+	if err != nil {
+		return err
+	}
+
+	// Call Invoke operation
+	// TODO: we should retrieve the msg to verify if the ack is an error or not
+	_, err = consumer.op.Invoke(encoder.Body())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

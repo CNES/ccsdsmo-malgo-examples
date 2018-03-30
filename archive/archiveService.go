@@ -34,6 +34,7 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/consumer"
 	. "github.com/etiennelndr/archiveservice/archive/provider"
+	. "github.com/etiennelndr/archiveservice/data"
 	. "github.com/etiennelndr/archiveservice/service"
 )
 
@@ -55,6 +56,12 @@ const (
 	providerURLUpdate   = providerURL + "/providerUpdate"
 	providerURLDelete   = providerURL + "/providerDelete"
 	consumerURL         = "maltcp://127.0.0.1:14200"
+	/*consumerURLRetrieve = consumerURL + "/consumerRetrieve"
+	consumerURLQuery    = consumerURL + "/consumerQuery"
+	consumerURLCount    = consumerURL + "/consumerCount"
+	consumerURLStore    = consumerURL + "/consumerStore"
+	consumerURLUpdate   = consumerURL + "/consumerUpdate"
+	consumerURLDelete   = consumerURL + "/consumerDelete"*/
 )
 
 // CreateService : TODO
@@ -90,7 +97,7 @@ func (archiveService *ArchiveService) retrieveProvider() (*Provider, error) {
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, error) {
+func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, *ArchiveDetailsList, ElementList, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
 
@@ -105,16 +112,10 @@ func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, id
 		identifierList,
 		longList)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	// TODO (AF): do sthg with these objects
-	fmt.Println("RetrieveConsumer received:\n\t>>>",
-		consumer, "\n\t>>>",
-		archiveDetailsList, "\n\t>>>",
-		elementList)
-
-	return consumer, nil
+	return consumer, archiveDetailsList, elementList, nil
 }
 
 //======================================================================//
@@ -137,8 +138,26 @@ func (archiveService *ArchiveService) queryProvider() (*Provider, error) {
 	return provider, nil
 }
 
-func (archiveService *ArchiveService) queryConsumer() (*ProgressConsumer, error) {
-	return nil, nil
+func (archiveService *ArchiveService) queryConsumer(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, error) {
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Retrieve Consumer")
+
+	// IN
+	transport := new(FixedBinaryEncoding)
+	var providerURI = NewURI(providerURLQuery)
+	// OUT
+	consumer, responses, err := StartQueryConsumer(consumerURL,
+		transport,
+		providerURI,
+		boolean,
+		objectType,
+		archiveQueryList,
+		queryFilterList)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return consumer, responses, nil
 }
 
 //======================================================================//
@@ -149,11 +168,37 @@ func (archiveService *ArchiveService) queryConsumer() (*ProgressConsumer, error)
  * Operation number : 3
  */
 func (archiveService *ArchiveService) countProvider() (*Provider, error) {
-	return nil, nil
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Count Provider")
+
+	transport := new(FixedBinaryEncoding)
+	provider, err := StartCountProvider(providerURL, transport)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }
 
-func (archiveService *ArchiveService) countConsumer() (*InvokeConsumer, error) {
-	return nil, nil
+func (archiveService *ArchiveService) countConsumer(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, error) {
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Retrieve Consumer")
+
+	// IN
+	transport := new(FixedBinaryEncoding)
+	var providerURI = NewURI(providerURLCount)
+	// OUT
+	consumer, longList, err := StartCountConsumer(consumerURL,
+		transport,
+		providerURI,
+		objectType,
+		archiveQueryList,
+		queryFilterList)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return consumer, longList, nil
 }
 
 //======================================================================//
@@ -164,11 +209,39 @@ func (archiveService *ArchiveService) countConsumer() (*InvokeConsumer, error) {
  * Operation number : 4
  */
 func (archiveService *ArchiveService) storeProvider() (*Provider, error) {
-	return nil, nil
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Store Provider")
+
+	transport := new(FixedBinaryEncoding)
+	provider, err := StartStoreProvider(providerURL, transport)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }
 
-func (archiveService *ArchiveService) storeConsumer() (*RequestConsumer, error) {
-	return nil, nil
+func (archiveService *ArchiveService) storeConsumer(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, error) {
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Retrieve Consumer")
+
+	// IN
+	transport := new(FixedBinaryEncoding)
+	var providerURI = NewURI(providerURLStore)
+	// OUT
+	consumer, longList, err := StartStoreConsumer(consumerURL,
+		transport,
+		providerURI,
+		boolean,
+		objectType,
+		identifierList,
+		archiveDetailsList,
+		elementList)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return consumer, longList, nil
 }
 
 //======================================================================//
@@ -179,11 +252,38 @@ func (archiveService *ArchiveService) storeConsumer() (*RequestConsumer, error) 
  * Operation number : 5
  */
 func (archiveService *ArchiveService) updateProvider() (*Provider, error) {
-	return nil, nil
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Update Provider")
+
+	transport := new(FixedBinaryEncoding)
+	provider, err := StartUpdateProvider(providerURL, transport)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }
 
-func (archiveService *ArchiveService) updateConsumer() (*SubmitConsumer, error) {
-	return nil, nil
+func (archiveService *ArchiveService) updateConsumer(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*SubmitConsumer, error) {
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Retrieve Consumer")
+
+	// IN
+	transport := new(FixedBinaryEncoding)
+	var providerURI = NewURI(providerURLUpdate)
+	// OUT
+	consumer, err := StartUpdateConsumer(consumerURL,
+		transport,
+		providerURI,
+		objectType,
+		identifierList,
+		archiveDetailsList,
+		elementList)
+	if err != nil {
+		return nil, err
+	}
+
+	return consumer, nil
 }
 
 //======================================================================//
@@ -194,21 +294,102 @@ func (archiveService *ArchiveService) updateConsumer() (*SubmitConsumer, error) 
  * Operation number : 6
  */
 func (archiveService *ArchiveService) deleteProvider() (*Provider, error) {
-	return nil, nil
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Delete Provider")
+
+	transport := new(FixedBinaryEncoding)
+	provider, err := StartDeleteProvider(providerURL, transport)
+	if err != nil {
+		return nil, err
+	}
+
+	return provider, nil
 }
 
-func (archiveService *ArchiveService) deleteConsumer() (*RequestConsumer, error) {
-	return nil, nil
+func (archiveService *ArchiveService) deleteConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*RequestConsumer, *LongList, error) {
+	// Maybe we should not have to return an error
+	fmt.Println("Creation : Retrieve Consumer")
+
+	// IN
+	transport := new(FixedBinaryEncoding)
+	var providerURI = NewURI(providerURLDelete)
+	// OUT
+	consumer, respLongList, err := StartDeleteConsumer(consumerURL,
+		transport,
+		providerURI,
+		objectType,
+		identifierList,
+		longList)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return consumer, respLongList, nil
 }
 
 //======================================================================//
 //							START: Consumer								//
 //======================================================================//
 // LaunchRetrieveConsumer : TODO
-func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) error {
+func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, error) {
 	// Start Operation
-	consumer, err := archiveService.retrieveConsumer(objectType, identifierList, longList)
+	consumer, archiveDetailsList, elementList, err := archiveService.retrieveConsumer(objectType, identifierList, longList)
+	if err != nil {
+		return nil, nil, err
+	}
 
+	// Close the consumer
+	consumer.Close()
+
+	return archiveDetailsList, elementList, nil
+}
+
+// LaunchQueryConsumer : TODO
+func (archiveService *ArchiveService) LaunchQueryConsumer(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, error) {
+	// Start Operation
+	consumer, responses, err := archiveService.queryConsumer(boolean, objectType, archiveQueryList, queryFilterList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Close the consumer
+	consumer.Close()
+
+	return responses, nil
+}
+
+// LaunchCountConsumer : TODO
+func (archiveService *ArchiveService) LaunchCountConsumer(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
+	// Start Operation
+	consumer, longList, err := archiveService.countConsumer(objectType, archiveQueryList, queryFilterList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Close the consumer
+	consumer.Close()
+
+	return longList, nil
+}
+
+// LaunchStoreConsumer : TODO
+func (archiveService *ArchiveService) LaunchStoreConsumer(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
+	// Start Operation
+	consumer, longList, err := archiveService.storeConsumer(boolean, objectType, identifierList, archiveDetailsList, elementList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Close the consumer
+	consumer.Close()
+
+	return longList, nil
+}
+
+// LaunchUpdateConsumer : TODO
+func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+	// Start Operation
+	consumer, err := archiveService.updateConsumer(objectType, identifierList, archiveDetailsList, elementList)
 	if err != nil {
 		return err
 	}
@@ -217,6 +398,20 @@ func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectTy
 	consumer.Close()
 
 	return nil
+}
+
+// LaunchDeleteConsumer : TODO
+func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, error) {
+	// Start Operation
+	consumer, respLongList, err := archiveService.deleteConsumer(objectType, identifierList, longList)
+	if err != nil {
+		return nil, err
+	}
+
+	// Close the consumer
+	consumer.Close()
+
+	return respLongList, nil
 }
 
 //======================================================================//

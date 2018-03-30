@@ -264,7 +264,6 @@ func (provider *Provider) queryHandler() error {
 				// TODO: we're (maybe) supposed to say to consumer that an error occured
 				return err
 			}
-
 		}
 
 		return nil
@@ -283,22 +282,120 @@ func (provider *Provider) queryHandler() error {
 }
 
 // PROGRESS
-func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *ArchiveQueryList, *QueryFilterList, error) {
-	return nil, nil, nil, nil, nil
+func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *ArchiveQueryList, QueryFilterList, error) {
+	// Create the decoder
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	// Decode Boolean
+	boolean, err := decoder.DecodeElement(NullBoolean)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Decode ObjectType
+	objectType, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Decode ArchiveQueryList
+	archiveQueryList, err := decoder.DecodeElement(NullArchiveQueryList)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Decode QueryFilterList
+	queryFilterList, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	return boolean.(*Boolean), objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), queryFilterList.(QueryFilterList), nil
 }
 
 // ACK
 func (provider *Provider) queryAck(transaction ProgressTransaction) error {
+	// Call Ack operation
+	err := transaction.Ack(nil, false)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // UPDATE
 func (provider *Provider) queryUpdate(transaction ProgressTransaction, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode ObjectType
+	err := objectType.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode IdentifierList
+	err = identifierList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode ArchiveDetailsList
+	err = archiveDetailsList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode ElementList
+	err = encoder.EncodeAbstractElement(elementList)
+	if err != nil {
+		return err
+	}
+
+	// Call Update operation
+	err = transaction.Update(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // RESPONSE
 func (provider *Provider) queryResponse(transaction ProgressTransaction, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode ObjectType
+	err := objectType.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode IdentifierList
+	err = identifierList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode ArchiveDetailsList
+	err = archiveDetailsList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode ElementList
+	err = encoder.EncodeAbstractElement(elementList)
+	if err != nil {
+		return err
+	}
+
+	// Call Update operation
+	err = transaction.Reply(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -378,16 +475,57 @@ func (provider *Provider) countHandler() error {
 
 // INVOKE
 func (provider *Provider) countInvoke(msg *Message) (*ObjectType, *ArchiveQueryList, QueryFilterList, error) {
-	return nil, nil, nil, nil
+	// Create the decoder
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	// Decode ObjectType
+	objectType, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Decode ArchiveQueryList
+	archiveQueryList, err := decoder.DecodeElement(NullArchiveQueryList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Decode QueryFilterList
+	queryFilterList, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), queryFilterList.(QueryFilterList), nil
 }
 
 // ACK
 func (provider *Provider) countAck(transaction InvokeTransaction) error {
+	// Call Ack operation
+	err := transaction.Ack(nil, false)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // RESPONSE
 func (provider *Provider) countResponse(transaction InvokeTransaction, longList *LongList) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode LongList
+	err := longList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Call Response operation
+	err = transaction.Reply(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -463,11 +601,59 @@ func (provider *Provider) storeHandler() error {
 
 // REQUEST
 func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
-	return nil, nil, nil, nil, nil, nil
+	// Create the decoder
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	// Decode Boolean
+	boolean, err := decoder.DecodeElement(NullBoolean)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	// Decode ObjectType
+	objectType, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	// Decode IdentifierList
+	identifierList, err := decoder.DecodeElement(NullIdentifierList)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	// Decode ArchiveDetailsList
+	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	// Decode ElementList
+	elementList, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
+	}
+
+	return boolean.(*Boolean), objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil
 }
 
 // RESPONSE
 func (provider *Provider) storeResponse(transaction RequestTransaction, longList *LongList) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode LongList
+	err := longList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Call Response operation
+	err = transaction.Reply(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -517,7 +703,6 @@ func (provider *Provider) updateHandler() error {
 				identifierList, "\n\t>>>",
 				archiveDetailsList, "\n\t>>>",
 				elementList)
-
 		}
 
 		return nil
@@ -537,11 +722,43 @@ func (provider *Provider) updateHandler() error {
 
 // SUBMIT
 func (provider *Provider) updateSubmit(msg *Message) (*ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
-	return nil, nil, nil, nil, nil
+	// Create the decoder
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	// Decode ObjectType
+	objectType, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Decode IdentifierList
+	identifierList, err := decoder.DecodeElement(NullIdentifierList)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Decode ArchiveDetailsList
+	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	// Decode ElementList
+	elementList, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil
 }
 
 // ACK
 func (provider *Provider) updateAck(transaction SubmitTransaction) error {
+	// Call Ack operation
+	err := transaction.Ack(nil, false)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -614,10 +831,46 @@ func (provider *Provider) deleteHandler() error {
 
 // REQUEST
 func (provider *Provider) deleteRequest(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
-	return nil, nil, nil, nil
+	// Create the decoder
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	// Decode ObjectType
+	objectType, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Decode IdentifierList
+	identifierList, err := decoder.DecodeElement(NullIdentifierList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Decode LongList
+	longList, err := decoder.DecodeElement(NullLongList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return objectType.(*ObjectType), identifierList.(*IdentifierList), longList.(*LongList), nil
 }
 
 // RESPONSE
 func (provider *Provider) deleteResponse(transaction RequestTransaction, longList *LongList) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode LongList
+	err := longList.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Call Response operation
+	err = transaction.Reply(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

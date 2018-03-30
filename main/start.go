@@ -32,13 +32,14 @@ import (
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 	. "github.com/etiennelndr/archiveservice/archive"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
+	. "github.com/etiennelndr/archiveservice/data"
 )
 
 func main() {
 	args := os.Args[1:]
 
-	if len(args) != 1 {
-		fmt.Println("ERROR: You must use this program like this: go run start.go [provider|consumer]")
+	if len(args) != 2 {
+		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|consumer] [retrieve|query|count|store|update|delete]")
 		return
 	}
 
@@ -48,19 +49,77 @@ func main() {
 	archiveService = element.(*ArchiveService)
 
 	if args[0] == "provider" {
-		// Start the provider
-		archiveService.LaunchProvider(OPERATION_IDENTIFIER_RETRIEVE)
+		switch args[1] {
+		case "retrieve":
+			// Start the retrieve provider
+			archiveService.LaunchProvider(OPERATION_IDENTIFIER_RETRIEVE)
+			break
+		case "query":
+			// Start the query provider
+			archiveService.LaunchProvider(OPERATION_IDENTIFIER_QUERY)
+			break
+		case "count":
+			// Start the count provider
+			archiveService.LaunchProvider(OPERATION_IDENTIFIER_COUNT)
+			break
+		case "store":
+			// Start the store provider
+			archiveService.LaunchProvider(OPERATION_IDENTIFIER_STORE)
+			break
+		case "update":
+			// Start the update provider
+			archiveService.LaunchProvider(OPERATION_IDENTIFIER_UPDATE)
+			break
+		case "delete":
+			// Start the delete provider
+			archiveService.LaunchProvider(OPERATION_IDENTIFIER_DELETE)
+			break
+		default:
+			fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|consumer] [retrieve|query|count|store|update|delete]")
+			return
+		}
 	} else if args[0] == "consumer" {
-		// Create parameters
-		var objectType ObjectType
-		var identifierList IdentifierList
-		var longList = NewLongList(10)
+		switch args[1] {
+		case "retrieve":
+			// Start the retrieve consumer
+			// Create parameters
+			var objectType ObjectType
+			var identifierList IdentifierList
+			var longList = NewLongList(10)
 
-		// Start the consumer
-		archiveService.LaunchRetrieveConsumer(objectType, identifierList, *longList)
+			// Start the consumer
+			archiveService.LaunchRetrieveConsumer(objectType, identifierList, *longList)
+			break
+		case "query":
+			// Start the query consumer
+			/*var boolean Boolean
+			var objectType ObjectType
+			var archiveQueryList ArchiveQueryList
+			var queryFilterList QueryFilterList*/
 
+			break
+		case "count":
+			// Start the count consumer
+
+			break
+		case "store":
+			// Start the store consumer
+
+			break
+		case "update":
+			// Start the update consumer
+
+			break
+		case "delete":
+			// Start the delete consumer
+
+			break
+		default:
+			fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|consumer] [retrieve|query|count|store|update|delete]")
+			return
+		}
 	} else {
-		fmt.Println("ERROR: You must use this program like this: go run start.go [provider|consumer]")
+		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|consumer] [retrieve|query|count|store|update|delete]")
 		return
 	}
 }

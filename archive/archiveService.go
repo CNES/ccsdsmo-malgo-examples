@@ -56,12 +56,6 @@ const (
 	providerURLUpdate   = providerURL + "/providerUpdate"
 	providerURLDelete   = providerURL + "/providerDelete"
 	consumerURL         = "maltcp://127.0.0.1:14200"
-	/*consumerURLRetrieve = consumerURL + "/consumerRetrieve"
-	consumerURLQuery    = consumerURL + "/consumerQuery"
-	consumerURLCount    = consumerURL + "/consumerCount"
-	consumerURLStore    = consumerURL + "/consumerStore"
-	consumerURLUpdate   = consumerURL + "/consumerUpdate"
-	consumerURLDelete   = consumerURL + "/consumerDelete"*/
 )
 
 // CreateService : TODO

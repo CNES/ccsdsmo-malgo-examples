@@ -30,7 +30,7 @@ import (
 )
 
 type CompositeFilter struct {
-	FieldName  String
+	FieldName  *String
 	Type       ExpressionOperator
 	FieldValue Attribute
 }
@@ -44,7 +44,7 @@ const (
 	COM_COMPOSITE_FILTER_SHORT_FORM      Long    = 0x2000002000003
 )
 
-func NewCompositeFilter(fieldName String, _type ExpressionOperator, fieldValue Attribute) *CompositeFilter {
+func NewCompositeFilter(fieldName *String, _type ExpressionOperator, fieldValue Attribute) *CompositeFilter {
 	compositeFilter := &CompositeFilter{
 		fieldName,
 		_type,
@@ -94,6 +94,20 @@ func (*CompositeFilter) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (c *CompositeFilter) Encode(encoder Encoder) error {
+	// FieldName  String
+	err := encoder.EncodeElement(c.FieldName)
+	if err != nil {
+		return err
+	}
+
+	// Type       ExpressionOperator
+	err = encoder.EncodeSmallEnum(uint8(c.Type))
+	if err != nil {
+		return err
+	}
+
+	// FieldValue Attribute
+	return encoder.EncodeNullableAbstractElement(c.FieldValue)
 }
 
 // Decodes and instance of CompositeFilter using the supplied decoder
@@ -102,10 +116,38 @@ func (*CompositeFilter) Decode(decoder Decoder) (Element, error) {
 }
 
 func DecodeCompositeFilter(decoder Decoder) (*CompositeFilter, error) {
-	return nil, nil
+	// FieldName  String
+	element, err := decoder.DecodeElement(NullString)
+	if err != nil {
+		return nil, err
+	}
+	fieldName := element.(*String)
+
+	// Type       ExpressionOperator
+	elementType, err := decoder.DecodeSmallEnum()
+	if err != nil {
+		return nil, err
+	}
+	_type := ExpressionOperator(elementType)
+
+	// FieldValue Attribute Nullable
+	elementValue, err := decoder.DecodeNullableAbstractElement()
+	if err != nil {
+		return nil, err
+	}
+	fieldValue := elementValue.(Attribute)
+
+	// Create CompositeFilter
+	compositeFilter := &CompositeFilter{
+		fieldName,
+		_type,
+		fieldValue,
+	}
+
+	return compositeFilter, nil
 }
 
-// The methods allows the creation of an element in a generic way, i.e., using     the MAL Element polymorphism
+// The methods allows the creation of an element in a generic way, i.e., using the MAL Element polymorphism
 func (*CompositeFilter) CreateElement() Element {
 	return new(CompositeFilter)
 }

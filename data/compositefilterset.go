@@ -22,3 +22,107 @@
  * SOFTWARE.
  */
 package data
+
+import (
+	. "github.com/ccsdsmo/malgo/com"
+	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/etiennelndr/archiveservice/archive/constants"
+)
+
+type CompositeFilterSet struct {
+	filters CompositeFilterList
+}
+
+var (
+	NullCompositeFilterSet *CompositeFilterSet = nil
+)
+
+const (
+	COM_COMPOSITE_FILTER_SET_TYPE_SHORT_FORM Integer = 0x04
+	COM_COMPOSITE_FILTER_SET_FORM            Long    = 0x2000002000004
+)
+
+func NewCompositeFilterSet(filters CompositeFilterList) *CompositeFilterSet {
+	compositeFilterSet := &CompositeFilterSet{
+		filters,
+	}
+	return compositeFilterSet
+}
+
+// ----- Defines COM CompositeFilterSet as a MAL Composite -----
+func (c *CompositeFilterSet) Composite() Composite {
+	return c
+}
+
+// ================================================================================
+// Defines COM CompositeFilterSet type as a MAL Element
+// ================================================================================
+// Registers COM CompositeFilterSet type for polymorpsism handling
+func init() {
+	RegisterMALElement(COM_COMPOSITE_FILTER_SET_FORM, NullCompositeFilterSet)
+}
+
+// ----- Defines COM ArchiveDetails as a MAL Element -----
+// Returns the absolute short form of the element type
+func (*CompositeFilterSet) GetShortForm() Long {
+	return COM_COMPOSITE_FILTER_SET_FORM
+}
+
+// Returns the number of the area this element belongs to
+func (*CompositeFilterSet) GetAreaNumber() UShort {
+	return COM_AREA_NUMBER
+}
+
+// Returns the version of the area this element belongs to
+func (*CompositeFilterSet) GetAreaVersion() UOctet {
+	return COM_AREA_VERSION
+}
+
+func (*CompositeFilterSet) GetServiceNumber() UShort {
+	return ARCHIVE_SERVICE_SERVICE_NUMBER
+}
+
+// Returns the relative short form of the element type
+func (*CompositeFilterSet) GetTypeShortForm() Integer {
+	return COM_COMPOSITE_FILTER_SET_TYPE_SHORT_FORM
+}
+
+// ----- Encoding and Decoding -----
+// Encodes this element using the supplied encoder
+func (c *CompositeFilterSet) Encode(encoder Encoder) error {
+	return c.filters.Encode(encoder)
+}
+
+// Decodes and instance of CompositeFilterSet using the supplied decoder
+func (*CompositeFilterSet) Decode(decoder Decoder) (Element, error) {
+	return DecodeCompositeFilterSet(decoder)
+}
+
+func DecodeCompositeFilterSet(decoder Decoder) (*CompositeFilterSet, error) {
+	// Decode CompositeFilterList
+	element, err := decoder.DecodeElement(NullCompositeFilterList)
+	if err != nil {
+		return nil, err
+	}
+	filters := element.(*CompositeFilterList)
+
+	// Create CompositeFilterList
+	compositeFilterSet := &CompositeFilterSet{
+		*filters,
+	}
+
+	return compositeFilterSet, nil
+}
+
+// The methods allows the creation of an element in a generic way, i.e., using     the MAL Element polymorphism
+func (*CompositeFilterSet) CreateElement() Element {
+	return new(CompositeFilterSet)
+}
+
+func (c *CompositeFilterSet) IsNull() bool {
+	return c == nil
+}
+
+func (*CompositeFilterSet) Null() Element {
+	return NullCompositeFilterSet
+}

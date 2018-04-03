@@ -27,6 +27,7 @@ import (
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
+	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/data"
@@ -88,7 +89,7 @@ func (s *SubmitConsumer) Close() {
 //								CONSUMERS								//
 //======================================================================//
 // Create a consumer for an invoke operation
-func createInvokeConsumer(url string, factory EncodingFactory, providerURI *URI, typeOfConsumer string, operation UShort) (*InvokeConsumer, error) {
+func createInvokeConsumer(url string, providerURI *URI, typeOfConsumer string, operation UShort) (*InvokeConsumer, error) {
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -105,13 +106,15 @@ func createInvokeConsumer(url string, factory EncodingFactory, providerURI *URI,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
+	factory := new(FixedBinaryEncoding)
+
 	consumer := &InvokeConsumer{ctx, cctx, op, factory}
 
 	return consumer, nil
 }
 
 // Create a consumer for a progress operation
-func createProgressConsumer(url string, factory EncodingFactory, providerURI *URI, typeOfConsumer string, operation UShort) (*ProgressConsumer, error) {
+func createProgressConsumer(url string, providerURI *URI, typeOfConsumer string, operation UShort) (*ProgressConsumer, error) {
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -128,13 +131,15 @@ func createProgressConsumer(url string, factory EncodingFactory, providerURI *UR
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
+	factory := new(FixedBinaryEncoding)
+
 	consumer := &ProgressConsumer{ctx, cctx, op, factory}
 
 	return consumer, nil
 }
 
 // Create a consumer for a request operation
-func createRequestConsumer(url string, factory EncodingFactory, providerURI *URI, typeOfConsumer string, operation UShort) (*RequestConsumer, error) {
+func createRequestConsumer(url string, providerURI *URI, typeOfConsumer string, operation UShort) (*RequestConsumer, error) {
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -151,13 +156,15 @@ func createRequestConsumer(url string, factory EncodingFactory, providerURI *URI
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
+	factory := new(FixedBinaryEncoding)
+
 	consumer := &RequestConsumer{ctx, cctx, op, factory}
 
 	return consumer, nil
 }
 
 // Create a consumer for a submit operation
-func createSubmitConsumer(url string, factory EncodingFactory, providerURI *URI, typeOfConsumer string, operation UShort) (*SubmitConsumer, error) {
+func createSubmitConsumer(url string, providerURI *URI, typeOfConsumer string, operation UShort) (*SubmitConsumer, error) {
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -174,6 +181,8 @@ func createSubmitConsumer(url string, factory EncodingFactory, providerURI *URI,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
+	factory := new(FixedBinaryEncoding)
+
 	consumer := &SubmitConsumer{ctx, cctx, op, factory}
 
 	return consumer, nil
@@ -183,9 +192,9 @@ func createSubmitConsumer(url string, factory EncodingFactory, providerURI *URI,
 //								RETRIEVE								//
 //======================================================================//
 // StartRetrieveConsumer : TODO
-func StartRetrieveConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, *ArchiveDetailsList, ElementList, error) {
+func StartRetrieveConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, *ArchiveDetailsList, ElementList, error) {
 	// Create the consumer
-	consumer, err := createInvokeConsumer(url, factory, providerURI, "consumerRetrieve", OPERATION_IDENTIFIER_RETRIEVE)
+	consumer, err := createInvokeConsumer(url, providerURI, "consumerRetrieve", OPERATION_IDENTIFIER_RETRIEVE)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -266,18 +275,22 @@ func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, Element
 //								QUERY									//
 //======================================================================//
 // StartQueryConsumer : TODO
-func StartQueryConsumer(url string, factory EncodingFactory, providerURI *URI, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, error) {
+func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, error) {
 	// Create the consumer
-	consumer, err := createProgressConsumer(url, factory, providerURI, "consumerQuery", OPERATION_IDENTIFIER_QUERY)
+	consumer, err := createProgressConsumer(url, providerURI, "consumerQuery", OPERATION_IDENTIFIER_QUERY)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	println("wecheeeeu")
 
 	// Call Progress function
 	err = consumer.queryProgress(boolean, objectType, archiveQueryList, queryFilterList)
 	if err != nil {
 		return nil, nil, err
 	}
+
+	println("yoloooooooooooo")
 
 	// Create the interface that will receive all the responses
 	responses := []interface{}{}
@@ -373,7 +386,7 @@ func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *
 		}
 
 		// Decode ArchiveDetailsList
-		archiveDetailsList, err := decoder.DecodeElement(NullArchiveQueryList)
+		archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -413,7 +426,7 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 	}
 
 	// Decode ArchiveDetailsList
-	archiveDetailsList, err := decoder.DecodeElement(NullArchiveQueryList)
+	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -431,9 +444,9 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 //								COUNT									//
 //======================================================================//
 // StartCountConsumer : TODO
-func StartCountConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, error) {
+func StartCountConsumer(url string, providerURI *URI, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, error) {
 	// Create the consumer
-	consumer, err := createInvokeConsumer(url, factory, providerURI, "consumerCount", OPERATION_IDENTIFIER_COUNT)
+	consumer, err := createInvokeConsumer(url, providerURI, "consumerCount", OPERATION_IDENTIFIER_COUNT)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -510,9 +523,9 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, error) {
 //								STORE									//
 //======================================================================//
 // StartStoreConsumer : TODO
-func StartStoreConsumer(url string, factory EncodingFactory, providerURI *URI, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, error) {
+func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, error) {
 	// Create the consumer
-	consumer, err := createRequestConsumer(url, factory, providerURI, "consumerStore", OPERATION_IDENTIFIER_STORE)
+	consumer, err := createRequestConsumer(url, providerURI, "consumerStore", OPERATION_IDENTIFIER_STORE)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -583,9 +596,9 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 //								UPDATE									//
 //======================================================================//
 // StartUpdateConsumer : TODO
-func StartUpdateConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*SubmitConsumer, error) {
+func StartUpdateConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*SubmitConsumer, error) {
 	// Create the consumer
-	consumer, err := createSubmitConsumer(url, factory, providerURI, "consumerUpdate", OPERATION_IDENTIFIER_UPDATE)
+	consumer, err := createSubmitConsumer(url, providerURI, "consumerUpdate", OPERATION_IDENTIFIER_UPDATE)
 	if err != nil {
 		return nil, err
 	}
@@ -641,9 +654,9 @@ func (consumer *SubmitConsumer) updateSubmit(objectType ObjectType, identifierLi
 //								DELETE									//
 //======================================================================//
 // StartDeleteConsumer : TODO
-func StartDeleteConsumer(url string, factory EncodingFactory, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*RequestConsumer, *LongList, error) {
+func StartDeleteConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*RequestConsumer, *LongList, error) {
 	// Create the consumer
-	consumer, err := createRequestConsumer(url, factory, providerURI, "consumerDelete", OPERATION_IDENTIFIER_DELETE)
+	consumer, err := createRequestConsumer(url, providerURI, "consumerDelete", OPERATION_IDENTIFIER_DELETE)
 	if err != nil {
 		return nil, nil, err
 	}

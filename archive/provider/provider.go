@@ -25,14 +25,21 @@ package provider
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
+	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/data"
+)
+
+var (
+	ctx    *Context
+	locker sync.Mutex
 )
 
 // Define Provider's structure
@@ -48,16 +55,24 @@ func (provider *Provider) Close() {
 }
 
 // Create a provider
-func createProvider(url string, factory EncodingFactory, typeOfProvider string) (*Provider, error) {
-	ctx, err := NewContext(url)
-	if err != nil {
-		return nil, err
+func createProvider(url string, typeOfProvider string) (*Provider, error) {
+	// Declare variables
+	var err error
+	locker.Lock()
+	if ctx == nil {
+		ctx, err = NewContext(url)
+		if err != nil {
+			return nil, err
+		}
 	}
+	locker.Unlock()
 
 	cctx, err := NewClientContext(ctx, typeOfProvider)
 	if err != nil {
 		return nil, err
 	}
+
+	factory := new(FixedBinaryEncoding)
 
 	provider := &Provider{ctx, cctx, factory}
 
@@ -68,9 +83,9 @@ func createProvider(url string, factory EncodingFactory, typeOfProvider string) 
 //								RETRIEVE								//
 //======================================================================//
 // StartRetrieveProvider :
-func StartRetrieveProvider(url string, factory EncodingFactory) (*Provider, error) {
+func StartRetrieveProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, factory, "providerRetrieve")
+	provider, err := createProvider(url, "providerRetrieve")
 	if err != nil {
 		return nil, err
 	}
@@ -196,9 +211,9 @@ func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *Identifier
 //								QUERY									//
 //======================================================================//
 // StartRetrieveProvider :
-func StartQueryProvider(url string, factory EncodingFactory) (*Provider, error) {
+func StartQueryProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, factory, "providerQuery")
+	provider, err := createProvider(url, "providerQuery")
 	if err != nil {
 		return nil, err
 	}
@@ -403,9 +418,9 @@ func (provider *Provider) queryResponse(transaction ProgressTransaction, objectT
 //								COUNT									//
 //======================================================================//
 // StartCountProvider :
-func StartCountProvider(url string, factory EncodingFactory) (*Provider, error) {
+func StartCountProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, factory, "providerCount")
+	provider, err := createProvider(url, "providerCount")
 	if err != nil {
 		return nil, err
 	}
@@ -443,7 +458,7 @@ func (provider *Provider) countHandler() error {
 			time.Sleep(250 * time.Millisecond)
 
 			// TODO (AF): do sthg with these objects
-			fmt.Println("RetrieveHandler received:\n\t>>>",
+			fmt.Println("CountHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				archiveQueryList, "\n\t>>>",
 				queryFilterList)
@@ -533,9 +548,9 @@ func (provider *Provider) countResponse(transaction InvokeTransaction, longList 
 //								STORE									//
 //======================================================================//
 // StartStoreProvider :
-func StartStoreProvider(url string, factory EncodingFactory) (*Provider, error) {
+func StartStoreProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, factory, "providerStore")
+	provider, err := createProvider(url, "providerStore")
 	if err != nil {
 		return nil, err
 	}
@@ -566,7 +581,7 @@ func (provider *Provider) storeHandler() error {
 			time.Sleep(250 * time.Millisecond)
 
 			// TODO (AF): do sthg with these objects
-			fmt.Println("RetrieveHandler received:\n\t>>>",
+			fmt.Println("StoreHandler received:\n\t>>>",
 				boolean, "\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
@@ -661,9 +676,9 @@ func (provider *Provider) storeResponse(transaction RequestTransaction, longList
 //								UPDATE									//
 //======================================================================//
 // StartUpdateProvider :
-func StartUpdateProvider(url string, factory EncodingFactory) (*Provider, error) {
+func StartUpdateProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, factory, "providerUpdate")
+	provider, err := createProvider(url, "providerUpdate")
 	if err != nil {
 		return nil, err
 	}
@@ -698,7 +713,7 @@ func (provider *Provider) updateHandler() error {
 			}
 
 			// TODO (AF): do sthg with these objects
-			fmt.Println("RetrieveHandler received:\n\t>>>",
+			fmt.Println("UpdateHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
 				archiveDetailsList, "\n\t>>>",
@@ -766,9 +781,9 @@ func (provider *Provider) updateAck(transaction SubmitTransaction) error {
 //								DELETE									//
 //======================================================================//
 // StartDeleteProvider :
-func StartDeleteProvider(url string, factory EncodingFactory) (*Provider, error) {
+func StartDeleteProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, factory, "providerDelete")
+	provider, err := createProvider(url, "providerDelete")
 	if err != nil {
 		return nil, err
 	}
@@ -796,7 +811,7 @@ func (provider *Provider) deleteHandler() error {
 			}
 
 			// TODO (AF): do sthg with these objects
-			fmt.Println("RetrieveHandler received:\n\t>>>",
+			fmt.Println("DeleteHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
 				longListRequest)

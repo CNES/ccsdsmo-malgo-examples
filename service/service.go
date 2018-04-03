@@ -24,11 +24,13 @@
 package service
 
 import (
+	"sync"
+
 	. "github.com/ccsdsmo/malgo/mal"
 )
 
 type Service interface {
 	CreateService() Service
 
-	LaunchProvider(operation UShort) error
+	LaunchProvider(operation UShort, wg sync.WaitGroup) error
 }

@@ -24,6 +24,7 @@
 package data
 
 import (
+	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 )
@@ -77,12 +78,12 @@ func (*CompositeFilterList) GetShortForm() Long {
 
 // Returns the number of the area this element type belongs to.
 func (*CompositeFilterList) GetAreaNumber() UShort {
-	return SERVICE_AREA_NUMBER
+	return COM_AREA_NUMBER
 }
 
 // Returns the version of the area this element type belongs to.
 func (*CompositeFilterList) GetAreaVersion() UOctet {
-	return SERVICE_AREA_VERSION
+	return COM_AREA_VERSION
 }
 
 // Returns the number of the service this element type belongs to.

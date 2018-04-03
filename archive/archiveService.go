@@ -26,11 +26,11 @@ package archive
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
-	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/consumer"
 	. "github.com/etiennelndr/archiveservice/archive/provider"
@@ -39,11 +39,11 @@ import (
 )
 
 type ArchiveService struct {
-	areaIdentifier    Identifier
-	serviceIdentifier Identifier
-	areaNumber        Integer
-	serviceNumber     Integer
-	areaVersion       Integer
+	AreaIdentifier    Identifier
+	ServiceIdentifier Identifier
+	AreaNumber        Integer
+	ServiceNumber     Integer
+	AreaVersion       Integer
 }
 
 // Constants for the providers and consumers
@@ -82,8 +82,7 @@ func (archiveService *ArchiveService) retrieveProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Provider")
 
-	transport := new(FixedBinaryEncoding)
-	provider, err := StartRetrieveProvider(providerURL, transport)
+	provider, err := StartRetrieveProvider(providerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -96,11 +95,9 @@ func (archiveService *ArchiveService) retrieveConsumer(objectType ObjectType, id
 	fmt.Println("Creation : Retrieve Consumer")
 
 	// IN
-	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLRetrieve)
 	// OUT
 	consumer, archiveDetailsList, elementList, err := StartRetrieveConsumer(consumerURL,
-		transport,
 		providerURI,
 		objectType,
 		identifierList,
@@ -123,8 +120,7 @@ func (archiveService *ArchiveService) queryProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Query Provider")
 
-	transport := new(FixedBinaryEncoding)
-	provider, err := StartQueryProvider(providerURL, transport)
+	provider, err := StartQueryProvider(providerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -134,14 +130,12 @@ func (archiveService *ArchiveService) queryProvider() (*Provider, error) {
 
 func (archiveService *ArchiveService) queryConsumer(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, error) {
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve Consumer")
+	fmt.Println("Creation : Query Consumer")
 
 	// IN
-	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLQuery)
 	// OUT
 	consumer, responses, err := StartQueryConsumer(consumerURL,
-		transport,
 		providerURI,
 		boolean,
 		objectType,
@@ -165,8 +159,7 @@ func (archiveService *ArchiveService) countProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Count Provider")
 
-	transport := new(FixedBinaryEncoding)
-	provider, err := StartCountProvider(providerURL, transport)
+	provider, err := StartCountProvider(providerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -176,14 +169,12 @@ func (archiveService *ArchiveService) countProvider() (*Provider, error) {
 
 func (archiveService *ArchiveService) countConsumer(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, error) {
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve Consumer")
+	fmt.Println("Creation : Count Consumer")
 
 	// IN
-	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLCount)
 	// OUT
 	consumer, longList, err := StartCountConsumer(consumerURL,
-		transport,
 		providerURI,
 		objectType,
 		archiveQueryList,
@@ -206,8 +197,7 @@ func (archiveService *ArchiveService) storeProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Store Provider")
 
-	transport := new(FixedBinaryEncoding)
-	provider, err := StartStoreProvider(providerURL, transport)
+	provider, err := StartStoreProvider(providerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -217,14 +207,12 @@ func (archiveService *ArchiveService) storeProvider() (*Provider, error) {
 
 func (archiveService *ArchiveService) storeConsumer(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, error) {
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve Consumer")
+	fmt.Println("Creation : Store Consumer")
 
 	// IN
-	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLStore)
 	// OUT
 	consumer, longList, err := StartStoreConsumer(consumerURL,
-		transport,
 		providerURI,
 		boolean,
 		objectType,
@@ -249,8 +237,7 @@ func (archiveService *ArchiveService) updateProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Update Provider")
 
-	transport := new(FixedBinaryEncoding)
-	provider, err := StartUpdateProvider(providerURL, transport)
+	provider, err := StartUpdateProvider(providerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -260,14 +247,12 @@ func (archiveService *ArchiveService) updateProvider() (*Provider, error) {
 
 func (archiveService *ArchiveService) updateConsumer(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*SubmitConsumer, error) {
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve Consumer")
+	fmt.Println("Creation : Update Consumer")
 
 	// IN
-	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLUpdate)
 	// OUT
 	consumer, err := StartUpdateConsumer(consumerURL,
-		transport,
 		providerURI,
 		objectType,
 		identifierList,
@@ -291,8 +276,7 @@ func (archiveService *ArchiveService) deleteProvider() (*Provider, error) {
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Delete Provider")
 
-	transport := new(FixedBinaryEncoding)
-	provider, err := StartDeleteProvider(providerURL, transport)
+	provider, err := StartDeleteProvider(providerURL)
 	if err != nil {
 		return nil, err
 	}
@@ -302,14 +286,12 @@ func (archiveService *ArchiveService) deleteProvider() (*Provider, error) {
 
 func (archiveService *ArchiveService) deleteConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*RequestConsumer, *LongList, error) {
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve Consumer")
+	fmt.Println("Creation : Delete Consumer")
 
 	// IN
-	transport := new(FixedBinaryEncoding)
 	var providerURI = NewURI(providerURLDelete)
 	// OUT
 	consumer, respLongList, err := StartDeleteConsumer(consumerURL,
-		transport,
 		providerURI,
 		objectType,
 		identifierList,
@@ -412,7 +394,9 @@ func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType
 //							START: Provider								//
 //======================================================================//
 // LaunchProvider : TODO
-func (archiveService *ArchiveService) LaunchProvider(operation UShort) error {
+func (archiveService *ArchiveService) LaunchProvider(operation UShort, wg sync.WaitGroup) error {
+	// Inform the WaitGroup that this goroutine is finished at the end of this function
+	defer wg.Done()
 	// Declare variables
 	var provider *Provider
 	var err error
@@ -449,10 +433,10 @@ func (archiveService *ArchiveService) LaunchProvider(operation UShort) error {
 	defer provider.Close()
 
 	// Start communication
-	var running bool = true
+	var running = true
 	for running == true {
-		time.Sleep(120 * time.Second)
-		running = false
+		time.Sleep(10 * time.Second)
+		//running = false
 	}
 
 	return nil

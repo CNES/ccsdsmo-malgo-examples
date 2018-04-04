@@ -103,25 +103,48 @@ func StartRetrieveProvider(url string) (*Provider, error) {
 func (provider *Provider) retrieveHandler() error {
 	retrieveHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
-			// Create Invoke Transaction
+			// ----- Create Invoke Transaction -----
 			transaction := t.(InvokeTransaction)
 
-			// Call invoke operation and store objects
+			// ----- Call invoke operation and store objects -----
 			objectType, identifierList, longList, err := provider.retrieveInvoke(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
-			// Call Ack operation
+			// ----- Verify the parameters -----
+			// Verify ObjectType values (all of its attributes must not be equal to '0')
+			if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
+				// TODO: we must send an INVALID error to the consumer
+				fmt.Println("ERROR: INVALID")
+			}
+
+			// Verify IdentifierList
+			for i := 0; i < identifierList.Size(); i++ {
+				if *(*identifierList)[i] == "*" {
+					// TODO: we must send an INVALID error to the consumer
+					fmt.Println("ERROR: INVALID")
+				}
+			}
+
+			// Verify LongList
+			for i := 0; i < identifierList.Size(); i++ {
+				if *(*longList)[i] == 0 {
+					// TODO: we must send an INVALID error to the consumer
+					fmt.Println("ERROR: INVALID")
+				}
+			}
+
+			// ----- Call Ack operation -----
 			err = provider.retrieveAck(transaction)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
 			// Hold on, wait a little
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(SLEEP_TIME * time.Millisecond)
 
 			// TODO (AF): do sthg with these objects
 			fmt.Println("RetrieveHandler received:\n\t>>>",
@@ -131,10 +154,10 @@ func (provider *Provider) retrieveHandler() error {
 
 			var archiveDetailsList = new(ArchiveDetailsList)
 			var elementList = new(ArchiveQueryList)
-			// Call Response operation
+			// ----- Call Response operation -----
 			err = provider.retrieveResponse(transaction, archiveDetailsList, elementList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 		}
@@ -142,8 +165,8 @@ func (provider *Provider) retrieveHandler() error {
 		return nil
 	}
 
-	err := provider.cctx.RegisterInvokeHandler(SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+	err := provider.cctx.RegisterInvokeHandler(COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		OPERATION_IDENTIFIER_RETRIEVE,
 		retrieveHandler)
@@ -152,6 +175,31 @@ func (provider *Provider) retrieveHandler() error {
 	}
 
 	return nil
+}
+
+// INVOKE
+func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
+	decoder := provider.factory.NewDecoder(msg.Body)
+
+	element, err := decoder.DecodeElement(NullObjectType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	objectType := element.(*ObjectType)
+
+	element, err = decoder.DecodeElement(NullIdentifierList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	identifierList := element.(*IdentifierList)
+
+	element, err = decoder.DecodeElement(NullLongList)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	longList := element.(*LongList)
+
+	return objectType, identifierList, longList, nil
 }
 
 // ACK
@@ -182,31 +230,6 @@ func (provider *Provider) retrieveResponse(transaction InvokeTransaction, archiv
 	return nil
 }
 
-// INVOKE
-func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
-	decoder := provider.factory.NewDecoder(msg.Body)
-
-	element, err := decoder.DecodeElement(NullObjectType)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	objectType := element.(*ObjectType)
-
-	element, err = decoder.DecodeElement(NullIdentifierList)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	identifierList := element.(*IdentifierList)
-
-	element, err = decoder.DecodeElement(NullLongList)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	longList := element.(*LongList)
-
-	return objectType, identifierList, longList, nil
-}
-
 //======================================================================//
 //								QUERY									//
 //======================================================================//
@@ -233,12 +256,25 @@ func (provider *Provider) queryHandler() error {
 		if msg != nil {
 			transaction := t.(ProgressTransaction)
 
-			// Retrieve the objects thanks to the progress operation
+			// ----- Retrieve the objects thanks to the progress operation -----
 			boolean, objectType, archiveQueryList, queryFilter, err := provider.queryProgress(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
+
+			// ----- Verify the parameters -----
+			// TODO: form a single query from ArchiveQueryList and QueryFilterList
+
+			// ----- Call Ack operation -----
+			err = provider.queryAck(transaction)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				return err
+			}
+
+			// Hold on buddy, wait a little
+			time.Sleep(SLEEP_TIME * time.Millisecond)
 
 			// TODO: do sthg with these objects
 			fmt.Println("QueryHandler received:\n\t>>>",
@@ -247,36 +283,34 @@ func (provider *Provider) queryHandler() error {
 				archiveQueryList, "\n\t>>>",
 				queryFilter)
 
-			// Call Ack operation
-			err = provider.queryAck(transaction)
-			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
-				return err
+			// TODO: This value will depend in the future of the number of objects to send to the consumer
+			var nbObjects = 10
+			// TODO: These variables will be created automatically in the future
+			var objType = new(ObjectType)
+			var archDetList = new(ArchiveDetailsList)
+			var idList = new(IdentifierList)
+			var elementList ElementList
+			if *boolean != true {
+				elementList = nil
+				idList = nil
+			} else {
+				idList = new(IdentifierList)
+				elementList = new(LongList)
 			}
 
-			// Hold on buddy, wait a little
-			time.Sleep(250 * time.Millisecond)
-
-			// This value will depend in the future of the number of objects to send to the consumer
-			var nbObjects = 10
-			// These variables will be created automatically in the future
-			var objType = new(ObjectType)
-			var idList = new(IdentifierList)
-			var archDetList = new(ArchiveDetailsList)
-			var elementList = new(ArchiveQueryList)
 			for i := 0; i < nbObjects; i++ {
 				// Call Update operation
 				err = provider.queryUpdate(transaction, objType, idList, archDetList, elementList)
 				if err != nil {
-					// TODO: we're (maybe) supposed to say to consumer that an error occured
+					// TODO: we're (maybe) supposed to say to the consumer that an error occured
 					return err
 				}
 			}
 
-			// Call Response operation
+			// ----- Call Response operation -----
 			err = provider.queryResponse(transaction, objType, idList, archDetList, elementList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 		}
@@ -284,8 +318,8 @@ func (provider *Provider) queryHandler() error {
 		return nil
 	}
 
-	err := provider.cctx.RegisterProgressHandler(SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+	err := provider.cctx.RegisterProgressHandler(COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		OPERATION_IDENTIFIER_QUERY,
 		queryHandler)
@@ -443,19 +477,19 @@ func (provider *Provider) countHandler() error {
 			// Call Invoke operation
 			objectType, archiveQueryList, queryFilterList, err := provider.countInvoke(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
 			// Call Ack operation
 			err = provider.retrieveAck(transaction)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
 			// Hold on, wait a little
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(SLEEP_TIME * time.Millisecond)
 
 			// TODO (AF): do sthg with these objects
 			fmt.Println("CountHandler received:\n\t>>>",
@@ -468,7 +502,7 @@ func (provider *Provider) countHandler() error {
 			// Call Response operation
 			err = provider.countResponse(transaction, longList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 		}
@@ -476,8 +510,8 @@ func (provider *Provider) countHandler() error {
 		return nil
 	}
 
-	err := provider.cctx.RegisterInvokeHandler(SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+	err := provider.cctx.RegisterInvokeHandler(COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		OPERATION_IDENTIFIER_COUNT,
 		countHandler)
@@ -573,12 +607,12 @@ func (provider *Provider) storeHandler() error {
 			// Call Request operation
 			boolean, objectType, identifierList, archiveDetailsList, elementList, err := provider.storeRequest(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
 			// Hold on, wait a little
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(SLEEP_TIME * time.Millisecond)
 
 			// TODO (AF): do sthg with these objects
 			fmt.Println("StoreHandler received:\n\t>>>",
@@ -593,7 +627,7 @@ func (provider *Provider) storeHandler() error {
 			// Call Response operation
 			err = provider.storeResponse(transaction, longList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
@@ -602,8 +636,8 @@ func (provider *Provider) storeHandler() error {
 		return nil
 	}
 
-	err := provider.cctx.RegisterRequestHandler(SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+	err := provider.cctx.RegisterRequestHandler(COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		OPERATION_IDENTIFIER_STORE,
 		storeHandler)
@@ -701,14 +735,14 @@ func (provider *Provider) updateHandler() error {
 			// Call Submit operation
 			objectType, identifierList, archiveDetailsList, elementList, err := provider.updateSubmit(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
 			// Call Ack operation
 			err = provider.updateAck(transaction)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
@@ -723,8 +757,8 @@ func (provider *Provider) updateHandler() error {
 		return nil
 	}
 
-	err := provider.cctx.RegisterSubmitHandler(SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+	err := provider.cctx.RegisterSubmitHandler(COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		OPERATION_IDENTIFIER_UPDATE,
 		updateHandler)
@@ -806,7 +840,7 @@ func (provider *Provider) deleteHandler() error {
 			// Call Request operation
 			objectType, identifierList, longListRequest, err := provider.deleteRequest(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
@@ -817,14 +851,14 @@ func (provider *Provider) deleteHandler() error {
 				longListRequest)
 
 			// Hold on dude, wait a little
-			time.Sleep(250 * time.Millisecond)
+			time.Sleep(SLEEP_TIME * time.Millisecond)
 
 			// This variable will be created automatically in the future
 			var longListResponse = new(LongList)
 			// Call Response operation
 			err = provider.deleteResponse(transaction, longListResponse)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to consumer that an error occured
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 		}
@@ -832,8 +866,8 @@ func (provider *Provider) deleteHandler() error {
 		return nil
 	}
 
-	err := provider.cctx.RegisterRequestHandler(SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+	err := provider.cctx.RegisterRequestHandler(COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		OPERATION_IDENTIFIER_DELETE,
 		deleteHandler)

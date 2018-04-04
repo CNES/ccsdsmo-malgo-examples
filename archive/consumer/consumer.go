@@ -101,8 +101,8 @@ func createInvokeConsumer(url string, providerURI *URI, typeOfConsumer string, o
 	}
 
 	op := cctx.NewInvokeOperation(providerURI,
-		SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+		COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
@@ -126,8 +126,8 @@ func createProgressConsumer(url string, providerURI *URI, typeOfConsumer string,
 	}
 
 	op := cctx.NewProgressOperation(providerURI,
-		SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+		COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
@@ -151,8 +151,8 @@ func createRequestConsumer(url string, providerURI *URI, typeOfConsumer string, 
 	}
 
 	op := cctx.NewRequestOperation(providerURI,
-		SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+		COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 
@@ -176,8 +176,8 @@ func createSubmitConsumer(url string, providerURI *URI, typeOfConsumer string, o
 	}
 
 	op := cctx.NewSubmitOperation(providerURI,
-		SERVICE_AREA_NUMBER,
-		SERVICE_AREA_VERSION,
+		COM_AREA_NUMBER,
+		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		operation)
 

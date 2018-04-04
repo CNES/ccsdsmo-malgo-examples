@@ -79,14 +79,14 @@ func main() {
 				UOctet(archiveService.AreaVersion),
 				UShort(archiveService.ServiceNumber),
 			}
-			var identifierList = NewIdentifierList(10)
-			var longList = NewLongList(10)
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
+			var longList = LongList([]*Long{NewLong(29), NewLong(31)})
 
 			// // Variables to retrieve the return of this function
 			var archiveDetailsList *ArchiveDetailsList
 			var elementList ElementList
 			// Start the consumer
-			archiveDetailsList, elementList, err = archiveService.LaunchRetrieveConsumer(objectType, *identifierList, *longList)
+			archiveDetailsList, elementList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
 
 			fmt.Println("Retrieve Consumer received:\n\t>>>", archiveDetailsList, "\n\t>>>", elementList)
 

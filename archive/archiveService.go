@@ -41,9 +41,9 @@ import (
 type ArchiveService struct {
 	AreaIdentifier    Identifier
 	ServiceIdentifier Identifier
-	AreaNumber        Integer
+	AreaNumber        UShort
 	ServiceNumber     Integer
-	AreaVersion       Integer
+	AreaVersion       UOctet
 }
 
 // Constants for the providers and consumers
@@ -63,9 +63,9 @@ func (*ArchiveService) CreateService() Service {
 	archiveService := &ArchiveService{
 		ARCHIVE_SERVICE_AREA_IDENTIFIER,
 		ARCHIVE_SERVICE_SERVICE_IDENTIFIER,
-		SERVICE_AREA_NUMBER,
+		COM_AREA_NUMBER,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
-		SERVICE_AREA_VERSION,
+		COM_AREA_VERSION,
 	}
 
 	return archiveService

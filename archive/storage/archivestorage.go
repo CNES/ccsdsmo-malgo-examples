@@ -22,3 +22,38 @@
  * SOFTWARE.
  */
 package storage
+
+import "os"
+
+const (
+	FILE_TO_READ_AND_WRITE string = "./archive/storage/archive.txt"
+)
+
+// WriteInArchive :
+func WriteInArchive(data []byte) error {
+	var file *os.File
+	var err error
+	// Open the file in Append mode
+	file, err = os.OpenFile(FILE_TO_READ_AND_WRITE, os.O_APPEND|os.O_RDWR, 0666)
+	if err != nil {
+		// If we have an error it may mean that the file doesn't exist
+		file, err = os.Create(FILE_TO_READ_AND_WRITE)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = file.WriteString(string(data) + "\n")
+	if err != nil {
+		return err
+	}
+
+	file.Sync()
+
+	return nil
+}
+
+// StoreInArchive : store objects in the Archive
+func StoreInArchive() error {
+	return nil
+}

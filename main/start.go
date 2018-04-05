@@ -33,6 +33,7 @@ import (
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/service"
+	. "github.com/etiennelndr/archiveservice/archive/storage"
 	. "github.com/etiennelndr/archiveservice/data"
 )
 
@@ -207,6 +208,8 @@ func main() {
 			fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|[consumer] [retrieve|query|count|store|update|delete]]")
 			return
 		}
+	} else if args[0] == "test" {
+		err = WriteInArchive([]byte("test"))
 	} else {
 		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|[consumer] [retrieve|query|count|store|update|delete]]")
 		return
@@ -215,5 +218,4 @@ func main() {
 	if err != nil {
 		fmt.Println("ERROR: sthg unwanted happened,", err)
 	}
-
 }

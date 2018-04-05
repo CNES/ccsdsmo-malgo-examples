@@ -481,6 +481,8 @@ func (provider *Provider) countHandler() error {
 				return err
 			}
 
+			// ----- Verify the parameters -----
+
 			// Call Ack operation
 			err = provider.retrieveAck(transaction)
 			if err != nil {
@@ -611,6 +613,49 @@ func (provider *Provider) storeHandler() error {
 				return err
 			}
 
+			// ----- Verify the parameters -----
+			// The fouth and fith lists must be the same size
+			if archiveDetailsList.Size() != elementList.Size() {
+				// TODO: we must send an INVALID error to the consumer
+				fmt.Println("ERROR: INVALID")
+			}
+
+			// Verify ObjectType values (all of its attributes must not be equal to '0')
+			if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
+				// TODO: we must send an INVALID error to the consumer
+				fmt.Println("ERROR: INVALID")
+			}
+
+			// Verify IdentifierList
+			for i := 0; i < identifierList.Size(); i++ {
+				if *(*identifierList)[i] == "*" {
+					// TODO: we must send an INVALID error to the consumer
+					fmt.Println("ERROR: INVALID")
+				}
+			}
+
+			// Verify the parameters network, timestamp and provider of the object ArchiveDetails
+			mapNetwork := map[*Identifier]bool{
+				NewIdentifier("0"): true,
+				NewIdentifier("*"): true,
+				nil:                true,
+			}
+			mapTimestamp := map[*FineTime]bool{
+				NewFineTime(time.Unix(int64(0), int64(0))): true,
+				nil: true,
+			}
+			mapProvider := map[*URI]bool{
+				NewURI("0"): true,
+				NewURI("*"): true,
+				nil:         true,
+			}
+			for i := 0; i < archiveDetailsList.Size(); i++ {
+				if mapNetwork[(*archiveDetailsList)[i].Network] || mapTimestamp[(*archiveDetailsList)[i].Timestamp] || mapProvider[(*archiveDetailsList)[i].Provider] {
+					// TODO: we must send an INVALID error to the consumer
+					fmt.Println("ERROR: INVALID")
+				}
+			}
+
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
@@ -623,9 +668,14 @@ func (provider *Provider) storeHandler() error {
 				elementList)
 
 			// This variable will be created automatically in the future
-			var longList = new(LongList)
+			var longList LongList
+			if *boolean == true {
+				longList = LongList([]*Long{NewLong(1), NewLong(2), NewLong(3)})
+			} else {
+				longList = nil
+			}
 			// Call Response operation
-			err = provider.storeResponse(transaction, longList)
+			err = provider.storeResponse(transaction, &longList)
 			if err != nil {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
@@ -739,6 +789,8 @@ func (provider *Provider) updateHandler() error {
 				return err
 			}
 
+			// ----- Verify the parameters -----
+
 			// Call Ack operation
 			err = provider.updateAck(transaction)
 			if err != nil {
@@ -843,6 +895,8 @@ func (provider *Provider) deleteHandler() error {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
+
+			// ----- Verify the parameters -----
 
 			// TODO (AF): do sthg with these objects
 			fmt.Println("DeleteHandler received:\n\t>>>",

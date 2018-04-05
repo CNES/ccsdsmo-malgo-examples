@@ -29,11 +29,11 @@ import (
 )
 
 type ArchiveDetails struct {
-	instId    Long
-	details   ObjectDetails
-	network   *Identifier
-	timestamp *FineTime
-	provider  *URI
+	InstId    Long
+	Details   ObjectDetails
+	Network   *Identifier
+	Timestamp *FineTime
+	Provider  *URI
 }
 
 var (
@@ -77,16 +77,16 @@ func (*ArchiveDetails) GetShortForm() Long {
 
 // Returns the number of the area this element belongs to
 func (a *ArchiveDetails) GetAreaNumber() UShort {
-	return a.details.GetAreaNumber()
+	return a.Details.GetAreaNumber()
 }
 
 // Returns the version of the area this element belongs to
 func (a *ArchiveDetails) GetAreaVersion() UOctet {
-	return a.details.GetAreaVersion()
+	return a.Details.GetAreaVersion()
 }
 
 func (a *ArchiveDetails) GetServiceNumber() UShort {
-	return a.details.GetServiceNumber()
+	return a.Details.GetServiceNumber()
 }
 
 // Returns the relative short form of the element type
@@ -98,31 +98,31 @@ func (*ArchiveDetails) GetTypeShortForm() Integer {
 // Encodes this element using the supplied encoder
 func (a *ArchiveDetails) Encode(encoder Encoder) error {
 	// Encode instId (Long)
-	err := encoder.EncodeElement(&a.instId)
+	err := encoder.EncodeElement(&a.InstId)
 	if err != nil {
 		return err
 	}
 
 	// Encode details (ObjectDetails)
-	err = encoder.EncodeElement(&a.details)
+	err = encoder.EncodeElement(&a.Details)
 	if err != nil {
 		return err
 	}
 
 	// Encode network (NullableIdentifier)
-	err = encoder.EncodeNullableElement(a.network)
+	err = encoder.EncodeNullableElement(a.Network)
 	if err != nil {
 		return err
 	}
 
 	// Encode timestamp (NullableFineTime)
-	err = encoder.EncodeNullableElement(a.timestamp)
+	err = encoder.EncodeNullableElement(a.Timestamp)
 	if err != nil {
 		return err
 	}
 
 	// Encode provider (NullableURI)
-	return encoder.EncodeNullableElement(a.provider)
+	return encoder.EncodeNullableElement(a.Provider)
 }
 
 // Decodes and instance of ArchiveDetails using the supplied decoder

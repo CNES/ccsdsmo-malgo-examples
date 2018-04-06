@@ -23,37 +23,93 @@
  */
 package storage
 
-import "os"
+import (
+	"database/sql"
+	"fmt"
 
-const (
-	FILE_TO_READ_AND_WRITE string = "./archive/storage/archive.txt"
+	. "github.com/ccsdsmo/malgo/com"
+	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/etiennelndr/archiveservice/data"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
-// WriteInArchive :
-func WriteInArchive(data []byte) error {
-	var file *os.File
-	var err error
-	// Open the file in Append mode
-	file, err = os.OpenFile(FILE_TO_READ_AND_WRITE, os.O_APPEND|os.O_RDWR, 0666)
+// ArchiveDatabase :
+type ArchiveDatabase struct {
+	db       *sql.DB
+	username string
+	password string
+	database string
+}
+
+const (
+	USERNAME = "archiveService"
+	PASSWORD = "1a2B3c4D!@?"
+	DATABASE = "archive"
+	TABLE    = "Archive"
+)
+
+func createArchiveDatabase(username string, password string, database string) (*ArchiveDatabase, error) {
+	// Get a handle for our database
+	db, err := sql.Open("mysql", username+":"+password+"@/"+database)
 	if err != nil {
-		// If we have an error it may mean that the file doesn't exist
-		file, err = os.Create(FILE_TO_READ_AND_WRITE)
-		if err != nil {
-			return err
-		}
+		return nil, err
 	}
 
-	_, err = file.WriteString(string(data) + "\n")
+	// Create the bdd for the ArchiveService
+	archiveDatabase := &ArchiveDatabase{
+		db,
+		username,
+		password,
+		database,
+	}
+
+	return archiveDatabase, nil
+}
+
+// StoreInArchive : Use this function to store objects in an COM archive
+func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+	// Create the handle
+	archiveDatabase, err := createArchiveDatabase(USERNAME, PASSWORD, DATABASE)
 	if err != nil {
 		return err
 	}
+	defer archiveDatabase.db.Close()
 
-	file.Sync()
+	for i := 0; i < archiveDetailsList.Size(); i++ {
+		if archiveDetailsList[i].InstId == 0 {
+			// We have to create a new and unused object instance identifier
+		} else {
+			// We must verify if the object instance identifier is not already present in the table
+			statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
+			if err != nil {
+				return err
+			}
+			defer statementVerify.Close()
 
-	return nil
-}
+			// Execute the query
+			var queryReturn int
+			err = statementVerify.QueryRow(archiveDetailsList[i].InstId).Scan(&queryReturn)
+			if err != nil {
+				return err
+			}
 
-// StoreInArchive : store objects in the Archive
-func StoreInArchive() error {
+			fmt.Println(queryReturn)
+		}
+	}
+
+	/*statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
+	if err != nil {
+		return err
+	}
+	defer statementStore.Close()
+
+	for i := 0; i < archiveDetailsList.Size(); i++ {
+		_, err = statementStore.Exec(archiveDetailsList[i].InstId, elementList[i])
+		if err != nil {
+			return err
+		}
+	}*/
+
 	return nil
 }

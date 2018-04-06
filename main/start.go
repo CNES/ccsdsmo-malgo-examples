@@ -27,13 +27,13 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/service"
-	. "github.com/etiennelndr/archiveservice/archive/storage"
 	. "github.com/etiennelndr/archiveservice/data"
 )
 
@@ -143,8 +143,6 @@ func main() {
 		case "store":
 			// Start the store consumer
 			// Create parameters
-			// boolean Boolean, objectType ObjectType, identifierList IdentifierList,
-			// archiveDetailsList ArchiveDetailsList, elementList ElementList
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
@@ -152,14 +150,33 @@ func main() {
 				UOctet(archiveService.AreaVersion),
 				UShort(archiveService.ServiceNumber),
 			}
-			var identifierList = NewIdentifierList(10)
-			var archiveDetailsList = NewArchiveDetailsList(10)
-			var elementList = NewLongList(10)
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
+			// Object instance identifier
+			var objectInstanceIdentifier = *NewLong(15)
+			// Variables for ArchiveDetailsList
+			var objectKey = ObjectKey{
+				identifierList,
+				objectInstanceIdentifier,
+			}
+			var objectID = ObjectId{
+				&objectType,
+				&objectKey,
+			}
+			var objectDetails = ObjectDetails{
+				Related: NewLong(1),
+				Source:  &objectID,
+			}
+			var network = NewIdentifier("network")
+			var fineTime = NewFineTime(time.Now())
+			var uri = NewURI("main/start")
+			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+			var elementList = NewLongList(1)
+			(*elementList)[0] = NewLong(29)
 
 			// Variable to retrieve the return of this function
 			var longList *LongList
 			// Start the consumer
-			longList, err = archiveService.LaunchStoreConsumer(*boolean, objectType, *identifierList, *archiveDetailsList, elementList)
+			longList, err = archiveService.LaunchStoreConsumer(*boolean, objectType, identifierList, archiveDetailsList, elementList)
 
 			fmt.Println("Store Consumer received:\n\t>>>", longList)
 
@@ -167,39 +184,36 @@ func main() {
 		case "update":
 			// Start the update consumer
 			// Create parameters
-			// objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList,
-			// elementList ElementList
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
 				UShort(archiveService.ServiceNumber),
 			}
-			var identifierList = NewIdentifierList(10)
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			var archiveDetailsList = NewArchiveDetailsList(10)
 			var elementList = NewLongList(10)
 
 			// Start the consumer
-			err = archiveService.LaunchUpdateConsumer(objectType, *identifierList, *archiveDetailsList, elementList)
+			err = archiveService.LaunchUpdateConsumer(objectType, identifierList, *archiveDetailsList, elementList)
 
 			break
 		case "delete":
 			// Start the delete consumer
 			// Create parameters
-			// objectType ObjectType, identifierList IdentifierList, longList LongList
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
 				UShort(archiveService.ServiceNumber),
 			}
-			var identifierList = NewIdentifierList(10)
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			var longList = NewLongList(10)
 
 			// Variable to retrieve the return of this function
 			var respLongList *LongList
 			// Start the consumer
-			respLongList, err = archiveService.LaunchDeleteConsumer(objectType, *identifierList, *longList)
+			respLongList, err = archiveService.LaunchDeleteConsumer(objectType, identifierList, *longList)
 
 			fmt.Println("Delete Consumer received:\n\t>>>", respLongList)
 
@@ -208,8 +222,6 @@ func main() {
 			fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|[consumer] [retrieve|query|count|store|update|delete]]")
 			return
 		}
-	} else if args[0] == "test" {
-		err = WriteInArchive([]byte("test"))
 	} else {
 		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|[consumer] [retrieve|query|count|store|update|delete]]")
 		return

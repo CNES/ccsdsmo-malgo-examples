@@ -24,6 +24,8 @@
 package consumer
 
 import (
+	"fmt"
+
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -140,6 +142,7 @@ func createProgressConsumer(url string, providerURI *URI, typeOfConsumer string,
 
 // Create a consumer for a request operation
 func createRequestConsumer(url string, providerURI *URI, typeOfConsumer string, operation UShort) (*RequestConsumer, error) {
+	fmt.Println("Create Request Consumer")
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -542,7 +545,10 @@ func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 // Request & Response
 func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
 	// Create the encoder
+	fmt.Println("Store Request")
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+
+	fmt.Println(encoder.Body())
 
 	// Encode Boolean
 	err := boolean.Encode(encoder)
@@ -550,11 +556,15 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 		return nil, err
 	}
 
+	fmt.Println(encoder.Body())
+
 	// Encode ObjectType
 	err = objectType.Encode(encoder)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(encoder.Body())
 
 	// Encode IdentifierList
 	err = identifierList.Encode(encoder)

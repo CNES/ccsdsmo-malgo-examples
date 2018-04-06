@@ -24,6 +24,7 @@
 package provider
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -34,7 +35,9 @@ import (
 	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
+	. "github.com/etiennelndr/archiveservice/archive/storage"
 	. "github.com/etiennelndr/archiveservice/data"
+	. "github.com/etiennelndr/archiveservice/errors"
 )
 
 var (
@@ -606,54 +609,21 @@ func (provider *Provider) storeHandler() error {
 		if msg != nil {
 			transaction := t.(RequestTransaction)
 
+			fmt.Println("Store Handler")
+
 			// Call Request operation
 			boolean, objectType, identifierList, archiveDetailsList, elementList, err := provider.storeRequest(msg)
 			if err != nil {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				fmt.Println(err)
 				return err
 			}
 
 			// ----- Verify the parameters -----
-			// The fouth and fith lists must be the same size
-			if archiveDetailsList.Size() != elementList.Size() {
-				// TODO: we must send an INVALID error to the consumer
-				fmt.Println("ERROR: INVALID")
-			}
-
-			// Verify ObjectType values (all of its attributes must not be equal to '0')
-			if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-				// TODO: we must send an INVALID error to the consumer
-				fmt.Println("ERROR: INVALID")
-			}
-
-			// Verify IdentifierList
-			for i := 0; i < identifierList.Size(); i++ {
-				if *(*identifierList)[i] == "*" {
-					// TODO: we must send an INVALID error to the consumer
-					fmt.Println("ERROR: INVALID")
-				}
-			}
-
-			// Verify the parameters network, timestamp and provider of the object ArchiveDetails
-			mapNetwork := map[*Identifier]bool{
-				NewIdentifier("0"): true,
-				NewIdentifier("*"): true,
-				nil:                true,
-			}
-			mapTimestamp := map[*FineTime]bool{
-				NewFineTime(time.Unix(int64(0), int64(0))): true,
-				nil: true,
-			}
-			mapProvider := map[*URI]bool{
-				NewURI("0"): true,
-				NewURI("*"): true,
-				nil:         true,
-			}
-			for i := 0; i < archiveDetailsList.Size(); i++ {
-				if mapNetwork[(*archiveDetailsList)[i].Network] || mapTimestamp[(*archiveDetailsList)[i].Timestamp] || mapProvider[(*archiveDetailsList)[i].Provider] {
-					// TODO: we must send an INVALID error to the consumer
-					fmt.Println("ERROR: INVALID")
-				}
+			err = provider.storeVerifyParameters(transaction, boolean, objectType, identifierList, archiveDetailsList, elementList)
+			if err != nil {
+				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				return err
 			}
 
 			// Hold on, wait a little
@@ -667,12 +637,17 @@ func (provider *Provider) storeHandler() error {
 				archiveDetailsList, "\n\t>>>",
 				elementList)
 
+			err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
+			if err != nil {
+				return err
+			}
+
 			// This variable will be created automatically in the future
 			var longList LongList
 			if *boolean == true {
 				longList = LongList([]*Long{NewLong(1), NewLong(2), NewLong(3)})
 			} else {
-				longList = nil
+				longList = *NewLongList(0)
 			}
 			// Call Response operation
 			err = provider.storeResponse(transaction, &longList)
@@ -680,7 +655,6 @@ func (provider *Provider) storeHandler() error {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
-
 		}
 
 		return nil
@@ -698,10 +672,63 @@ func (provider *Provider) storeHandler() error {
 	return nil
 }
 
+// VERIFY PARAMETERS
+func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, boolean *Boolean, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
+	// The fourth and fifth lists must be the same size
+	if archiveDetailsList.Size() != elementList.Size() {
+		fmt.Println("ArchiveDetailsList and ElementList must have the same size")
+		provider.storeResponseError(transaction, COM_ERROR_INVALID, "ArchiveDetailsList and ElementList must have the same size", NewLongList(1))
+		return errors.New("ArchiveDetailsList and ElementList must have the same size")
+	}
+
+	// Verify ObjectType values (all of its attributes must not be equal to '0')
+	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
+		fmt.Println("ObjectType's attributes must not be equal to 'O'")
+		provider.storeResponseError(transaction, COM_ERROR_INVALID, "ObjectType's attributes must not be equal to 'O'", NewLongList(1))
+		return errors.New("ObjectType's attributes must not be equal to 'O'")
+	}
+
+	// Verify IdentifierList
+	for i := 0; i < identifierList.Size(); i++ {
+		if *(*identifierList)[i] == "*" {
+			fmt.Println("IdenfierList elements must not be equal to '*'")
+			provider.storeResponseError(transaction, COM_ERROR_INVALID, "IdenfierList elements must not be equal to '*'", NewLongList(1))
+			return errors.New("IdenfierList elements must not be equal to '*'")
+		}
+	}
+
+	// Verify the parameters network, timestamp and provider of the object ArchiveDetails
+	mapNetwork := map[*Identifier]bool{
+		NewIdentifier("0"): true,
+		NewIdentifier("*"): true,
+		nil:                true,
+	}
+	mapTimestamp := map[*FineTime]bool{
+		NewFineTime(time.Unix(int64(0), int64(0))): true,
+		nil: true,
+	}
+	mapProvider := map[*URI]bool{
+		NewURI("0"): true,
+		NewURI("*"): true,
+		nil:         true,
+	}
+	for i := 0; i < archiveDetailsList.Size(); i++ {
+		if mapNetwork[(*archiveDetailsList)[i].Network] || mapTimestamp[(*archiveDetailsList)[i].Timestamp] || mapProvider[(*archiveDetailsList)[i].Provider] {
+			fmt.Println("ArchiveDetailsList elements must not be equal to '0', '*' or NULL")
+			provider.storeResponseError(transaction, COM_ERROR_INVALID, "ArchiveDetailsList elements must not be equal to '0', '*' or NULL", NewLongList(1))
+			return errors.New("ArchiveDetailsList elements must not be equal to '0', '*' or NULL")
+		}
+	}
+
+	return nil
+}
+
 // REQUEST
 func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
+
+	fmt.Println(msg.Body)
 
 	// Decode Boolean
 	boolean, err := decoder.DecodeElement(NullBoolean)
@@ -749,6 +776,37 @@ func (provider *Provider) storeResponse(transaction RequestTransaction, longList
 
 	// Call Response operation
 	err = transaction.Reply(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (provider *Provider) storeResponseError(transaction RequestTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode UInteger
+	err := errorNumber.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode String
+	err = errorComment.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Encode Element
+	err = errorExtra.Encode(encoder)
+	if err != nil {
+		return err
+	}
+
+	// Call Response operation with Error status
+	err = transaction.Reply(encoder.Body(), true)
 	if err != nil {
 		return err
 	}

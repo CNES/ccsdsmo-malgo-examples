@@ -54,6 +54,11 @@ func (c *CompositeFilterSet) Composite() Composite {
 	return c
 }
 
+// ----- Defines COM CompositeFilterSet as a COM QueryFilter -----
+func (c *CompositeFilterSet) QueryFilter() QueryFilter {
+	return c
+}
+
 // ================================================================================
 // Defines COM CompositeFilterSet type as a MAL Element
 // ================================================================================

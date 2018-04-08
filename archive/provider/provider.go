@@ -676,24 +676,24 @@ func (provider *Provider) storeHandler() error {
 func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, boolean *Boolean, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	// The fourth and fifth lists must be the same size
 	if archiveDetailsList.Size() != elementList.Size() {
-		fmt.Println("ArchiveDetailsList and ElementList must have the same size")
-		provider.storeResponseError(transaction, COM_ERROR_INVALID, "ArchiveDetailsList and ElementList must have the same size", NewLongList(1))
-		return errors.New("ArchiveDetailsList and ElementList must have the same size")
+		fmt.Println(ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR)
+		provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR, NewLongList(1))
+		return errors.New(string(ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR))
 	}
 
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-		fmt.Println("ObjectType's attributes must not be equal to 'O'")
-		provider.storeResponseError(transaction, COM_ERROR_INVALID, "ObjectType's attributes must not be equal to 'O'", NewLongList(1))
-		return errors.New("ObjectType's attributes must not be equal to 'O'")
+		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
+		provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
+		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
 	}
 
 	// Verify IdentifierList
 	for i := 0; i < identifierList.Size(); i++ {
 		if *(*identifierList)[i] == "*" {
-			fmt.Println("IdenfierList elements must not be equal to '*'")
-			provider.storeResponseError(transaction, COM_ERROR_INVALID, "IdenfierList elements must not be equal to '*'", NewLongList(1))
-			return errors.New("IdenfierList elements must not be equal to '*'")
+			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
+			provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
+			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
 		}
 	}
 
@@ -714,9 +714,9 @@ func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, 
 	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if mapNetwork[(*archiveDetailsList)[i].Network] || mapTimestamp[(*archiveDetailsList)[i].Timestamp] || mapProvider[(*archiveDetailsList)[i].Provider] {
-			fmt.Println("ArchiveDetailsList elements must not be equal to '0', '*' or NULL")
-			provider.storeResponseError(transaction, COM_ERROR_INVALID, "ArchiveDetailsList elements must not be equal to '0', '*' or NULL", NewLongList(1))
-			return errors.New("ArchiveDetailsList elements must not be equal to '0', '*' or NULL")
+			fmt.Println(ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR)
+			provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR, NewLongList(1))
+			return errors.New(string(ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR))
 		}
 	}
 
@@ -736,11 +736,15 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 		return nil, nil, nil, nil, nil, err
 	}
 
+	fmt.Println("after boolea,")
+
 	// Decode ObjectType
 	objectType, err := decoder.DecodeElement(NullObjectType)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
+
+	fmt.Println("after objectType")
 
 	// Decode IdentifierList
 	identifierList, err := decoder.DecodeElement(NullIdentifierList)
@@ -748,11 +752,15 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 		return nil, nil, nil, nil, nil, err
 	}
 
+	fmt.Println("after identifierList")
+
 	// Decode ArchiveDetailsList
 	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
+
+	fmt.Println("after archiveDetailsList")
 
 	// Decode ElementList
 	elementList, err := decoder.DecodeAbstractElement()

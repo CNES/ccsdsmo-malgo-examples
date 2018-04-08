@@ -24,8 +24,6 @@
 package data
 
 import (
-	"errors"
-
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
@@ -61,14 +59,14 @@ func (list *ArchiveDetailsList) Size() int {
 	return -1
 }
 
-func (list *ArchiveDetailsList) GetElementAt(i int) (Element, error) {
+func (list *ArchiveDetailsList) GetElementAt(i int) Element {
 	if list != nil {
 		if i <= list.Size() {
-			return (*list)[i], nil
+			return (*list)[i]
 		}
-		return nil, errors.New("Index must not be upper or equal to the list size")
+		return nil
 	}
-	return nil, errors.New("List must not be null")
+	return nil
 }
 
 func (*ArchiveDetailsList) Composite() Composite {

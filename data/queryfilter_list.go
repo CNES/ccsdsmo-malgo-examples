@@ -31,5 +31,5 @@ type QueryFilterList interface {
 	Composite
 	QueryFilterList() QueryFilterList
 	Size() int
-	GetElementAt(i int) (QueryFilter, error)
+	GetElementAt(i int) QueryFilter
 }

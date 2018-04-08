@@ -24,8 +24,6 @@
 package data
 
 import (
-	"errors"
-
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/etiennelndr/archiveservice/archive/constants"
@@ -69,14 +67,14 @@ func (list *CompositeFilterSetList) QueryFilterList() QueryFilterList {
 	return list
 }
 
-func (list *CompositeFilterSetList) GetElementAt(i int) (QueryFilter, error) {
+func (list *CompositeFilterSetList) GetElementAt(i int) QueryFilter {
 	if list != nil {
 		if i <= list.Size() {
-			return (*list)[i], nil
+			return (*list)[i]
 		}
-		return nil, errors.New("Index must not be upper or equal to the list size")
+		return nil
 	}
-	return nil, errors.New("List must not be null")
+	return nil
 }
 
 // ================================================================================

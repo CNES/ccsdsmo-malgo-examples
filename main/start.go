@@ -152,7 +152,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(15)
+			var objectInstanceIdentifier = *NewLong(13)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,

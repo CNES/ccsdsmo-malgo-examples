@@ -25,6 +25,7 @@ package storage
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	. "github.com/ccsdsmo/malgo/com"
@@ -51,6 +52,7 @@ const (
 
 func createArchiveDatabase(username string, password string, database string) (*ArchiveDatabase, error) {
 	// Get a handle for our database
+	fmt.Println("IN createArchiveDatabase")
 	db, err := sql.Open("mysql", username+":"+password+"@/"+database)
 	if err != nil {
 		return nil, err
@@ -70,16 +72,20 @@ func createArchiveDatabase(username string, password string, database string) (*
 // StoreInArchive : Use this function to store objects in an COM archive
 func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
 	// Create the handle
+	fmt.Println("IN StoreInArchive")
 	archiveDatabase, err := createArchiveDatabase(USERNAME, PASSWORD, DATABASE)
 	if err != nil {
 		return err
 	}
 	defer archiveDatabase.db.Close()
 
+	fmt.Println("IN StoreInArchive: after the creation of the handler")
+
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
 		} else {
+			fmt.Println("IN StoreInArchive: beginning of the for()")
 			// We must verify if the object instance identifier is not already present in the table
 			statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
 			if err != nil {
@@ -91,10 +97,27 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			var queryReturn int
 			err = statementVerify.QueryRow(archiveDetailsList[i].InstId).Scan(&queryReturn)
 			if err != nil {
-				return err
+				if err.Error() != "sql: no rows in result set" {
+					return err
+				}
+				// This object is not present in the archive
+				statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
+				if err != nil {
+					return err
+				}
+				defer statementStore.Close()
+
+				_, err = statementStore.Exec(archiveDetailsList[i].InstId, elementList.GetElementAt(i))
+				if err != nil {
+					return err
+				}
+
+				return nil
 			}
 
 			fmt.Println(queryReturn)
+
+			return errors.New("DUPLICATE")
 		}
 	}
 
@@ -110,6 +133,5 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			return err
 		}
 	}*/
-
 	return nil
 }

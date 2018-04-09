@@ -233,6 +233,6 @@ func main() {
 	if err != nil {
 		fmt.Println("ERROR: sthg unwanted happened,", err)
 	} else if errorsList != nil {
-		fmt.Println(*errorsList.ErrorComment)
+		fmt.Println(*errorsList.ErrorNumber)
 	}
 }

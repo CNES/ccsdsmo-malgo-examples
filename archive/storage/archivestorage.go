@@ -26,7 +26,8 @@ package storage
 import (
 	"database/sql"
 	"errors"
-	"fmt"
+	"math/rand"
+	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
@@ -71,6 +72,8 @@ func createArchiveDatabase(username string, password string, database string) (*
 
 // StoreInArchive : Use this function to store objects in an COM archive
 func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+	rand.Seed(time.Now().UnixNano())
+
 	// Create the handle
 	archiveDatabase, err := createArchiveDatabase(USERNAME, PASSWORD, DATABASE)
 	if err != nil {
@@ -83,24 +86,11 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId != 0 {
 			// We must verify if the object instance identifier is not already present in the table
-			statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
+			boolean, err := isObjectInstanceIdentifierInDatabase(archiveDatabase, int64(archiveDetailsList[i].InstId))
 			if err != nil {
 				return err
 			}
-			defer statementVerify.Close()
-
-			// Execute the query
-			// Before, create a variable to retrieve the result
-			var queryReturn int
-			// Then, execute the query
-			err = statementVerify.QueryRow(archiveDetailsList[i].InstId).Scan(&queryReturn)
-			if err != nil {
-				if err.Error() != "sql: no rows in result set" {
-					return err
-				}
-			} else {
-				fmt.Println(queryReturn)
-
+			if boolean {
 				return errors.New(string(COM_ERROR_DUPLICATE))
 			}
 		}
@@ -109,22 +99,65 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
+			for {
+				var objectInstanceIdentifier = rand.Int63n(int64(LONG_MAX))
+				boolean, err := isObjectInstanceIdentifierInDatabase(archiveDatabase, objectInstanceIdentifier)
+				if err != nil {
+					return err
+				}
+				if !boolean {
+					// OK, we can insert the object with this instance identifier
+					// This object is not present in the archive
+					err := insertInDatabase(archiveDatabase, objectInstanceIdentifier, elementList.GetElementAt(i))
+					if err != nil {
+						return err
+					}
+					break
+				}
+			}
 		} else {
 			// This object is not present in the archive
-			statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
+			err := insertInDatabase(archiveDatabase, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i))
 			if err != nil {
 				return err
 			}
-			defer statementStore.Close()
-
-			_, err = statementStore.Exec(archiveDetailsList[i].InstId, elementList.GetElementAt(i))
-			if err != nil {
-				return err
-			}
-
-			return nil
 		}
 	}
 
+	return nil
+}
+
+func isObjectInstanceIdentifierInDatabase(archiveDatabase *ArchiveDatabase, objectInstanceIdentifier int64) (bool, error) {
+	statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
+	if err != nil {
+		return false, err
+	}
+	defer statementVerify.Close()
+
+	// Execute the query
+	// Before, create a variable to retrieve the result
+	var queryReturn int
+	// Then, execute the query
+	err = statementVerify.QueryRow(objectInstanceIdentifier).Scan(&queryReturn)
+	if err != nil {
+		if err.Error() != "sql: no rows in result set" {
+			return false, err
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func insertInDatabase(archiveDatabase *ArchiveDatabase, objectInstanceIdentifier int64, element Element) error {
+	statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
+	if err != nil {
+		return err
+	}
+	defer statementStore.Close()
+
+	_, err = statementStore.Exec(objectInstanceIdentifier, element)
+	if err != nil {
+		return err
+	}
 	return nil
 }

@@ -609,8 +609,6 @@ func (provider *Provider) storeHandler() error {
 		if msg != nil {
 			transaction := t.(RequestTransaction)
 
-			fmt.Println("Store Handler")
-
 			// Call Request operation
 			boolean, objectType, identifierList, archiveDetailsList, elementList, err := provider.storeRequest(msg)
 			if err != nil {
@@ -639,6 +637,9 @@ func (provider *Provider) storeHandler() error {
 
 			err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
+				if err.Error() == "DUPLICATE" {
+					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
+				}
 				return err
 			}
 
@@ -728,15 +729,11 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
 
-	fmt.Println(msg.Body)
-
 	// Decode Boolean
 	boolean, err := decoder.DecodeElement(NullBoolean)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-
-	fmt.Println("after boolea,")
 
 	// Decode ObjectType
 	objectType, err := decoder.DecodeElement(NullObjectType)
@@ -744,23 +741,17 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 		return nil, nil, nil, nil, nil, err
 	}
 
-	fmt.Println("after objectType")
-
 	// Decode IdentifierList
 	identifierList, err := decoder.DecodeElement(NullIdentifierList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
-	fmt.Println("after identifierList")
-
 	// Decode ArchiveDetailsList
 	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-
-	fmt.Println("after archiveDetailsList")
 
 	// Decode ElementList
 	elementList, err := decoder.DecodeAbstractElement()
@@ -795,20 +786,7 @@ func (provider *Provider) storeResponseError(transaction RequestTransaction, err
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
-	// Encode UInteger
-	err := errorNumber.Encode(encoder)
-	if err != nil {
-		return err
-	}
-
-	// Encode String
-	err = errorComment.Encode(encoder)
-	if err != nil {
-		return err
-	}
-
-	// Encode Element
-	err = errorExtra.Encode(encoder)
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
 	if err != nil {
 		return err
 	}

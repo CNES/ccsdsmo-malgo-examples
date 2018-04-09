@@ -24,8 +24,6 @@
 package consumer
 
 import (
-	"fmt"
-
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -33,6 +31,7 @@ import (
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/data"
+	. "github.com/etiennelndr/archiveservice/errors"
 )
 
 // InvokeConsumer :
@@ -142,7 +141,6 @@ func createProgressConsumer(url string, providerURI *URI, typeOfConsumer string,
 
 // Create a consumer for a request operation
 func createRequestConsumer(url string, providerURI *URI, typeOfConsumer string, operation UShort) (*RequestConsumer, error) {
-	fmt.Println("Create Request Consumer")
 	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
@@ -285,15 +283,11 @@ func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 		return nil, nil, err
 	}
 
-	println("wecheeeeu")
-
 	// Call Progress function
 	err = consumer.queryProgress(boolean, objectType, archiveQueryList, queryFilterList)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	println("yoloooooooooooo")
 
 	// Create the interface that will receive all the responses
 	responses := []interface{}{}
@@ -526,68 +520,73 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, error) {
 //								STORE									//
 //======================================================================//
 // StartStoreConsumer : TODO
-func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, error) {
+func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createRequestConsumer(url, providerURI, "consumerStore", OPERATION_IDENTIFIER_STORE)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Call Request function and retrieve the Response
-	longList, err := consumer.storeRequest(boolean, objectType, identifierList, archiveDetailsList, elementList)
+	longList, errorsList, err := consumer.storeRequest(boolean, objectType, identifierList, archiveDetailsList, elementList)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return consumer, longList, nil
+	return consumer, longList, errorsList, nil
 }
 
 // Request & Response
-func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
+func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Create the encoder
-	fmt.Println("Store Request")
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
-
-	fmt.Println(encoder.Body())
 
 	// Encode Boolean
 	err := boolean.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	fmt.Println(encoder.Body())
 
 	// Encode ObjectType
 	err = objectType.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	fmt.Println(encoder.Body())
 
 	// Encode IdentifierList
 	err = identifierList.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Encode ArchiveDetailsList
 	err = archiveDetailsList.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Encode ElementList
 	err = encoder.EncodeAbstractElement(elementList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Call Request operation and retrieve the Response
 	resp, err := consumer.op.Request(encoder.Body())
 	if err != nil {
-		return nil, err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return nil, errorsList, nil
+		}
+		return nil, nil, err
 	}
 
 	// Create the decoder
@@ -596,10 +595,10 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 	// Decode LongList
 	longList, err := decoder.DecodeElement(NullLongList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return longList.(*LongList), nil
+	return longList.(*LongList), nil, nil
 }
 
 //======================================================================//

@@ -69,7 +69,7 @@ func (list *CompositeFilterSetList) QueryFilterList() QueryFilterList {
 
 func (list *CompositeFilterSetList) GetElementAt(i int) QueryFilter {
 	if list != nil {
-		if i <= list.Size() {
+		if i < list.Size() {
 			return (*list)[i]
 		}
 		return nil

@@ -27,18 +27,12 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 )
 
-const (
-	COM_ERROR_INVALID   UInteger = 70000
-	COM_ERROR_DUPLICATE UInteger = 70001
-
-	COM_ERROR_INVALID_MESSAGE   String = "Operation specific"
-	COM_ERROR_DUPLICATE_MESSAGE String = "Operation specific"
-
-	ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR                 String = "ArchiveDetailsList and ElementList must have the same size"
-	ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR         String = "ObjectType's attributes must not be equal to 'O'"
-	ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR     String = "IdenfierList elements must not be equal to '*'"
-	ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR String = "ArchiveDetailsList elements must not be equal to '0', '*' or NULL"
-)
+// ServiceError : TODO
+type ServiceError struct {
+	ErrorNumber  *UInteger
+	ErrorComment *String
+	ErrorExtra   Element
+}
 
 func EncodeError(encoder Encoder, errorNumber UInteger, errorComment String, errorExtra Element) (Encoder, error) {
 	// Encode UInteger
@@ -62,24 +56,31 @@ func EncodeError(encoder Encoder, errorNumber UInteger, errorComment String, err
 	return encoder, nil
 }
 
-func DecodeError(decoder Decoder) (*UInteger, *String, Element, error) {
+func DecodeError(decoder Decoder) (*ServiceError, error) {
 	// Decode UInteger
 	errorNumber, err := decoder.DecodeElement(NullUInteger)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	// Decode String
 	errorComment, err := decoder.DecodeElement(NullString)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	// Decode Element
 	errorExtra, err := decoder.DecodeAbstractElement()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	return errorNumber.(*UInteger), errorComment.(*String), errorExtra, nil
+	// Create ServiceError
+	serviceError := &ServiceError{
+		errorNumber.(*UInteger),
+		errorComment.(*String),
+		errorExtra,
+	}
+
+	return serviceError, nil
 }

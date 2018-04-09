@@ -39,3 +39,47 @@ const (
 	ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR     String = "IdenfierList elements must not be equal to '*'"
 	ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR String = "ArchiveDetailsList elements must not be equal to '0', '*' or NULL"
 )
+
+func EncodeError(encoder Encoder, errorNumber UInteger, errorComment String, errorExtra Element) (Encoder, error) {
+	// Encode UInteger
+	err := errorNumber.Encode(encoder)
+	if err != nil {
+		return nil, err
+	}
+
+	// Encode String
+	err = errorComment.Encode(encoder)
+	if err != nil {
+		return nil, err
+	}
+
+	// Encode Element
+	err = encoder.EncodeAbstractElement(errorExtra)
+	if err != nil {
+		return nil, err
+	}
+
+	return encoder, nil
+}
+
+func DecodeError(decoder Decoder) (*UInteger, *String, Element, error) {
+	// Decode UInteger
+	errorNumber, err := decoder.DecodeElement(NullUInteger)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Decode String
+	errorComment, err := decoder.DecodeElement(NullString)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Decode Element
+	errorExtra, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return errorNumber.(*UInteger), errorComment.(*String), errorExtra, nil
+}

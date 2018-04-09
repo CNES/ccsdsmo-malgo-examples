@@ -35,6 +35,7 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/service"
 	. "github.com/etiennelndr/archiveservice/data"
+	. "github.com/etiennelndr/archiveservice/errors"
 )
 
 func main() {
@@ -47,8 +48,9 @@ func main() {
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
-	// Variable to retrieve the different errors
+	// Variables to retrieve the different errors
 	var err error
+	var errorsList *ServiceError
 	// Create the Archive Service
 	element := archiveService.CreateService()
 	archiveService = element.(*ArchiveService)
@@ -176,9 +178,10 @@ func main() {
 			// Variable to retrieve the return of this function
 			var longList *LongList
 			// Start the consumer
-			longList, err = archiveService.LaunchStoreConsumer(*boolean, objectType, identifierList, archiveDetailsList, elementList)
+			longList, errorsList, err = archiveService.LaunchStoreConsumer(*boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-			fmt.Println("Store Consumer received:\n\t>>>", longList)
+			fmt.Println("Store Consumer received:\n\t>>>", longList,
+				"\n\t>>>", errorsList)
 
 			break
 		case "update":
@@ -229,5 +232,7 @@ func main() {
 
 	if err != nil {
 		fmt.Println("ERROR: sthg unwanted happened,", err)
+	} else if errorsList != nil {
+		fmt.Println(*errorsList.ErrorComment)
 	}
 }

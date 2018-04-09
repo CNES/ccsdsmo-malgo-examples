@@ -23,6 +23,10 @@
  */
 package archive
 
+import (
+	. "github.com/ccsdsmo/malgo/mal"
+)
+
 // Constants for the Archive Service
 const (
 	ARCHIVE_SERVICE_SERVICE_IDENTIFIER = "Archive"
@@ -46,4 +50,18 @@ const (
 
 const (
 	SLEEP_TIME = 250
+)
+
+// Constants for all the errors
+const (
+	COM_ERROR_INVALID   UInteger = 70000
+	COM_ERROR_DUPLICATE UInteger = 70001
+
+	COM_ERROR_INVALID_MESSAGE   String = "Operation specific"
+	COM_ERROR_DUPLICATE_MESSAGE String = "Operation specific"
+
+	ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR                 String = "ArchiveDetailsList and ElementList must have the same size"
+	ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR         String = "ObjectType's attributes must not be equal to 'O'"
+	ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR     String = "IdenfierList elements must not be equal to '*'"
+	ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR String = "ArchiveDetailsList elements must not be equal to '0', '*' or NULL"
 )

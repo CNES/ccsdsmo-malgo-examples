@@ -30,6 +30,7 @@ import (
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/data"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -77,10 +78,10 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 	}
 	defer archiveDatabase.db.Close()
 
+	// TODO : WARNING -> We MUST do a roll back if a "DUPLICATE" error occurs (none
+	// of the objects have to be stored)
 	for i := 0; i < archiveDetailsList.Size(); i++ {
-		if archiveDetailsList[i].InstId == 0 {
-			// We have to create a new and unused object instance identifier
-		} else {
+		if archiveDetailsList[i].InstId != 0 {
 			// We must verify if the object instance identifier is not already present in the table
 			statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
 			if err != nil {
@@ -89,44 +90,41 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			defer statementVerify.Close()
 
 			// Execute the query
+			// Before, create a variable to retrieve the result
 			var queryReturn int
+			// Then, execute the query
 			err = statementVerify.QueryRow(archiveDetailsList[i].InstId).Scan(&queryReturn)
 			if err != nil {
 				if err.Error() != "sql: no rows in result set" {
 					return err
 				}
-				// This object is not present in the archive
-				statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
-				if err != nil {
-					return err
-				}
-				defer statementStore.Close()
+			} else {
+				fmt.Println(queryReturn)
 
-				_, err = statementStore.Exec(archiveDetailsList[i].InstId, elementList.GetElementAt(i))
-				if err != nil {
-					return err
-				}
-
-				return nil
+				return errors.New(string(COM_ERROR_DUPLICATE))
 			}
-
-			fmt.Println(queryReturn)
-
-			return errors.New("DUPLICATE")
 		}
 	}
-
-	/*statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
-	if err != nil {
-		return err
-	}
-	defer statementStore.Close()
 
 	for i := 0; i < archiveDetailsList.Size(); i++ {
-		_, err = statementStore.Exec(archiveDetailsList[i].InstId, elementList[i])
-		if err != nil {
-			return err
+		if archiveDetailsList[i].InstId == 0 {
+			// We have to create a new and unused object instance identifier
+		} else {
+			// This object is not present in the archive
+			statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
+			if err != nil {
+				return err
+			}
+			defer statementStore.Close()
+
+			_, err = statementStore.Exec(archiveDetailsList[i].InstId, elementList.GetElementAt(i))
+			if err != nil {
+				return err
+			}
+
+			return nil
 		}
-	}*/
+	}
+
 	return nil
 }

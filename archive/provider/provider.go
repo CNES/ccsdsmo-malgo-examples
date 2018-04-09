@@ -637,7 +637,7 @@ func (provider *Provider) storeHandler() error {
 
 			err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
-				if err.Error() == "DUPLICATE" {
+				if err.Error() == string(COM_ERROR_DUPLICATE) {
 					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
 				}
 				return err

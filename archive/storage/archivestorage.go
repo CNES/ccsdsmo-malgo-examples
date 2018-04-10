@@ -52,37 +52,19 @@ const (
 	TABLE    = "Archive"
 )
 
-func createArchiveDatabase(username string, password string, database string) (*ArchiveDatabase, error) {
-	// Get a handle for our database
-	db, err := sql.Open("mysql", username+":"+password+"@/"+database)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create the bdd for the ArchiveService
-	archiveDatabase := &ArchiveDatabase{
-		db,
-		username,
-		password,
-		database,
-	}
-
-	return archiveDatabase, nil
-}
-
 // StoreInArchive : Use this function to store objects in an COM archive
 func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (LongList, error) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Create the handle
-	archiveDatabase, err := createArchiveDatabase(USERNAME, PASSWORD, DATABASE)
+	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE)
 	if err != nil {
 		return nil, err
 	}
-	defer archiveDatabase.db.Close()
+	defer db.Close()
 
 	// Create the transaction (me have to use this method to use rollback and commit)
-	tx, err := archiveDatabase.db.Begin()
+	tx, err := db.Begin()
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +132,6 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 }
 
 func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier int64) (bool, error) {
-	/*statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
-	if err != nil {
-		return false, err
-	}
-	defer statementVerify.Close()*/
-
 	// Execute the query
 	// Before, create a variable to retrieve the result
 	var queryReturn int
@@ -171,14 +147,7 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 }
 
 func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element) error {
-	/*statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
-	if err != nil {
-		return err
-	}
-	defer statementStore.Close()*/
-
 	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? )", objectInstanceIdentifier, element)
-	//_, err = statementStore.Exec(objectInstanceIdentifier, element)
 	if err != nil {
 		return err
 	}

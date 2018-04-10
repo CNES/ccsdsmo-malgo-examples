@@ -613,6 +613,7 @@ func (provider *Provider) storeHandler() error {
 			boolean, objectType, identifierList, archiveDetailsList, elementList, err := provider.storeRequest(msg)
 			if err != nil {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.storeResponseError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLong(0))
 				fmt.Println(err)
 				return err
 			}
@@ -620,7 +621,6 @@ func (provider *Provider) storeHandler() error {
 			// ----- Verify the parameters -----
 			err = provider.storeVerifyParameters(transaction, boolean, objectType, identifierList, archiveDetailsList, elementList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				return err
 			}
 
@@ -635,25 +635,29 @@ func (provider *Provider) storeHandler() error {
 				archiveDetailsList, "\n\t>>>",
 				elementList)
 
-			err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
+			var longList LongList
+			longList, err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
 				if err.Error() == string(COM_ERROR_DUPLICATE) {
 					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
+				} else {
+					provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE, NewLongList(0))
 				}
 				return err
 			}
 
-			// This variable will be created automatically in the future
-			var longList LongList
-			if *boolean == true {
-				longList = LongList([]*Long{NewLong(1), NewLong(2), NewLong(3)})
-			} else {
+			// TODO: for each object stored, and 'ObjectStored' event may be published
+			// to the event service
+
+			// If boolean is false then we must send an empty LongList
+			if !(*boolean) {
 				longList = *NewLongList(0)
 			}
 			// Call Response operation
 			err = provider.storeResponse(transaction, &longList)
 			if err != nil {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE, NewLongList(0))
 				return err
 			}
 		}
@@ -782,6 +786,7 @@ func (provider *Provider) storeResponse(transaction RequestTransaction, longList
 	return nil
 }
 
+// RESPONSE ERROR
 func (provider *Provider) storeResponseError(transaction RequestTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))

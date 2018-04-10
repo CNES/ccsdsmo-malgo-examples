@@ -71,13 +71,13 @@ func createArchiveDatabase(username string, password string, database string) (*
 }
 
 // StoreInArchive : Use this function to store objects in an COM archive
-func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (LongList, error) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Create the handle
 	archiveDatabase, err := createArchiveDatabase(USERNAME, PASSWORD, DATABASE)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer archiveDatabase.db.Close()
 
@@ -88,13 +88,15 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			// We must verify if the object instance identifier is not already present in the table
 			boolean, err := isObjectInstanceIdentifierInDatabase(archiveDatabase, int64(archiveDetailsList[i].InstId))
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if boolean {
-				return errors.New(string(COM_ERROR_DUPLICATE))
+				return nil, errors.New(string(COM_ERROR_DUPLICATE))
 			}
 		}
 	}
+
+	var longList LongList
 
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
@@ -103,15 +105,19 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 				var objectInstanceIdentifier = rand.Int63n(int64(LONG_MAX))
 				boolean, err := isObjectInstanceIdentifierInDatabase(archiveDatabase, objectInstanceIdentifier)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if !boolean {
 					// OK, we can insert the object with this instance identifier
 					// This object is not present in the archive
 					err := insertInDatabase(archiveDatabase, objectInstanceIdentifier, elementList.GetElementAt(i))
 					if err != nil {
-						return err
+						return nil, err
 					}
+
+					// Insert this new object instance identifier in the returned list
+					longList = append(longList, NewLong(objectInstanceIdentifier))
+
 					break
 				}
 			}
@@ -119,12 +125,15 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			// This object is not present in the archive
 			err := insertInDatabase(archiveDatabase, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i))
 			if err != nil {
-				return err
+				return nil, err
 			}
+
+			// Insert this new object instance identifier in the returned list
+			longList = append(longList, &archiveDetailsList[i].InstId)
 		}
 	}
 
-	return nil
+	return longList, nil
 }
 
 func isObjectInstanceIdentifierInDatabase(archiveDatabase *ArchiveDatabase, objectInstanceIdentifier int64) (bool, error) {

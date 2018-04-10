@@ -81,19 +81,9 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 	}
 	defer archiveDatabase.db.Close()
 
-	// TODO : WARNING -> We MUST do a roll back if a "DUPLICATE" error occurs (none
-	// of the objects have to be stored)
-	for i := 0; i < archiveDetailsList.Size(); i++ {
-		if archiveDetailsList[i].InstId != 0 {
-			// We must verify if the object instance identifier is not already present in the table
-			boolean, err := isObjectInstanceIdentifierInDatabase(archiveDatabase, int64(archiveDetailsList[i].InstId))
-			if err != nil {
-				return nil, err
-			}
-			if boolean {
-				return nil, errors.New(string(COM_ERROR_DUPLICATE))
-			}
-		}
+	tx, err := archiveDatabase.db.Begin()
+	if err != nil {
+		return nil, err
 	}
 
 	var longList LongList
@@ -103,15 +93,16 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			// We have to create a new and unused object instance identifier
 			for {
 				var objectInstanceIdentifier = rand.Int63n(int64(LONG_MAX))
-				boolean, err := isObjectInstanceIdentifierInDatabase(archiveDatabase, objectInstanceIdentifier)
+				boolean, err := isObjectInstanceIdentifierInDatabase(tx, objectInstanceIdentifier)
 				if err != nil {
+					tx.Rollback()
 					return nil, err
 				}
 				if !boolean {
 					// OK, we can insert the object with this instance identifier
-					// This object is not present in the archive
-					err := insertInDatabase(archiveDatabase, objectInstanceIdentifier, elementList.GetElementAt(i))
+					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i))
 					if err != nil {
+						tx.Rollback()
 						return nil, err
 					}
 
@@ -122,9 +113,21 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 				}
 			}
 		} else {
-			// This object is not present in the archive
-			err := insertInDatabase(archiveDatabase, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i))
+			// We must verify if the object instance identifier is not already present in the table
+			boolean, err := isObjectInstanceIdentifierInDatabase(tx, int64(archiveDetailsList[i].InstId))
 			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+			if boolean {
+				tx.Rollback()
+				return nil, errors.New(string(COM_ERROR_DUPLICATE))
+			}
+
+			// This object is not present in the archive
+			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i))
+			if err != nil {
+				tx.Rollback()
 				return nil, err
 			}
 
@@ -133,21 +136,24 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 		}
 	}
 
+	// TODO: try to do a rollack
+	tx.Commit()
+
 	return longList, nil
 }
 
-func isObjectInstanceIdentifierInDatabase(archiveDatabase *ArchiveDatabase, objectInstanceIdentifier int64) (bool, error) {
-	statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
+func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier int64) (bool, error) {
+	/*statementVerify, err := archiveDatabase.db.Prepare("SELECT objectInstanceIdentifier FROM " + TABLE + " WHERE objectInstanceIdentifier = ? ")
 	if err != nil {
 		return false, err
 	}
-	defer statementVerify.Close()
+	defer statementVerify.Close()*/
 
 	// Execute the query
 	// Before, create a variable to retrieve the result
 	var queryReturn int
 	// Then, execute the query
-	err = statementVerify.QueryRow(objectInstanceIdentifier).Scan(&queryReturn)
+	err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", objectInstanceIdentifier).Scan(&queryReturn)
 	if err != nil {
 		if err.Error() != "sql: no rows in result set" {
 			return false, err
@@ -157,14 +163,15 @@ func isObjectInstanceIdentifierInDatabase(archiveDatabase *ArchiveDatabase, obje
 	return true, nil
 }
 
-func insertInDatabase(archiveDatabase *ArchiveDatabase, objectInstanceIdentifier int64, element Element) error {
-	statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
+func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element) error {
+	/*statementStore, err := archiveDatabase.db.Prepare("INSERT INTO " + TABLE + " VALUES ( NULL , ? , ? )")
 	if err != nil {
 		return err
 	}
-	defer statementStore.Close()
+	defer statementStore.Close()*/
 
-	_, err = statementStore.Exec(objectInstanceIdentifier, element)
+	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? )", objectInstanceIdentifier, element)
+	//_, err = statementStore.Exec(objectInstanceIdentifier, element)
 	if err != nil {
 		return err
 	}

@@ -145,16 +145,20 @@ func main() {
 		case "store":
 			// Start the store consumer
 			// Create parameters
+			// Object that's going to be stored in the archive
+			var elementList = NewLongList(1)
+			(*elementList)[0] = NewLong(29)
+
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(archiveService.ServiceNumber),
+				UShort(elementList.GetShortForm()),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(13)
+			var objectInstanceIdentifier = *NewLong(0)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,
@@ -172,8 +176,6 @@ func main() {
 			var fineTime = NewFineTime(time.Now())
 			var uri = NewURI("main/start")
 			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
-			var elementList = NewLongList(1)
-			(*elementList)[0] = NewLong(29)
 
 			// Variable to retrieve the return of this function
 			var longList *LongList

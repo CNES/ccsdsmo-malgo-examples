@@ -81,11 +81,13 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 	}
 	defer archiveDatabase.db.Close()
 
+	// Create the transaction (me have to use this method to use rollback and commit)
 	tx, err := archiveDatabase.db.Begin()
 	if err != nil {
 		return nil, err
 	}
 
+	// Variable to return all the object instance identifiers
 	var longList LongList
 
 	for i := 0; i < archiveDetailsList.Size(); i++ {
@@ -95,6 +97,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 				var objectInstanceIdentifier = rand.Int63n(int64(LONG_MAX))
 				boolean, err := isObjectInstanceIdentifierInDatabase(tx, objectInstanceIdentifier)
 				if err != nil {
+					// An error occurred, do a rollback
 					tx.Rollback()
 					return nil, err
 				}
@@ -102,6 +105,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 					// OK, we can insert the object with this instance identifier
 					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i))
 					if err != nil {
+						// An error occurred, do a rollback
 						tx.Rollback()
 						return nil, err
 					}
@@ -116,10 +120,12 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			// We must verify if the object instance identifier is not already present in the table
 			boolean, err := isObjectInstanceIdentifierInDatabase(tx, int64(archiveDetailsList[i].InstId))
 			if err != nil {
+				// An error occurred, do a rollback
 				tx.Rollback()
 				return nil, err
 			}
 			if boolean {
+				// An error occurred, do a rollback
 				tx.Rollback()
 				return nil, errors.New(string(COM_ERROR_DUPLICATE))
 			}
@@ -127,6 +133,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			// This object is not present in the archive
 			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i))
 			if err != nil {
+				// An error occurred, do a rollback
 				tx.Rollback()
 				return nil, err
 			}
@@ -136,7 +143,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 		}
 	}
 
-	// TODO: try to do a rollack
+	// Commit changes
 	tx.Commit()
 
 	return longList, nil

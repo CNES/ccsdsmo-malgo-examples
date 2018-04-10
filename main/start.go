@@ -31,7 +31,7 @@ import (
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
-	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
+
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/service"
 	. "github.com/etiennelndr/archiveservice/data"
@@ -236,5 +236,6 @@ func main() {
 		fmt.Println("ERROR: sthg unwanted happened,", err)
 	} else if errorsList != nil {
 		fmt.Println(*errorsList.ErrorNumber)
+		fmt.Println(*errorsList.ErrorComment)
 	}
 }

@@ -31,6 +31,7 @@ import (
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
+
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/data"
 
@@ -52,6 +53,30 @@ const (
 	TABLE    = "Archive"
 )
 
+//======================================================================//
+//                            RETRIEVE                                  //
+//======================================================================//
+func RetrieveInArchive() error {
+	return nil
+}
+
+//======================================================================//
+//                              QUERY                                   //
+//======================================================================//
+func QueryArchive() error {
+	return nil
+}
+
+//======================================================================//
+//                              COUNT                                   //
+//======================================================================//
+func CountInArchive() error {
+	return nil
+}
+
+//======================================================================//
+//                              STORE                                   //
+//======================================================================//
 // StoreInArchive : Use this function to store objects in an COM archive
 func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (LongList, error) {
 	rand.Seed(time.Now().UnixNano())
@@ -85,7 +110,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 				}
 				if !boolean {
 					// OK, we can insert the object with this instance identifier
-					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i))
+					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i), objectType, identifier)
 					if err != nil {
 						// An error occurred, do a rollback
 						tx.Rollback()
@@ -113,7 +138,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 			}
 
 			// This object is not present in the archive
-			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i))
+			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i), objectType, identifier)
 			if err != nil {
 				// An error occurred, do a rollback
 				tx.Rollback()
@@ -131,6 +156,21 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 	return longList, nil
 }
 
+//======================================================================//
+//                              UPDATE                                  //
+//======================================================================//
+func UpdateArchive() error {
+	return nil
+}
+
+//======================================================================//
+//                              DELETE                                  //
+//======================================================================//
+func DeleteInArchive() error {
+	return nil
+}
+
+// This function allows to verify if an instance of an object is already in the archive
 func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier int64) (bool, error) {
 	// Execute the query
 	// Before, create a variable to retrieve the result
@@ -146,8 +186,16 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 	return true, nil
 }
 
-func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element) error {
-	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? )", objectInstanceIdentifier, element)
+// This function allows insert an element in the archive
+func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element, objectType ObjectType, identifier IdentifierList) error {
+
+	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? , ? , ? , ? , ? , ? )",
+		objectInstanceIdentifier,
+		element,
+		objectType.Area,
+		objectType.Service,
+		objectType.Version,
+		objectType.Number)
 	if err != nil {
 		return err
 	}

@@ -117,26 +117,9 @@ func (provider *Provider) retrieveHandler() error {
 			}
 
 			// ----- Verify the parameters -----
-			// Verify ObjectType values (all of its attributes must not be equal to '0')
-			if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-				// TODO: we must send an INVALID error to the consumer
-				fmt.Println("ERROR: INVALID")
-			}
-
-			// Verify IdentifierList
-			for i := 0; i < identifierList.Size(); i++ {
-				if *(*identifierList)[i] == "*" {
-					// TODO: we must send an INVALID error to the consumer
-					fmt.Println("ERROR: INVALID")
-				}
-			}
-
-			// Verify LongList
-			for i := 0; i < identifierList.Size(); i++ {
-				if *(*longList)[i] == 0 {
-					// TODO: we must send an INVALID error to the consumer
-					fmt.Println("ERROR: INVALID")
-				}
+			err = provider.retrieveVerifyParameters(transaction, objectType, identifierList, longList)
+			if err != nil {
+				return err
 			}
 
 			// ----- Call Ack operation -----
@@ -160,7 +143,7 @@ func (provider *Provider) retrieveHandler() error {
 			// ----- Call Response operation -----
 			err = provider.retrieveResponse(transaction, archiveDetailsList, elementList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.retrieveResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE, NewLongList(0))
 				return err
 			}
 		}
@@ -168,6 +151,7 @@ func (provider *Provider) retrieveHandler() error {
 		return nil
 	}
 
+	// Register the handler
 	err := provider.cctx.RegisterInvokeHandler(COM_AREA_NUMBER,
 		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
@@ -175,6 +159,27 @@ func (provider *Provider) retrieveHandler() error {
 		retrieveHandler)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// VERIFY PARAMETERS
+func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction, objectType *ObjectType, identifierList *IdentifierList, longList *LongList) error {
+	// Verify ObjectType values (all of its attributes must not be equal to '0')
+	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
+		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
+		provider.retrieveResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
+		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
+	}
+
+	// Verify IdentifierList
+	for i := 0; i < identifierList.Size(); i++ {
+		if *(*identifierList)[i] == "*" {
+			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
+			provider.retrieveResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
+			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
+		}
 	}
 
 	return nil
@@ -214,6 +219,25 @@ func (provider *Provider) retrieveAck(transaction InvokeTransaction) error {
 	return nil
 }
 
+// ACK ERROR
+func (provider *Provider) retrieveAckError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Ack operation with Error status
+	err = transaction.Ack(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // RESPONSE
 func (provider *Provider) retrieveResponse(transaction InvokeTransaction, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -229,6 +253,25 @@ func (provider *Provider) retrieveResponse(transaction InvokeTransaction, archiv
 	}
 
 	transaction.Reply(encoder.Body(), false)
+
+	return nil
+}
+
+// RESPONSE ERROR
+func (provider *Provider) retrieveResponseError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Response operation with Error status
+	err = transaction.Reply(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -321,6 +364,7 @@ func (provider *Provider) queryHandler() error {
 		return nil
 	}
 
+	// Register the handler
 	err := provider.cctx.RegisterProgressHandler(COM_AREA_NUMBER,
 		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
@@ -515,6 +559,7 @@ func (provider *Provider) countHandler() error {
 		return nil
 	}
 
+	// Register the handler
 	err := provider.cctx.RegisterInvokeHandler(COM_AREA_NUMBER,
 		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
@@ -641,7 +686,7 @@ func (provider *Provider) storeHandler() error {
 				if err.Error() == string(COM_ERROR_DUPLICATE) {
 					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
 				} else {
-					provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE, NewLongList(0))
+					provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				}
 				return err
 			}
@@ -656,8 +701,7 @@ func (provider *Provider) storeHandler() error {
 			// Call Response operation
 			err = provider.storeResponse(transaction, &longList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
-				provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE, NewLongList(0))
+				provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 		}
@@ -665,6 +709,7 @@ func (provider *Provider) storeHandler() error {
 		return nil
 	}
 
+	// Register the handler
 	err := provider.cctx.RegisterRequestHandler(COM_AREA_NUMBER,
 		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
@@ -858,6 +903,7 @@ func (provider *Provider) updateHandler() error {
 		return nil
 	}
 
+	// Register the handler
 	err := provider.cctx.RegisterSubmitHandler(COM_AREA_NUMBER,
 		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
@@ -969,6 +1015,7 @@ func (provider *Provider) deleteHandler() error {
 		return nil
 	}
 
+	// Register the handler
 	err := provider.cctx.RegisterRequestHandler(COM_AREA_NUMBER,
 		COM_AREA_VERSION,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,

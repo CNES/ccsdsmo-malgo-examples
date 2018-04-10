@@ -31,6 +31,8 @@ import (
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
+	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
+
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/consumer"
 	. "github.com/etiennelndr/archiveservice/archive/provider"

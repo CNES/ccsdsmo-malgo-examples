@@ -148,13 +148,12 @@ func main() {
 			// Object that's going to be stored in the archive
 			var elementList = NewLongList(1)
 			(*elementList)[0] = NewLong(29)
-
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(elementList.GetShortForm()),
+				UShort((*elementList)[0].GetShortForm()),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			// Object instance identifier

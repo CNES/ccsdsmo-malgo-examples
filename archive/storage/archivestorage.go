@@ -26,11 +26,13 @@ package storage
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"math/rand"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
+	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/data"
@@ -38,14 +40,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// ArchiveDatabase :
-type ArchiveDatabase struct {
-	db       *sql.DB
-	username string
-	password string
-	database string
-}
-
+// Database ids
 const (
 	USERNAME = "archiveService"
 	PASSWORD = "1a2B3c4D!@?"
@@ -56,14 +51,59 @@ const (
 //======================================================================//
 //                            RETRIEVE                                  //
 //======================================================================//
-func RetrieveInArchive() error {
-	return nil
+func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInstanceIdentifiers LongList) (ArchiveDetailsList, ElementList, error) {
+	fmt.Println("IN: RetrieveInArchive")
+	// Create the transaction to execute future queries
+	db, tx, err := createTransaction()
+	if err != nil {
+		return nil, nil, err
+	}
+	defer db.Close()
+
+	// Create variables to return the elements and information
+	var archiveDetailsList ArchiveDetailsList
+	var elementList ElementList
+	// Then, retrieve these elements and their information
+	for i := 0; i < objectInstanceIdentifiers.Size(); i++ {
+		// Variables to store the different elements present in the database
+		var objectInstanceIdentifier Long
+		var encodedObjectDetails []byte
+		var encodedElement []byte
+
+		// We can retrieve this object
+		err = tx.QueryRow("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", objectInstanceIdentifier).Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails)
+		if err != nil {
+			if err.Error() == "sql: no rows in result set" {
+				return nil, nil, errors.New("UNKNOWN")
+			}
+			return nil, nil, err
+		}
+
+		archiveDetails, element, err := decodeRetrieveElements(objectInstanceIdentifier, encodedObjectDetails, encodedElement)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		archiveDetailsList = append(archiveDetailsList, archiveDetails)
+		elementList = append(elementList, element)
+
+	}
+
+	return nil, nil, nil
 }
 
 //======================================================================//
 //                              QUERY                                   //
 //======================================================================//
 func QueryArchive() error {
+	// Create the transaction to execute future queries
+	db, tx, err := createTransaction()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	fmt.Println(tx)
+
 	return nil
 }
 
@@ -71,6 +111,15 @@ func QueryArchive() error {
 //                              COUNT                                   //
 //======================================================================//
 func CountInArchive() error {
+	// Create the transaction to execute future queries
+	db, tx, err := createTransaction()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	fmt.Println(tx)
+
 	return nil
 }
 
@@ -78,26 +127,47 @@ func CountInArchive() error {
 //                              STORE                                   //
 //======================================================================//
 // StoreInArchive : Use this function to store objects in an COM archive
-func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (LongList, error) {
+func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (LongList, error) {
 	rand.Seed(time.Now().UnixNano())
 
-	// Create the handle
-	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE)
+	// Create the transaction to execute future queries
+	db, tx, err := createTransaction()
 	if err != nil {
 		return nil, err
 	}
 	defer db.Close()
 
-	// Create the transaction (me have to use this method to use rollback and commit)
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
 	// Variable to return all the object instance identifiers
 	var longList LongList
 
+	// Create the domain (It might change in the future)
+	domain := adaptDomain(identifierList)
+
 	for i := 0; i < archiveDetailsList.Size(); i++ {
+		// First of all, we need to encode the element and the objectDetails
+		factory := new(FixedBinaryEncoding)
+
+		// Create the encoder
+		encoder := factory.NewEncoder(make([]byte, 0, 8192))
+
+		// Encode the Element
+		err := encoder.EncodeAbstractElement(elementList.GetElementAt(i))
+		if err != nil {
+			return nil, err
+		}
+		encodedElement := encoder.Body()
+
+		// Reallocate the encoder
+		encoder = factory.NewEncoder(make([]byte, 0, 8192))
+
+		// Encode the ObjectDetails
+		err = archiveDetailsList[i].Details.Encode(encoder)
+		if err != nil {
+			return nil, err
+		}
+		encodedObjectDetails := encoder.Body()
+
+		//encoder := factory.
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
 			for {
@@ -110,7 +180,7 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 				}
 				if !boolean {
 					// OK, we can insert the object with this instance identifier
-					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i), objectType, identifier)
+					err := insertInDatabase(tx, objectInstanceIdentifier, encodedElement, objectType, domain, encodedObjectDetails)
 					if err != nil {
 						// An error occurred, do a rollback
 						tx.Rollback()
@@ -132,13 +202,13 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 				return nil, err
 			}
 			if boolean {
-				// An error occurred, do a rollback
+				// This object is already in the database, do a rollback and raise a DUPLICATE error
 				tx.Rollback()
 				return nil, errors.New(string(COM_ERROR_DUPLICATE))
 			}
 
 			// This object is not present in the archive
-			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i), objectType, identifier)
+			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), encodedElement, objectType, domain, encodedObjectDetails)
 			if err != nil {
 				// An error occurred, do a rollback
 				tx.Rollback()
@@ -160,6 +230,15 @@ func StoreInArchive(objectType ObjectType, identifier IdentifierList, archiveDet
 //                              UPDATE                                  //
 //======================================================================//
 func UpdateArchive() error {
+	// Create the transaction to execute future queries
+	db, tx, err := createTransaction()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	fmt.Println(tx)
+
 	return nil
 }
 
@@ -167,7 +246,35 @@ func UpdateArchive() error {
 //                              DELETE                                  //
 //======================================================================//
 func DeleteInArchive() error {
+	// Create the transaction to execute future queries
+	db, tx, err := createTransaction()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	fmt.Println(tx)
+
 	return nil
+}
+
+//======================================================================//
+//                          GLOBAL FUNCTIONS                            //
+//======================================================================//
+func createTransaction() (*sql.DB, *sql.Tx, error) {
+	// Create the handle
+	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Create the transaction (me have to use this method to use rollback and commit)
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, tx, nil
 }
 
 // This function allows to verify if an instance of an object is already in the archive
@@ -187,17 +294,63 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 }
 
 // This function allows insert an element in the archive
-func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element, objectType ObjectType, identifier IdentifierList) error {
-
-	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? , ? , ? , ? , ? , ? )",
+func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element []byte, objectType ObjectType, domain String, objectDetails []byte) error {
+	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? , ? , ? , ? , ? , ? , ? )",
 		objectInstanceIdentifier,
 		element,
 		objectType.Area,
 		objectType.Service,
 		objectType.Version,
-		objectType.Number)
+		objectType.Number,
+		domain,
+		objectDetails)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+// TODO: might change in the future
+func adaptDomain(identifierList IdentifierList) String {
+	// Create the domain (It might change in the future)
+	var domain String
+	domain += "/"
+	for i := 0; i < identifierList.Size(); i++ {
+		domain += String(*identifierList.GetElementAt(i).(*Identifier))
+		domain += "/"
+	}
+
+	return domain
+}
+
+func decodeRetrieveElements(objectInstanceIdentifier Long, _objectDetails []byte, _element []byte) (*ArchiveDetails, Element, error) {
+	// Create the factory
+	factory := new(FixedBinaryEncoding)
+
+	// Create the decoder
+	decoder := factory.NewDecoder(_objectDetails)
+
+	// Decode the ArchiveDetails
+	elem, err := decoder.DecodeElement(NullObjectDetails)
+	if err != nil {
+		return nil, nil, err
+	}
+	objectDetails := elem.(*ObjectDetails)
+
+	// Reallocate the decoder
+	decoder = factory.NewDecoder(_element)
+
+	// Decode the Element
+	element, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Create the new elements
+	archiveDetails := &ArchiveDetails{
+		InstId:  objectInstanceIdentifier,
+		Details: *objectDetails,
+	}
+
+	return archiveDetails, element, nil
 }

@@ -74,7 +74,7 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 		err = tx.QueryRow("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", objectInstanceIdentifier).Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails)
 		if err != nil {
 			if err.Error() == "sql: no rows in result set" {
-				return nil, nil, errors.New("UNKNOWN")
+				return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
 			}
 			return nil, nil, err
 		}
@@ -237,7 +237,48 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 	}
 	defer db.Close()
 
-	fmt.Println(tx)
+	// Create the domain (It might change in the future)
+	domain := adaptDomain(identifierList)
+
+	for i := 0; i < elementList.Size(); i++ {
+		// First of all, we need to verify if the object instance identifier, combined with the object type
+		// and the domain are in the archive
+		var queryReturn int
+		err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			archiveDetailsList[i].InstId,
+			objectType.Area,
+			objectType.Service,
+			objectType.Version,
+			objectType.Number,
+			domain).Scan(&queryReturn)
+		if err != nil {
+			if err.Error() == "sql: no rows in result set" {
+				return errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+			}
+			return err
+		}
+
+		// TODO: Encode element and objectDetails
+		element, objectDetails, err := encodeUpdateElements(elementList.GetElementAt(i), archiveDetailsList[i].Details)
+
+		// If no error, the object is in the archive and we can update it
+		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ? AND objectDetails = ? WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			element,
+			objectDetails,
+			archiveDetailsList[i].InstId,
+			objectType.Area,
+			objectType.Service,
+			objectType.Version,
+			objectType.Number,
+			domain)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// Commit changes
+	tx.Commit()
 
 	return nil
 }
@@ -353,4 +394,31 @@ func decodeRetrieveElements(objectInstanceIdentifier Long, _objectDetails []byte
 	}
 
 	return archiveDetails, element, nil
+}
+
+func encodeUpdateElements(_element Element, _objectDetails ObjectDetails) ([]byte, []byte, error) {
+	// Create the factory
+	factory := new(FixedBinaryEncoding)
+
+	// Create the encoder
+	encoder := factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode Element
+	err := encoder.EncodeAbstractElement(_element)
+	if err != nil {
+		return nil, nil, err
+	}
+	element := encoder.Body()
+
+	// Reallocate the encoder
+	encoder = factory.NewEncoder(make([]byte, 0, 8192))
+
+	// Encode ObjectDetails
+	err = _objectDetails.Encode(encoder)
+	if err != nil {
+		return nil, nil, err
+	}
+	objectDetails := encoder.Body()
+
+	return element, objectDetails, nil
 }

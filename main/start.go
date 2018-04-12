@@ -85,7 +85,7 @@ func main() {
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			var longList = LongList([]*Long{NewLong(29), NewLong(31)})
 
-			// // Variables to retrieve the return of this function
+			// Variables to retrieve the return of this function
 			var archiveDetailsList *ArchiveDetailsList
 			var elementList ElementList
 			// Start the consumer

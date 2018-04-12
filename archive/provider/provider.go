@@ -1080,6 +1080,10 @@ func (provider *Provider) deleteHandler() error {
 			}
 
 			// ----- Verify the parameters -----
+			err = provider.deleteVerifyParameters(transaction, *objectType, *identifierList)
+			if err != nil {
+				return err
+			}
 
 			// TODO (AF): do sthg with these objects
 			fmt.Println("DeleteHandler received:\n\t>>>",
@@ -1087,15 +1091,21 @@ func (provider *Provider) deleteHandler() error {
 				identifierList, "\n\t>>>",
 				longListRequest)
 
-			// Hold on dude, wait a little
-			time.Sleep(SLEEP_TIME * time.Millisecond)
+			// Delete these objects
+			longListResponse, err := DeleteInArchive(*objectType, *identifierList, *longListRequest)
+			if err != nil {
+				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
+					provider.deleteResponseError(transaction, MAL_ERROR_UNKNOWN, MAL_ERROR_UNKNOWN_MESSAGE, NewLongList(0))
+				} else {
+					provider.deleteResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				}
+				return err
+			}
 
-			// This variable will be created automatically in the future
-			var longListResponse = new(LongList)
 			// Call Response operation
 			err = provider.deleteResponse(transaction, longListResponse)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.deleteResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 		}
@@ -1117,6 +1127,25 @@ func (provider *Provider) deleteHandler() error {
 }
 
 // VERIFY PARAMETERS
+func (provider *Provider) deleteVerifyParameters(transaction RequestTransaction, objectType ObjectType, identifierList IdentifierList) error {
+	// Verify ObjectType values (all of its attributes must not be equal to '0')
+	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
+		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
+		provider.deleteResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
+		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
+	}
+
+	// Verify IdentifierList
+	for i := 0; i < identifierList.Size(); i++ {
+		if *(identifierList)[i] == "*" {
+			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
+			provider.deleteResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
+			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
+		}
+	}
+
+	return nil
+}
 
 // REQUEST
 func (provider *Provider) deleteRequest(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
@@ -1165,3 +1194,20 @@ func (provider *Provider) deleteResponse(transaction RequestTransaction, longLis
 }
 
 // RESPONSE ERROR
+func (provider *Provider) deleteResponseError(transaction RequestTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Response operation with Error status
+	err = transaction.Reply(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

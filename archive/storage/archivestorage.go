@@ -286,17 +286,65 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 //======================================================================//
 //                              DELETE                                  //
 //======================================================================//
-func DeleteInArchive() error {
+func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longListRequest LongList) (*LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer db.Close()
 
-	fmt.Println(tx)
+	// Variable to return
+	var longList *LongList
 
-	return nil
+	// Create the domain (It might change in the future)
+	domain := adaptDomain(identifierList)
+
+	// Variable to say if we have to delete all of the objects or not
+	var isAll = false
+	for i := 0; i < longListRequest.Size(); i++ {
+		if *longListRequest[i] == 0 {
+			isAll = true
+			break
+		}
+	}
+
+	if isAll {
+		// Retrieve the objectInstanceIdentifier
+		rows, err := tx.Query("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			objectType.Area,
+			objectType.Service,
+			objectType.Version,
+			objectType.Number,
+			domain)
+		for rows.Next() {
+			var instID *Long
+			if err = rows.Scan(instID); err != nil {
+				return nil, err
+			}
+
+			*longList = append(*longList, instID)
+		}
+
+		// Delete all these objects
+		_, err = tx.Exec("DELETE FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			objectType.Area,
+			objectType.Service,
+			objectType.Version,
+			objectType.Number,
+			domain)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
+	} else {
+
+	}
+
+	// Commit changes
+	tx.Commit()
+
+	return longList, nil
 }
 
 //======================================================================//
@@ -305,6 +353,12 @@ func DeleteInArchive() error {
 func createTransaction() (*sql.DB, *sql.Tx, error) {
 	// Create the handle
 	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Validate DSN data
+	err = db.Ping()
 	if err != nil {
 		return nil, nil, err
 	}

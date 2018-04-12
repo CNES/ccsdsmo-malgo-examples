@@ -24,6 +24,8 @@
 package consumer
 
 import (
+	"fmt"
+
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -530,10 +532,14 @@ func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 	// Call Request function and retrieve the Response
 	longList, errorsList, err := consumer.storeRequest(boolean, objectType, identifierList, archiveDetailsList, elementList)
 	if err != nil {
-		return nil, nil, nil, err
+		fmt.Println("err")
+		return consumer, nil, nil, err
+	} else if errorsList != nil {
+		fmt.Println("errorsList")
+		return consumer, nil, errorsList, nil
 	}
 
-	return consumer, longList, errorsList, nil
+	return consumer, longList, nil, nil
 }
 
 // Request & Response
@@ -605,58 +611,72 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 //								UPDATE									//
 //======================================================================//
 // StartUpdateConsumer : TODO
-func StartUpdateConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*SubmitConsumer, error) {
+func StartUpdateConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*SubmitConsumer, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createSubmitConsumer(url, providerURI, "consumerUpdate", OPERATION_IDENTIFIER_UPDATE)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Call Submit function
-	err = consumer.updateSubmit(objectType, identifierList, archiveDetailsList, elementList)
+	errorsList, err := consumer.updateSubmit(objectType, identifierList, archiveDetailsList, elementList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	} else if errorsList != nil {
+		return nil, errorsList, nil
 	}
 
-	return consumer, nil
+	return consumer, nil, nil
 }
 
 // Submit & Ack
-func (consumer *SubmitConsumer) updateSubmit(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+func (consumer *SubmitConsumer) updateSubmit(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectType
 	err := objectType.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode IdentifierList
 	err = identifierList.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode ArchiveDetailsList
 	err = archiveDetailsList.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode ElementList
 	err = encoder.EncodeAbstractElement(elementList)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Call Submit operation
-	_, err = consumer.op.Submit(encoder.Body())
+	resp, err := consumer.op.Submit(encoder.Body())
 	if err != nil {
-		return err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, err
+			}
+
+			return errorsList, nil
+		}
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 //======================================================================//

@@ -157,7 +157,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(0)
+			var objectInstanceIdentifier = *NewLong(13)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,
@@ -188,18 +188,42 @@ func main() {
 		case "update":
 			// Start the update consumer
 			// Create parameters
+			// ---- ELEMENTLIST ----
+			// Object that's going to be updated in the archive
+			var elementList = NewLongList(1)
+			(*elementList)[0] = NewLong(29)
+			// ---- OBJECTTYPE ----
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(archiveService.ServiceNumber),
+				UShort((*elementList)[0].GetShortForm()),
 			}
+			// ---- IDENTIFIERLIST ----
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
-			var archiveDetailsList = NewArchiveDetailsList(10)
-			var elementList = NewLongList(10)
+			// Object instance identifier
+			var objectInstanceIdentifier = *NewLong(13)
+			// Variables for ArchiveDetailsList
+			// ---- ARCHIVEDETAILSLIST ----
+			var objectKey = ObjectKey{
+				identifierList,
+				objectInstanceIdentifier,
+			}
+			var objectID = ObjectId{
+				&objectType,
+				&objectKey,
+			}
+			var objectDetails = ObjectDetails{
+				Related: NewLong(1),
+				Source:  &objectID,
+			}
+			var network = NewIdentifier("network")
+			var fineTime = NewFineTime(time.Now())
+			var uri = NewURI("main/start")
+			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
 
 			// Start the consumer
-			err = archiveService.LaunchUpdateConsumer(objectType, identifierList, *archiveDetailsList, elementList)
+			errorsList, err = archiveService.LaunchUpdateConsumer(objectType, identifierList, archiveDetailsList, elementList)
 
 			break
 		case "delete":

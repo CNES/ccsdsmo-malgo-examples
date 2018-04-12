@@ -167,16 +167,18 @@ func (archiveService *ArchiveService) LaunchStoreConsumer(boolean Boolean, objec
 		elementList)
 	if err != nil {
 		return nil, nil, err
+	} else if errorsList != nil {
+		return nil, errorsList, nil
 	}
 
 	// Close the consumer
 	consumer.Close()
 
-	return longList, errorsList, nil
+	return longList, nil, nil
 }
 
 // LaunchUpdateConsumer : TODO
-func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Update Consumer")
@@ -184,20 +186,22 @@ func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType
 	// IN
 	var providerURI = NewURI(providerURLUpdate)
 	// OUT
-	consumer, err := StartUpdateConsumer(consumerURL,
+	consumer, errorsList, err := StartUpdateConsumer(consumerURL,
 		providerURI,
 		objectType,
 		identifierList,
 		archiveDetailsList,
 		elementList)
 	if err != nil {
-		return err
+		return nil, err
+	} else if errorsList != nil {
+		return errorsList, nil
 	}
 
 	// Close the consumer
 	consumer.Close()
 
-	return nil
+	return nil, nil
 }
 
 // LaunchDeleteConsumer : TODO

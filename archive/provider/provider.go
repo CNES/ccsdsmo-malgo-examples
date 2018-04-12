@@ -137,7 +137,17 @@ func (provider *Provider) retrieveHandler() error {
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
 				longList)
+
+			// Retrieve these objects in the archive
 			archiveDetailsList, elementList, err := RetrieveInArchive(*objectType, *identifierList, *longList)
+			if err != nil {
+				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
+					provider.retrieveAckError(transaction, MAL_ERROR_UNKNOWN, MAL_ERROR_UNKNOWN_MESSAGE, NewLongList(0))
+				} else {
+					provider.retrieveAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				}
+				return err
+			}
 
 			// ----- Call Response operation -----
 			err = provider.retrieveResponse(transaction, &archiveDetailsList, elementList)
@@ -670,9 +680,7 @@ func (provider *Provider) storeHandler() error {
 			// Call Request operation
 			boolean, objectType, identifierList, archiveDetailsList, elementList, err := provider.storeRequest(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
 				provider.storeResponseError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLong(0))
-				fmt.Println(err)
 				return err
 			}
 
@@ -693,6 +701,7 @@ func (provider *Provider) storeHandler() error {
 				archiveDetailsList, "\n\t>>>",
 				elementList)
 
+			// Store these objects in the archive
 			var longList LongList
 			longList, err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
@@ -894,7 +903,7 @@ func (provider *Provider) updateHandler() error {
 			// Call Submit operation
 			objectType, identifierList, archiveDetailsList, elementList, err := provider.updateSubmit(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.updateAckError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLong(0))
 				return err
 			}
 
@@ -904,19 +913,30 @@ func (provider *Provider) updateHandler() error {
 				return err
 			}
 
-			// Call Ack operation
-			err = provider.updateAck(transaction)
-			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
-				return err
-			}
-
 			// TODO (AF): do sthg with these objects
 			fmt.Println("UpdateHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
 				archiveDetailsList, "\n\t>>>",
 				elementList)
+
+			// Update these objects
+			err = UpdateArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
+			if err != nil {
+				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
+					provider.updateAckError(transaction, MAL_ERROR_UNKNOWN, MAL_ERROR_UNKNOWN_MESSAGE, NewLongList(0))
+				} else {
+					provider.updateAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				}
+				return err
+			}
+
+			// Call Ack operation
+			err = provider.updateAck(transaction)
+			if err != nil {
+				provider.updateAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				return err
+			}
 		}
 
 		return nil

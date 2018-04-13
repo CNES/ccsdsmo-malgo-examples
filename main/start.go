@@ -41,6 +41,35 @@ import (
 func main() {
 	args := os.Args[1:]
 
+	var _list = MAL_SHORT_LIST_SHORT_FORM
+	var _type = MAL_SHORT_SHORT_FORM
+	fmt.Println(_list)
+	fmt.Println(_type)
+	fmt.Println(_list - _type)
+
+	fmt.Printf("BEFORE:\n%08b\n", _type)
+	quatuor5 := (MAL_SHORT_SHORT_FORM & 0x0000F0) >> 4
+	fmt.Println(quatuor5)
+	var listByte []byte
+	listByte = append(listByte, 1, 0, 0, 1)
+	if quatuor5 == 0x0 {
+		var b byte
+		for i := 2; i >= 0; i-- {
+			b = byte(_type>>uint(i*8)) ^ 255
+			if i == 0 {
+				b++
+			}
+			listByte = append(listByte, b)
+		}
+	} else {
+
+	}
+
+	var finalListType = uint64(listByte[0]) << 42
+	finalListType &= uint64(listByte[0]) << 36
+	fmt.Printf("%08b\n", finalListType)
+	fmt.Printf("%08b\n", _list)
+
 	if len(args) < 1 || len(args) > 2 {
 		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|[consumer] [retrieve|query|count|store|update|delete]]")
 		return
@@ -80,16 +109,16 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(archiveService.ServiceNumber),
+				UShort(MAL_LONG_TYPE_SHORT_FORM),
 			}
-			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
-			var longList = LongList([]*Long{NewLong(29), NewLong(31)})
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+			var longList = LongList([]*Long{NewLong(29)})
 
 			// Variables to retrieve the return of this function
 			var archiveDetailsList *ArchiveDetailsList
 			var elementList ElementList
 			// Start the consumer
-			archiveDetailsList, elementList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
+			archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
 
 			fmt.Println("Retrieve Consumer received:\n\t>>>", archiveDetailsList, "\n\t>>>", elementList)
 
@@ -102,7 +131,7 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(archiveService.ServiceNumber),
+				UShort(MAL_LONG_TYPE_SHORT_FORM),
 			}
 			var archiveQueryList = NewArchiveQueryList(10)
 			var queryFilterList = NewCompositeFilterSetList(10)
@@ -153,11 +182,11 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort((*elementList)[0].GetShortForm()),
+				UShort((*elementList)[0].GetTypeShortForm()),
 			}
-			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(13)
+			var objectInstanceIdentifier = *NewLong(10)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,
@@ -197,10 +226,10 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort((*elementList)[0].GetShortForm()),
+				UShort((*elementList)[0].GetTypeShortForm()),
 			}
 			// ---- IDENTIFIERLIST ----
-			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
 			var objectInstanceIdentifier = *NewLong(13)
 			// Variables for ArchiveDetailsList
@@ -233,15 +262,15 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(archiveService.ServiceNumber),
+				UShort(MAL_LONG_TYPE_SHORT_FORM),
 			}
-			var identifierList = IdentifierList([]*Identifier{NewIdentifier("test"), NewIdentifier("archiveService")})
+			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			var longList = NewLongList(10)
 
 			// Variable to retrieve the return of this function
 			var respLongList *LongList
 			// Start the consumer
-			respLongList, err = archiveService.LaunchDeleteConsumer(objectType, identifierList, *longList)
+			respLongList, errorsList, err = archiveService.LaunchDeleteConsumer(objectType, identifierList, *longList)
 
 			fmt.Println("Delete Consumer received:\n\t>>>", respLongList)
 

@@ -51,7 +51,7 @@ const (
 //======================================================================//
 //                            RETRIEVE                                  //
 //======================================================================//
-func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInstanceIdentifiers LongList) (ArchiveDetailsList, ElementList, error) {
+func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInstanceIdentifierList LongList) (ArchiveDetailsList, ElementList, error) {
 	fmt.Println("IN: RetrieveInArchive")
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -61,17 +61,17 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 	defer db.Close()
 
 	// Create variables to return the elements and information
-	var archiveDetailsList ArchiveDetailsList
-	var elementList ElementList
+	var archiveDetailsList = *NewArchiveDetailsList(0)
+	var elementList = *new(ElementList)
 	// Then, retrieve these elements and their information
-	for i := 0; i < objectInstanceIdentifiers.Size(); i++ {
+	for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
 		var encodedObjectDetails []byte
 		var encodedElement []byte
 
 		// We can retrieve this object
-		err = tx.QueryRow("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", objectInstanceIdentifier).Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails)
+		err = tx.QueryRow("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", *objectInstanceIdentifierList[i]).Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails)
 		if err != nil {
 			if err.Error() == "sql: no rows in result set" {
 				return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
@@ -84,12 +84,15 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 			return nil, nil, err
 		}
 
-		//archiveDetailsList.
-		elementList = append(elementList, element)
-
+		archiveDetailsList.AppendElement(archiveDetails)
+		fmt.Println(elementList)
+		elementList.AppendElement(element)
 	}
 
-	return nil, nil, nil
+	// Commit changes
+	tx.Commit()
+
+	return archiveDetailsList, elementList, nil
 }
 
 //======================================================================//
@@ -102,7 +105,9 @@ func QueryArchive() error {
 		return err
 	}
 	defer db.Close()
-	fmt.Println(tx)
+
+	// Commit changes
+	tx.Commit()
 
 	return nil
 }
@@ -118,7 +123,8 @@ func CountInArchive() error {
 	}
 	defer db.Close()
 
-	fmt.Println(tx)
+	// Commit changes
+	tx.Commit()
 
 	return nil
 }
@@ -338,7 +344,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			return nil, err
 		}
 	} else {
-
+		// TODO: finish this method
 	}
 
 	// Commit changes
@@ -409,10 +415,11 @@ func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element []byte
 func adaptDomain(identifierList IdentifierList) String {
 	// Create the domain (It might change in the future)
 	var domain String
-	domain += "/"
 	for i := 0; i < identifierList.Size(); i++ {
 		domain += String(*identifierList.GetElementAt(i).(*Identifier))
-		domain += "/"
+		if i+1 < identifierList.Size() {
+			domain += "."
+		}
 	}
 
 	return domain

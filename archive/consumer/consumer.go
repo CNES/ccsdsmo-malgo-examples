@@ -24,8 +24,6 @@
 package consumer
 
 import (
-	"fmt"
-
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -195,26 +193,32 @@ func createSubmitConsumer(url string, providerURI *URI, typeOfConsumer string, o
 //								RETRIEVE								//
 //======================================================================//
 // StartRetrieveConsumer : TODO
-func StartRetrieveConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, *ArchiveDetailsList, ElementList, error) {
+func StartRetrieveConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*InvokeConsumer, *ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createInvokeConsumer(url, providerURI, "consumerRetrieve", OPERATION_IDENTIFIER_RETRIEVE)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Call Invoke operation
 	err = consumer.retrieveInvoke(objectType, identifierList, longList)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Call Response operation
-	archiveDetailsList, elementList, err := consumer.retrieveResponse()
+	archiveDetailsList, elementList, errorsList, err := consumer.retrieveResponse()
 	if err != nil {
-		return nil, nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consumer
+		consumer.Close()
+		return nil, nil, nil, errorsList, nil
 	}
 
-	return consumer, archiveDetailsList, elementList, nil
+	return consumer, archiveDetailsList, elementList, nil, nil
 }
 
 // Invoke & Ack
@@ -249,29 +253,41 @@ func (consumer *InvokeConsumer) retrieveInvoke(objectType ObjectType, identifier
 }
 
 // Response
-func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, ElementList, error) {
+func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Call Response operation
 	resp, err := consumer.op.GetResponse()
 	if err != nil {
-		return nil, nil, err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+
+			return nil, nil, errorsList, nil
+		}
+		return nil, nil, nil, err
 	}
 
 	// Create the decoder
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
 	// Decode ArchiveDetailsList
-	archiveDetails, err := decoder.DecodeElement(NullArchiveDetailsList)
+	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Decode ElementList
 	elementList, err := decoder.DecodeAbstractElement()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return archiveDetails.(*ArchiveDetailsList), elementList.(ElementList), nil
+	return archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil, nil
 }
 
 //======================================================================//
@@ -532,11 +548,13 @@ func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 	// Call Request function and retrieve the Response
 	longList, errorsList, err := consumer.storeRequest(boolean, objectType, identifierList, archiveDetailsList, elementList)
 	if err != nil {
-		fmt.Println("err")
-		return consumer, nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
 	} else if errorsList != nil {
-		fmt.Println("errorsList")
-		return consumer, nil, errorsList, nil
+		// Close consumer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
 	return consumer, longList, nil, nil
@@ -621,8 +639,12 @@ func StartUpdateConsumer(url string, providerURI *URI, objectType ObjectType, id
 	// Call Submit function
 	errorsList, err := consumer.updateSubmit(objectType, identifierList, archiveDetailsList, elementList)
 	if err != nil {
+		// Close consummer
+		consumer.Close()
 		return nil, nil, err
 	} else if errorsList != nil {
+		// Close consumer
+		consumer.Close()
 		return nil, errorsList, nil
 	}
 
@@ -683,59 +705,76 @@ func (consumer *SubmitConsumer) updateSubmit(objectType ObjectType, identifierLi
 //								DELETE									//
 //======================================================================//
 // StartDeleteConsumer : TODO
-func StartDeleteConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*RequestConsumer, *LongList, error) {
+func StartDeleteConsumer(url string, providerURI *URI, objectType ObjectType, identifierList IdentifierList, longList LongList) (*RequestConsumer, *LongList, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createRequestConsumer(url, providerURI, "consumerDelete", OPERATION_IDENTIFIER_DELETE)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Call Request function and retrieve the Response
-	respLongList, err := consumer.deleteRequest(objectType, identifierList, longList)
+	respLongList, errorsList, err := consumer.deleteRequest(objectType, identifierList, longList)
 	if err != nil {
-		return nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consumer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
-	return consumer, respLongList, nil
+	return consumer, respLongList, nil, nil
 }
 
 // Request & Reponse
-func (consumer *RequestConsumer) deleteRequest(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, error) {
+func (consumer *RequestConsumer) deleteRequest(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectType
 	err := objectType.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Encode IdentifierList
 	err = identifierList.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Encode LongList
 	err = longList.Encode(encoder)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Call Request operation and retrieve the Response
 	resp, err := consumer.op.Request(encoder.Body())
 	if err != nil {
-		return nil, err
-	}
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, nil, err
+			}
 
+			return nil, errorsList, nil
+		}
+		return nil, nil, err
+	}
 	// Create the decoder
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
 	// Decode LongList
 	respLongList, err := decoder.DecodeElement(NullLongList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return respLongList.(*LongList), nil
+	return respLongList.(*LongList), nil, nil
 }

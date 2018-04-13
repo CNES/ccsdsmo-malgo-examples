@@ -112,7 +112,7 @@ func (provider *Provider) retrieveHandler() error {
 			// ----- Call invoke operation and store objects -----
 			objectType, identifierList, longList, err := provider.retrieveInvoke(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.retrieveAckError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLongList(0))
 				return err
 			}
 
@@ -125,7 +125,7 @@ func (provider *Provider) retrieveHandler() error {
 			// ----- Call Ack operation -----
 			err = provider.retrieveAck(transaction)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.retrieveAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 
@@ -142,9 +142,9 @@ func (provider *Provider) retrieveHandler() error {
 			archiveDetailsList, elementList, err := RetrieveInArchive(*objectType, *identifierList, *longList)
 			if err != nil {
 				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
-					provider.retrieveAckError(transaction, MAL_ERROR_UNKNOWN, MAL_ERROR_UNKNOWN_MESSAGE, NewLongList(0))
+					provider.retrieveResponseError(transaction, MAL_ERROR_UNKNOWN, MAL_ERROR_UNKNOWN_MESSAGE, NewLongList(0))
 				} else {
-					provider.retrieveAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+					provider.retrieveResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				}
 				return err
 			}
@@ -262,6 +262,9 @@ func (provider *Provider) retrieveResponse(transaction InvokeTransaction, archiv
 	}
 
 	transaction.Reply(encoder.Body(), false)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

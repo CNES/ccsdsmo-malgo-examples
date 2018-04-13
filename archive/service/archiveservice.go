@@ -78,7 +78,7 @@ func (*ArchiveService) CreateService() Service {
 //                          START: Consumer                             //
 //======================================================================//
 // LaunchRetrieveConsumer : TODO
-func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, error) {
+func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
@@ -86,18 +86,21 @@ func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectTy
 	// IN
 	var providerURI = NewURI(providerURLRetrieve)
 	// OUT
-	consumer, archiveDetailsList, elementList, err := StartRetrieveConsumer(consumerURL,
+	consumer, archiveDetailsList, elementList, errorsList, err := StartRetrieveConsumer(consumerURL,
 		providerURI,
 		objectType,
 		identifierList,
 		longList)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		return nil, nil, errorsList, nil
 	}
+
 	// Close the consumer
 	consumer.Close()
 
-	return archiveDetailsList, elementList, nil
+	return archiveDetailsList, elementList, nil, nil
 }
 
 // LaunchQueryConsumer : TODO
@@ -205,7 +208,7 @@ func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType
 }
 
 // LaunchDeleteConsumer : TODO
-func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, error) {
+func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Delete Consumer")
@@ -213,19 +216,21 @@ func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType
 	// IN
 	var providerURI = NewURI(providerURLDelete)
 	// OUT
-	consumer, respLongList, err := StartDeleteConsumer(consumerURL,
+	consumer, respLongList, errorsList, err := StartDeleteConsumer(consumerURL,
 		providerURI,
 		objectType,
 		identifierList,
 		longList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	} else if errorsList != nil {
+		return nil, errorsList, nil
 	}
 
 	// Close the consumer
 	consumer.Close()
 
-	return respLongList, nil
+	return respLongList, nil, nil
 }
 
 //======================================================================//

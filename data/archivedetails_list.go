@@ -69,6 +69,12 @@ func (list *ArchiveDetailsList) GetElementAt(i int) Element {
 	return nil
 }
 
+func (list *ArchiveDetailsList) AppendElement(element Element) {
+	if list != nil {
+		*list = append(*list, element.(*ArchiveDetails))
+	}
+}
+
 func (*ArchiveDetailsList) Composite() Composite {
 	return new(ArchiveDetailsList)
 }

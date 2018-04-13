@@ -61,8 +61,8 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 	defer db.Close()
 
 	// Create variables to return the elements and information
-	//var archiveDetailsList ArchiveDetailsList
-	//var elementList ElementList
+	var archiveDetailsList ArchiveDetailsList
+	var elementList ElementList
 	// Then, retrieve these elements and their information
 	for i := 0; i < objectInstanceIdentifiers.Size(); i++ {
 		// Variables to store the different elements present in the database
@@ -79,13 +79,13 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 			return nil, nil, err
 		}
 
-		/*archiveDetails, element, err := decodeRetrieveElements(objectInstanceIdentifier, encodedObjectDetails, encodedElement)
+		archiveDetails, element, err := decodeRetrieveElements(objectInstanceIdentifier, encodedObjectDetails, encodedElement)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		archiveDetailsList = append(archiveDetailsList, archiveDetails)*/
-		//elementList = append(elementList, element)
+		//archiveDetailsList.
+		elementList = append(elementList, element)
 
 	}
 

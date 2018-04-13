@@ -32,4 +32,5 @@ type QueryFilterList interface {
 	QueryFilterList() QueryFilterList
 	Size() int
 	GetElementAt(i int) QueryFilter
+	AppendElement(element Element)
 }

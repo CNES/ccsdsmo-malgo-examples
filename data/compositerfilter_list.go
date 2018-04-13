@@ -69,6 +69,12 @@ func (list *CompositeFilterList) GetElementAt(i int) Element {
 	return nil
 }
 
+func (list *CompositeFilterList) AppendElement(element Element) {
+	if list != nil {
+		*list = append(*list, element.(*CompositeFilter))
+	}
+}
+
 func (*CompositeFilterList) Composite() Composite {
 	return new(CompositeFilterList)
 }

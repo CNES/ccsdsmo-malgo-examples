@@ -77,6 +77,12 @@ func (list *CompositeFilterSetList) GetElementAt(i int) QueryFilter {
 	return nil
 }
 
+func (list *CompositeFilterSetList) AppendElement(element Element) {
+	if list != nil {
+		*list = append(*list, element.(*CompositeFilterSet))
+	}
+}
+
 // ================================================================================
 // Defines COM CompositeFilterSetList type as a QueryFilter
 // ================================================================================

@@ -65,8 +65,16 @@ func main() {
 
 	}
 
-	var finalListType = uint64(listByte[0]) << 42
-	finalListType &= uint64(listByte[0]) << 36
+	var byte0 = uint64(listByte[6]) | 0xFFFFFFFFFFF00
+	var byte1 = (uint64(listByte[0]) << 8) | 0xFFFFFFFFF00FF
+	var byte2 = (uint64(listByte[4]) << 16) | 0xFFFFFFF00FFFF
+	var byte3 = (uint64(listByte[3]) << 24) | 0xFFFFF00FFFFFF
+	var byte4 = (uint64(listByte[2]) << 32) | 0xFFF00FFFFFFFF
+	var byte5 = (uint64(listByte[1]) << 40) | 0xF00FFFFFFFFFF
+	var byte6 = (uint64(listByte[0]) << 48) | 0x0FFFFFFFFFFFF
+
+	var finalListType = byte6 & byte5 & byte4 & byte3 & byte2 & byte1 & byte0
+	fmt.Printf("%08b\n", listByte)
 	fmt.Printf("%08b\n", finalListType)
 	fmt.Printf("%08b\n", _list)
 

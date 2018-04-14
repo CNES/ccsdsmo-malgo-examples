@@ -80,17 +80,20 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(MAL_LONG_TYPE_SHORT_FORM),
+				UShort(MAL_STRING_TYPE_SHORT_FORM),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
-			var longList = LongList([]*Long{NewLong(29)})
+			var longList = LongList([]*Long{NewLong(18)})
 
 			// Variables to retrieve the return of this function
 			var archiveDetailsList *ArchiveDetailsList
 			var elementList ElementList
 			// Start the consumer
 			archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
-
+			if elementList != nil && err == nil {
+				element := elementList.GetElementAt(0).(*String)
+				fmt.Println(*element)
+			}
 			fmt.Println("Retrieve Consumer received:\n\t>>>", archiveDetailsList, "\n\t>>>", elementList)
 
 			break
@@ -146,8 +149,8 @@ func main() {
 			// Start the store consumer
 			// Create parameters
 			// Object that's going to be stored in the archive
-			var elementList = NewLongList(1)
-			(*elementList)[0] = NewLong(29)
+			var elementList = NewStringList(1)
+			(*elementList)[0] = NewString("Hello")
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
@@ -157,7 +160,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(31)
+			var objectInstanceIdentifier = *NewLong(18)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,
@@ -190,8 +193,8 @@ func main() {
 			// Create parameters
 			// ---- ELEMENTLIST ----
 			// Object that's going to be updated in the archive
-			var elementList = NewLongList(1)
-			(*elementList)[0] = NewLong(29)
+			var elementList = NewStringList(1)
+			(*elementList)[0] = NewString("Hello")
 			// ---- OBJECTTYPE ----
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),

@@ -178,7 +178,7 @@ func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
 		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
-		provider.retrieveResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
+		provider.retrieveAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
 	}
 
@@ -186,7 +186,7 @@ func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction
 	for i := 0; i < identifierList.Size(); i++ {
 		if *(*identifierList)[i] == "*" {
 			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
-			provider.retrieveResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
+			provider.retrieveAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
 		}
 	}

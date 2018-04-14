@@ -60,9 +60,16 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 	}
 	defer db.Close()
 
+	listShortForm := typeShortFormToListShortForm(typeShortFormToShortForm(objectType))
+
+	element, err := LookupMALElement(listShortForm)
+	fmt.Println(element.GetTypeShortForm())
+
 	// Create variables to return the elements and information
 	var archiveDetailsList = *NewArchiveDetailsList(0)
-	var elementList = *new(ElementList)
+	//LookupMALElement(-objectType.Number)
+	var elementList = element.(ElementList)
+	elementList = elementList.CreateElement().(ElementList)
 	// Then, retrieve these elements and their information
 	for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
 		// Variables to store the different elements present in the database
@@ -85,7 +92,6 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 		}
 
 		archiveDetailsList.AppendElement(archiveDetails)
-		fmt.Println(elementList)
 		elementList.AppendElement(element)
 	}
 
@@ -482,4 +488,43 @@ func encodeUpdateElements(_element Element, _objectDetails ObjectDetails) ([]byt
 	objectDetails := encoder.Body()
 
 	return element, objectDetails, nil
+}
+
+// This part is usefull for type short form conversion (from typeShortForm to listShortForm)
+func typeShortFormToShortForm(objectType ObjectType) Long {
+	var typeShortForm = Long(objectType.Number) | 0xFFFFFFF000000
+	var areaVersion = (Long(objectType.Version) << 24) | 0xFFFFF00FFFFFF
+	var serviceNumber = (Long(objectType.Service) << 32) | 0xF0000FFFFFFFF
+	var areaNumber = (Long(objectType.Area) << 48) | 0x0FFFFFFFFFFFF
+
+	return areaNumber & serviceNumber & areaVersion & typeShortForm
+}
+
+func typeShortFormToListShortForm(typeShort Long) Long {
+	quatuor5 := (typeShort & 0x0000F0) >> 4
+	var listByte []byte
+	listByte = append(listByte, 1, 0, 0, 1)
+	if quatuor5 == 0x0 {
+		var b byte
+		for i := 2; i >= 0; i-- {
+			b = byte(typeShort>>uint(i*8)) ^ 255
+			if i == 0 {
+				b++
+			}
+			listByte = append(listByte, b)
+		}
+
+		var byte0 = Long(listByte[6]) | 0xFFFFFFFFFFF00
+		var byte1 = (Long(listByte[5]) << 8) | 0xFFFFFFFFF00FF
+		var byte2 = (Long(listByte[4]) << 16) | 0xFFFFFFF00FFFF
+		var byte3 = (Long(listByte[3]) << 24) | 0xFFFFF00FFFFFF
+		var byte4 = (Long(listByte[2]) << 32) | 0xFFF00FFFFFFFF
+		var byte5 = (Long(listByte[1]) << 40) | 0xF00FFFFFFFFFF
+		var byte6 = (Long(listByte[0]) << 48) | 0x0FFFFFFFFFFFF
+
+		return byte6 & byte5 & byte4 & byte3 & byte2 & byte1 & byte0
+	}
+
+	// Force bytes 2, 3, 4 and 5 to 1
+	return typeShort | 0x0000000FFFF00
 }

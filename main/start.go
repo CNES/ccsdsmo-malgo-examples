@@ -41,43 +41,6 @@ import (
 func main() {
 	args := os.Args[1:]
 
-	var _list = MAL_SHORT_LIST_SHORT_FORM
-	var _type = MAL_SHORT_SHORT_FORM
-	fmt.Println(_list)
-	fmt.Println(_type)
-	fmt.Println(_list - _type)
-
-	fmt.Printf("BEFORE:\n%08b\n", _type)
-	quatuor5 := (MAL_SHORT_SHORT_FORM & 0x0000F0) >> 4
-	fmt.Println(quatuor5)
-	var listByte []byte
-	listByte = append(listByte, 1, 0, 0, 1)
-	if quatuor5 == 0x0 {
-		var b byte
-		for i := 2; i >= 0; i-- {
-			b = byte(_type>>uint(i*8)) ^ 255
-			if i == 0 {
-				b++
-			}
-			listByte = append(listByte, b)
-		}
-	} else {
-
-	}
-
-	var byte0 = uint64(listByte[6]) | 0xFFFFFFFFFFF00
-	var byte1 = (uint64(listByte[0]) << 8) | 0xFFFFFFFFF00FF
-	var byte2 = (uint64(listByte[4]) << 16) | 0xFFFFFFF00FFFF
-	var byte3 = (uint64(listByte[3]) << 24) | 0xFFFFF00FFFFFF
-	var byte4 = (uint64(listByte[2]) << 32) | 0xFFF00FFFFFFFF
-	var byte5 = (uint64(listByte[1]) << 40) | 0xF00FFFFFFFFFF
-	var byte6 = (uint64(listByte[0]) << 48) | 0x0FFFFFFFFFFFF
-
-	var finalListType = byte6 & byte5 & byte4 & byte3 & byte2 & byte1 & byte0
-	fmt.Printf("%08b\n", listByte)
-	fmt.Printf("%08b\n", finalListType)
-	fmt.Printf("%08b\n", _list)
-
 	if len(args) < 1 || len(args) > 2 {
 		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go [provider|[consumer] [retrieve|query|count|store|update|delete]]")
 		return
@@ -89,8 +52,8 @@ func main() {
 	var err error
 	var errorsList *ServiceError
 	// Create the Archive Service
-	element := archiveService.CreateService()
-	archiveService = element.(*ArchiveService)
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
 
 	if args[0] == "provider" {
 		var wg sync.WaitGroup
@@ -166,7 +129,7 @@ func main() {
 				UShort(archiveService.AreaNumber),
 				UShort(archiveService.ServiceNumber),
 				UOctet(archiveService.AreaVersion),
-				UShort(archiveService.ServiceNumber),
+				UShort(MAL_LONG_TYPE_SHORT_FORM),
 			}
 			var archiveQueryList = NewArchiveQueryList(10)
 			var queryFilterList = NewCompositeFilterSetList(10)
@@ -194,7 +157,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(10)
+			var objectInstanceIdentifier = *NewLong(31)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,

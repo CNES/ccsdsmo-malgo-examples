@@ -41,7 +41,7 @@ var (
 
 const (
 	COM_COMPOSITE_FILTER_LIST_TYPE_SHORT_FORM Integer = -0x03
-	COM_COMPOSITE_FILTER_LIST_SHORT_FORM      Long    = 0x2000002FFFFFD
+	COM_COMPOSITE_FILTER_LIST_SHORT_FORM      Long    = 0x2000201FFFFFD
 )
 
 func NewCompositeFilterList(size int) *CompositeFilterList {

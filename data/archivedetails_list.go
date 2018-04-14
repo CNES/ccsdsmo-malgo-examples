@@ -41,7 +41,7 @@ var (
 
 const (
 	COM_ARCHIVE_DETAILS_LIST_TYPE_SHORT_FORM Integer = -0x01
-	COM_ARCHIVE_DETAILS_LIST_SHORT_FORM      Long    = 0x2000002FFFFFF
+	COM_ARCHIVE_DETAILS_LIST_SHORT_FORM      Long    = 0x2000201FFFFFF
 )
 
 func NewArchiveDetailsList(size int) *ArchiveDetailsList {

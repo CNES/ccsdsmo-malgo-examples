@@ -41,7 +41,7 @@ var (
 
 const (
 	COM_COMPOSITE_FILTER_TYPE_SHORT_FORM Integer = 0x03
-	COM_COMPOSITE_FILTER_SHORT_FORM      Long    = 0x2000002000003
+	COM_COMPOSITE_FILTER_SHORT_FORM      Long    = 0x2000201000003
 )
 
 func NewCompositeFilter(fieldName *String, _type ExpressionOperator, fieldValue Attribute) *CompositeFilter {

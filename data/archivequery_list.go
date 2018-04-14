@@ -41,7 +41,7 @@ var (
 
 const (
 	COM_ARCHIVE_QUERY_LIST_TYPE_SHORT_FORM Integer = -0x02
-	COM_ARCHIVE_QUERY_LIST_SHORT_FORM      Long    = 0x2000002FFFFFE
+	COM_ARCHIVE_QUERY_LIST_SHORT_FORM      Long    = 0x2000201FFFFFE
 )
 
 func NewArchiveQueryList(size int) *ArchiveQueryList {

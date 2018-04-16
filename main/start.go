@@ -83,7 +83,7 @@ func main() {
 				UShort(MAL_STRING_TYPE_SHORT_FORM),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
-			var longList = LongList([]*Long{NewLong(18)})
+			var longList = LongList([]*Long{NewLong(0)})
 
 			// Variables to retrieve the return of this function
 			var archiveDetailsList *ArchiveDetailsList
@@ -91,8 +91,10 @@ func main() {
 			// Start the consumer
 			archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
 			if elementList != nil && err == nil {
-				element := elementList.GetElementAt(0).(*String)
-				fmt.Println(*element)
+				for i := 0; i < elementList.Size(); i++ {
+					element := elementList.GetElementAt(i).(*String)
+					fmt.Println(*element)
+				}
 			}
 			fmt.Println("Retrieve Consumer received:\n\t>>>", archiveDetailsList, "\n\t>>>", elementList)
 
@@ -150,7 +152,7 @@ func main() {
 			// Create parameters
 			// Object that's going to be stored in the archive
 			var elementList = NewStringList(1)
-			(*elementList)[0] = NewString("Hello")
+			(*elementList)[0] = NewString("test_test")
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
 				UShort(archiveService.AreaNumber),
@@ -160,7 +162,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(18)
+			var objectInstanceIdentifier = *NewLong(17)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				identifierList,

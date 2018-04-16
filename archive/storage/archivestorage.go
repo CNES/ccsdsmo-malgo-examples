@@ -51,7 +51,7 @@ const (
 //======================================================================//
 //                            RETRIEVE                                  //
 //======================================================================//
-func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInstanceIdentifierList LongList) (ArchiveDetailsList, ElementList, error) {
+func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, objectInstanceIdentifierList LongList) (ArchiveDetailsList, ElementList, error) {
 	fmt.Println("IN: RetrieveInArchive")
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -60,43 +60,91 @@ func RetrieveInArchive(objectType ObjectType, domain IdentifierList, objectInsta
 	}
 	defer db.Close()
 
-	listShortForm := typeShortFormToListShortForm(typeShortFormToShortForm(objectType))
+	// Convert domain
+	domain := adaptDomain(identifierList)
 
+	// First of all, we need to verity the object instance identifiers values
+	var isAll = false
+	for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
+		if *objectInstanceIdentifierList[i] == 0 {
+			isAll = true
+			break
+		}
+	}
+
+	// Transform Type Short Form to List Short Form
+	listShortForm := typeShortFormToListShortForm(objectType)
+	fmt.Printf("created     : %08b\n", listShortForm)
+	fmt.Printf("not created : %08b\n", MAL_STRING_LIST_SHORT_FORM)
+	// Get Element in the MAL Registry
 	element, err := LookupMALElement(listShortForm)
-	fmt.Println(element.GetTypeShortForm())
 
 	// Create variables to return the elements and information
 	var archiveDetailsList = *NewArchiveDetailsList(0)
-	//LookupMALElement(-objectType.Number)
 	var elementList = element.(ElementList)
 	elementList = elementList.CreateElement().(ElementList)
 	// Then, retrieve these elements and their information
-	for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
+	if !isAll {
+		for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
+			// Variables to store the different elements present in the database
+			var encodedObjectDetails []byte
+			var encodedElement []byte
+
+			// We can retrieve this object
+			err = tx.QueryRow("SELECT element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", *objectInstanceIdentifierList[i]).Scan(&encodedElement, &encodedObjectDetails)
+			if err != nil {
+				if err.Error() == "sql: no rows in result set" {
+					return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+				}
+				return nil, nil, err
+			}
+
+			archiveDetails, element, err := decodeRetrieveElements(*objectInstanceIdentifierList[i], encodedObjectDetails, encodedElement)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			archiveDetailsList.AppendElement(archiveDetails)
+			elementList.AppendElement(element)
+		}
+	} else {
+		// Retrieve all these elements (no particular object instance iedentifiers)
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
 		var encodedObjectDetails []byte
 		var encodedElement []byte
 
-		// We can retrieve this object
-		err = tx.QueryRow("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", *objectInstanceIdentifierList[i]).Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails)
+		// Retrieve this object and its archive details in the archive
+		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			objectType.Area,
+			objectType.Service,
+			objectType.Version,
+			objectType.Number,
+			domain)
 		if err != nil {
-			if err.Error() == "sql: no rows in result set" {
-				return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+			return nil, nil, err
+		}
+
+		var countElements int
+		for rows.Next() {
+			if err = rows.Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails); err != nil {
+				return nil, nil, err
 			}
-			return nil, nil, err
+
+			archiveDetails, element, err := decodeRetrieveElements(objectInstanceIdentifier, encodedObjectDetails, encodedElement)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			archiveDetailsList.AppendElement(archiveDetails)
+			elementList.AppendElement(element)
+			countElements++
 		}
 
-		archiveDetails, element, err := decodeRetrieveElements(objectInstanceIdentifier, encodedObjectDetails, encodedElement)
-		if err != nil {
-			return nil, nil, err
+		if countElements == 0 {
+			return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
 		}
-
-		archiveDetailsList.AppendElement(archiveDetails)
-		elementList.AppendElement(element)
 	}
-
-	// Commit changes
-	tx.Commit()
 
 	return archiveDetailsList, elementList, nil
 }
@@ -307,7 +355,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 	defer db.Close()
 
 	// Variable to return
-	var longList *LongList
+	var longList = NewLongList(0)
 
 	// Create the domain (It might change in the future)
 	domain := adaptDomain(identifierList)
@@ -329,6 +377,15 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			objectType.Version,
 			objectType.Number,
 			domain)
+		if err != nil {
+			return nil, err
+		}
+
+		if !rows.Next() {
+			return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+		}
+
+		var countElements int
 		for rows.Next() {
 			var instID *Long
 			if err = rows.Scan(instID); err != nil {
@@ -336,6 +393,11 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			}
 
 			*longList = append(*longList, instID)
+			countElements++
+		}
+
+		if countElements == 0 {
+			return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
 		}
 
 		// Delete all these objects
@@ -417,9 +479,7 @@ func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element []byte
 	return nil
 }
 
-// TODO: might change in the future
 func adaptDomain(identifierList IdentifierList) String {
-	// Create the domain (It might change in the future)
 	var domain String
 	for i := 0; i < identifierList.Size(); i++ {
 		domain += String(*identifierList.GetElementAt(i).(*Identifier))
@@ -427,7 +487,6 @@ func adaptDomain(identifierList IdentifierList) String {
 			domain += "."
 		}
 	}
-
 	return domain
 }
 
@@ -500,10 +559,11 @@ func typeShortFormToShortForm(objectType ObjectType) Long {
 	return areaNumber & serviceNumber & areaVersion & typeShortForm
 }
 
-func typeShortFormToListShortForm(typeShort Long) Long {
-	quatuor5 := (typeShort & 0x0000F0) >> 4
+func typeShortFormToListShortForm(objectType ObjectType) Long {
 	var listByte []byte
-	listByte = append(listByte, 1, 0, 0, 1)
+	listByte = append(listByte, byte(objectType.Area), byte(objectType.Service>>8), byte(objectType.Service), byte(objectType.Version))
+	typeShort := typeShortFormToShortForm(objectType)
+	quatuor5 := (typeShort & 0x0000F0) >> 4
 	if quatuor5 == 0x0 {
 		var b byte
 		for i := 2; i >= 0; i-- {

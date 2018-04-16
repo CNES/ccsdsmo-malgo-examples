@@ -201,9 +201,15 @@ func StartRetrieveConsumer(url string, providerURI *URI, objectType ObjectType, 
 	}
 
 	// Call Invoke operation
-	err = consumer.retrieveInvoke(objectType, identifierList, longList)
+	errorsList, err := consumer.retrieveInvoke(objectType, identifierList, longList)
 	if err != nil {
+		// Close consummer
+		consumer.Close()
 		return nil, nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consumer
+		consumer.Close()
+		return nil, nil, nil, errorsList, nil
 	}
 
 	// Call Response operation
@@ -222,34 +228,46 @@ func StartRetrieveConsumer(url string, providerURI *URI, objectType ObjectType, 
 }
 
 // Invoke & Ack
-func (consumer *InvokeConsumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, longList LongList) error {
+func (consumer *InvokeConsumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 	// Encode ObjectType
 	err := objectType.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode IdentifierList
 	err = identifierList.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode LongList
 	err = longList.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Call Invoke operation
-	_, err = consumer.op.Invoke(encoder.Body())
+	resp, err := consumer.op.Invoke(encoder.Body())
 	if err != nil {
-		return err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, err
+			}
+
+			return errorsList, nil
+		}
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Response

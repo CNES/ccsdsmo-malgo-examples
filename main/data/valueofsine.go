@@ -28,7 +28,7 @@ import (
 )
 
 type ValueOfSine struct {
-	Value Long
+	Value Float
 }
 
 var (
@@ -40,7 +40,7 @@ const (
 	COM_VALUE_OF_SINE_SHORT_FORM      Long    = 0x2000301000001
 )
 
-func NewValueOfSine(value Long) *ValueOfSine {
+func NewValueOfSine(value Float) *ValueOfSine {
 	valueOfSine := &ValueOfSine{
 		value,
 	}
@@ -89,7 +89,7 @@ func (*ValueOfSine) GetTypeShortForm() Integer {
 // Encodes this element using the supplied encoder
 func (v *ValueOfSine) Encode(encoder Encoder) error {
 	// Encode value
-	return v.Value.Encode(encoder)
+	return encoder.EncodeFloat(&v.Value)
 }
 
 // Decodes and instance of ValueOfSine using the supplied decoder
@@ -99,7 +99,7 @@ func (*ValueOfSine) Decode(decoder Decoder) (Element, error) {
 
 func DecodeValueOfSine(decoder Decoder) (*ValueOfSine, error) {
 	// Decode value
-	value, err := decoder.DecodeLong()
+	value, err := decoder.DecodeFloat()
 	if err != nil {
 		return nil, err
 	}

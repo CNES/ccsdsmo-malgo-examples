@@ -36,6 +36,7 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/service"
 	. "github.com/etiennelndr/archiveservice/data"
 	. "github.com/etiennelndr/archiveservice/errors"
+	. "github.com/etiennelndr/archiveservice/main/data"
 )
 
 func main() {
@@ -77,10 +78,10 @@ func main() {
 			// Start the retrieve consumer
 			// Create parameters
 			var objectType = ObjectType{
-				UShort(archiveService.AreaNumber),
-				UShort(archiveService.ServiceNumber),
-				UOctet(archiveService.AreaVersion),
-				UShort(MAL_STRING_TYPE_SHORT_FORM),
+				UShort(2),
+				UShort(3),
+				UOctet(1),
+				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			var longList = LongList([]*Long{NewLong(0)})
@@ -92,7 +93,7 @@ func main() {
 			archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
 			if elementList != nil && err == nil {
 				for i := 0; i < elementList.Size(); i++ {
-					element := elementList.GetElementAt(i).(*String)
+					element := elementList.GetElementAt(i).(*ValueOfSine)
 					fmt.Println(*element)
 				}
 			}
@@ -104,10 +105,10 @@ func main() {
 			// Create parameters
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
-				UShort(archiveService.AreaNumber),
-				UShort(archiveService.ServiceNumber),
-				UOctet(archiveService.AreaVersion),
-				UShort(MAL_LONG_TYPE_SHORT_FORM),
+				UShort(2),
+				UShort(3),
+				UOctet(1),
+				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
 			var archiveQueryList = NewArchiveQueryList(10)
 			var queryFilterList = NewCompositeFilterSetList(10)
@@ -131,10 +132,10 @@ func main() {
 			// Create parameters
 			// objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList
 			var objectType = ObjectType{
-				UShort(archiveService.AreaNumber),
-				UShort(archiveService.ServiceNumber),
-				UOctet(archiveService.AreaVersion),
-				UShort(MAL_LONG_TYPE_SHORT_FORM),
+				UShort(2),
+				UShort(3),
+				UOctet(1),
+				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
 			var archiveQueryList = NewArchiveQueryList(10)
 			var queryFilterList = NewCompositeFilterSetList(10)
@@ -151,35 +152,35 @@ func main() {
 			// Start the store consumer
 			// Create parameters
 			// Object that's going to be stored in the archive
-			var elementList = NewStringList(1)
-			(*elementList)[0] = NewString("test_test")
+			var elementList = NewValueOfSineList(1)
+			(*elementList)[0] = NewValueOfSine(0)
 			var boolean = NewBoolean(true)
 			var objectType = ObjectType{
-				UShort(archiveService.AreaNumber),
-				UShort(archiveService.ServiceNumber),
-				UOctet(archiveService.AreaVersion),
+				UShort(2),
+				UShort(3),
+				UOctet(1),
 				UShort((*elementList)[0].GetTypeShortForm()),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(17)
+			var objectInstanceIdentifier = *NewLong(1)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
-				identifierList,
-				objectInstanceIdentifier,
+				Domain: identifierList,
+				InstId: objectInstanceIdentifier,
 			}
 			var objectID = ObjectId{
-				&objectType,
-				&objectKey,
+				Type: &objectType,
+				Key:  &objectKey,
 			}
 			var objectDetails = ObjectDetails{
 				Related: NewLong(1),
 				Source:  &objectID,
 			}
 			var network = NewIdentifier("network")
-			var fineTime = NewFineTime(time.Now())
-			var uri = NewURI("main/start")
-			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+			var timestamp = NewFineTime(time.Now())
+			var provider = NewURI("main/start")
+			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider)})
 
 			// Variable to retrieve the return of this function
 			var longList *LongList
@@ -195,13 +196,13 @@ func main() {
 			// Create parameters
 			// ---- ELEMENTLIST ----
 			// Object that's going to be updated in the archive
-			var elementList = NewStringList(1)
-			(*elementList)[0] = NewString("Hello")
+			var elementList = NewValueOfSineList(1)
+			(*elementList)[0] = NewValueOfSine(0.5)
 			// ---- OBJECTTYPE ----
 			var objectType = ObjectType{
-				UShort(archiveService.AreaNumber),
-				UShort(archiveService.ServiceNumber),
-				UOctet(archiveService.AreaVersion),
+				UShort(2),
+				UShort(3),
+				UOctet(1),
 				UShort((*elementList)[0].GetTypeShortForm()),
 			}
 			// ---- IDENTIFIERLIST ----
@@ -235,13 +236,14 @@ func main() {
 			// Start the delete consumer
 			// Create parameters
 			var objectType = ObjectType{
-				UShort(archiveService.AreaNumber),
-				UShort(archiveService.ServiceNumber),
-				UOctet(archiveService.AreaVersion),
-				UShort(MAL_LONG_TYPE_SHORT_FORM),
+				UShort(2),
+				UShort(3),
+				UOctet(1),
+				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
-			var longList = NewLongList(10)
+			var longList = NewLongList(0)
+			longList.AppendElement(NewLong(3))
 
 			// Variable to retrieve the return of this function
 			var respLongList *LongList

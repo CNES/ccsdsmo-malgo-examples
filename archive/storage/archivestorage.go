@@ -73,9 +73,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	}
 
 	// Transform Type Short Form to List Short Form
-	listShortForm := typeShortFormToListShortForm(objectType)
-	fmt.Printf("created     : %08b\n", listShortForm)
-	fmt.Printf("not created : %08b\n", MAL_STRING_LIST_SHORT_FORM)
+	listShortForm := convertToListShortForm(objectType)
 	// Get Element in the MAL Registry
 	element, err := LookupMALElement(listShortForm)
 
@@ -91,7 +89,8 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var encodedElement []byte
 
 			// We can retrieve this object
-			err = tx.QueryRow("SELECT element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ", *objectInstanceIdentifierList[i]).Scan(&encodedElement, &encodedObjectDetails)
+			err = tx.QueryRow("SELECT element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ",
+				*objectInstanceIdentifierList[i]).Scan(&encodedElement, &encodedObjectDetails)
 			if err != nil {
 				if err.Error() == "sql: no rows in result set" {
 					return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
@@ -381,18 +380,14 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			return nil, err
 		}
 
-		if !rows.Next() {
-			return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
-		}
-
 		var countElements int
 		for rows.Next() {
-			var instID *Long
-			if err = rows.Scan(instID); err != nil {
+			var instID Long
+			if err = rows.Scan(&instID); err != nil {
 				return nil, err
 			}
 
-			*longList = append(*longList, instID)
+			longList.AppendElement(&instID)
 			countElements++
 		}
 
@@ -412,7 +407,37 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			return nil, err
 		}
 	} else {
-		// TODO: finish this method
+		for i := 0; i < longListRequest.Size(); i++ {
+			// Check if the object is in the archive
+			var objInstID int
+			err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+				*longListRequest[i],
+				objectType.Area,
+				objectType.Service,
+				objectType.Version,
+				objectType.Number,
+				domain).Scan(&objInstID)
+			if err != nil {
+				if err.Error() == "sql: no rows in result set" {
+					return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+				}
+				return nil, err
+			}
+
+			_, err = tx.Exec("DELETE FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+				*longListRequest[i],
+				objectType.Area,
+				objectType.Service,
+				objectType.Version,
+				objectType.Number,
+				domain)
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+
+			longList.AppendElement(longListRequest.GetElementAt(i))
+		}
 	}
 
 	// Commit changes
@@ -559,7 +584,7 @@ func typeShortFormToShortForm(objectType ObjectType) Long {
 	return areaNumber & serviceNumber & areaVersion & typeShortForm
 }
 
-func typeShortFormToListShortForm(objectType ObjectType) Long {
+func convertToListShortForm(objectType ObjectType) Long {
 	var listByte []byte
 	listByte = append(listByte, byte(objectType.Area), byte(objectType.Service>>8), byte(objectType.Service), byte(objectType.Version))
 	typeShort := typeShortFormToShortForm(objectType)
@@ -585,6 +610,6 @@ func typeShortFormToListShortForm(objectType ObjectType) Long {
 		return byte6 & byte5 & byte4 & byte3 & byte2 & byte1 & byte0
 	}
 
-	// Force bytes 2, 3, 4 and 5 to 1
+	// Force bytes 2, 3 to 1
 	return typeShort | 0x0000000FFFF00
 }

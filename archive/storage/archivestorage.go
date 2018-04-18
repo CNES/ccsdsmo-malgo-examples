@@ -406,6 +406,13 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			tx.Rollback()
 			return nil, err
 		}
+
+		// Set AUTO_INCREMENT to max(id)+1
+		err = resetAutoIncrement(tx)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
 	} else {
 		for i := 0; i < longListRequest.Size(); i++ {
 			// Check if the object is in the archive
@@ -437,6 +444,13 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			}
 
 			longList.AppendElement(longListRequest.GetElementAt(i))
+		}
+
+		// Set AUTO_INCREMENT to max(id)+1
+		err = resetAutoIncrement(tx)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
 		}
 	}
 
@@ -498,6 +512,32 @@ func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element []byte
 		objectType.Number,
 		domain,
 		objectDetails)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// resetAutoIncrement take the maximum id in the database and set the
+// AUTO_INCREMENT at this value (actually it's this value to which we added 1)
+func resetAutoIncrement(tx *sql.Tx) error {
+	_, err := tx.Exec("SELECT @max := max(id)+1 FROM " + TABLE)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("SET @alter_statement = CONCAT('ALTER TABLE " + TABLE + " AUTO_INCREMENT = ', @max)")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("PREPARE stmt1 FROM @alter_statement;")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("EXECUTE stmt1")
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("DEALLOCATE PREPARE stmt1;")
 	if err != nil {
 		return err
 	}

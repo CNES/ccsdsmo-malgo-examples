@@ -29,15 +29,15 @@ import (
 )
 
 type ArchiveQuery struct {
-	domain        IdentifierList
-	network       Identifier
-	provider      URI
-	related       Long
-	source        ObjectId
-	startTime     FineTime
-	endTime       FineTime
-	sortOrder     Boolean
-	sortFieldName String
+	Domain        IdentifierList
+	Network       Identifier
+	Provider      URI
+	Related       Long
+	Source        ObjectId
+	StartTime     FineTime
+	EndTime       FineTime
+	SortOrder     Boolean
+	SortFieldName String
 }
 
 var (
@@ -93,17 +93,17 @@ func (*ArchiveQuery) GetShortForm() Long {
 
 // Returns the number of the area this element belongs to
 func (a *ArchiveQuery) GetAreaNumber() UShort {
-	return a.source.GetAreaNumber()
+	return a.Source.GetAreaNumber()
 }
 
 // Returns the version of the area this element belongs to
 func (a *ArchiveQuery) GetAreaVersion() UOctet {
-	return a.source.GetAreaVersion()
+	return a.Source.GetAreaVersion()
 }
 
 // Returns the number of the service this element belongs to
 func (a *ArchiveQuery) GetServiceNumber() UShort {
-	return a.source.GetServiceNumber()
+	return a.Source.GetServiceNumber()
 }
 
 // Returns the relative short form of the element type
@@ -115,55 +115,55 @@ func (*ArchiveQuery) GetTypeShortForm() Integer {
 // Encodes this element using the supplied encoder
 func (a *ArchiveQuery) Encode(encoder Encoder) error {
 	// Encode domain (NullableIdentifierList)
-	err := a.domain.Encode(encoder)
+	err := a.Domain.Encode(encoder)
 	if err != nil {
 		return err
 	}
 
 	// Encode network (NullableIdentifier)
-	err = encoder.EncodeNullableIdentifier(&a.network)
+	err = encoder.EncodeNullableIdentifier(&a.Network)
 	if err != nil {
 		return err
 	}
 
 	// Encode provider (NullableURI)
-	err = encoder.EncodeNullableURI(&a.provider)
+	err = encoder.EncodeNullableURI(&a.Provider)
 	if err != nil {
 		return err
 	}
 
 	// Encode related (Long)
-	err = encoder.EncodeLong(&a.related)
+	err = encoder.EncodeLong(&a.Related)
 	if err != nil {
 		return err
 	}
 
 	// Encode source (NullableObjectId)
-	err = encoder.EncodeNullableElement(&a.source)
+	err = encoder.EncodeNullableElement(&a.Source)
 	if err != nil {
 		return err
 	}
 
 	// Encode startTime (NullableFineTime)
-	err = encoder.EncodeNullableFineTime(&a.startTime)
+	err = encoder.EncodeNullableFineTime(&a.StartTime)
 	if err != nil {
 		return err
 	}
 
 	// Encode endTime (NullableFineTime)
-	err = encoder.EncodeNullableFineTime(&a.endTime)
+	err = encoder.EncodeNullableFineTime(&a.EndTime)
 	if err != nil {
 		return err
 	}
 
 	// Encode sortOrder (NullableBoolean)
-	err = encoder.EncodeNullableBoolean(&a.sortOrder)
+	err = encoder.EncodeNullableBoolean(&a.SortOrder)
 	if err != nil {
 		return err
 	}
 
 	// Encode sortFieldName (NullableString)
-	return encoder.EncodeNullableBoolean(&a.sortOrder)
+	return encoder.EncodeNullableString(&a.SortFieldName)
 }
 
 // Decodes an instance of ObjectDetails using the supplied decoder

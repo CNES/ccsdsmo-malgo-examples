@@ -315,48 +315,46 @@ func (provider *Provider) queryHandler() error {
 			transaction := t.(ProgressTransaction)
 
 			// ----- Retrieve the objects thanks to the progress operation -----
-			boolean, objectType, archiveQueryList, queryFilter, err := provider.queryProgress(msg)
+			boolean, objectType, archiveQueryList, queryFilterList, err := provider.queryProgress(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.queryAckError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLongList(0))
 				return err
 			}
 
 			// ----- Verify the parameters -----
-			// TODO: form a single query from ArchiveQueryList and QueryFilterList
+			// TODO: form a single query by combining ArchiveQueryList and QueryFilterList
 
 			// ----- Call Ack operation -----
 			err = provider.queryAck(transaction)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.queryAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE, NewLongList(0))
 				return err
 			}
 
 			// Hold on buddy, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
+			objType, archDetList, idList, elementList, err := QueryArchive(*objectType, *archiveQueryList, queryFilterList)
+			if err != nil {
+				//TODO: update error
+			}
+
 			// TODO: do sthg with these objects
 			fmt.Println("QueryHandler received:\n\t>>>",
 				boolean, "\n\t>>>",
 				objectType, "\n\t>>>",
 				archiveQueryList, "\n\t>>>",
-				queryFilter)
+				queryFilterList)
 
-			// TODO: This value will depend in the future of the number of objects to send to the consumer
-			var nbObjects = 10
-			// TODO: These variables will be created automatically in the future
-			var objType = new(ObjectType)
-			var archDetList = new(ArchiveDetailsList)
-			var idList = new(IdentifierList)
-			var elementList ElementList
 			if *boolean != true {
 				elementList = nil
 				idList = nil
 			} else {
-				idList = new(IdentifierList)
-				elementList = new(LongList)
+				idList = NewIdentifierList(0)
+				elementList = NewLongList(0)
 			}
 
-			for i := 0; i < nbObjects; i++ {
+			for i := 0; i < archiveQueryList.Size()-1; i++ {
 				// Call Update operation
 				err = provider.queryUpdate(transaction, objType, idList, archDetList, elementList)
 				if err != nil {
@@ -434,6 +432,23 @@ func (provider *Provider) queryAck(transaction ProgressTransaction) error {
 }
 
 // ACK ERROR
+func (provider *Provider) queryAckError(transaction ProgressTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Ack operation with Error status
+	err = transaction.Ack(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // UPDATE
 func (provider *Provider) queryUpdate(transaction ProgressTransaction, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
@@ -474,6 +489,23 @@ func (provider *Provider) queryUpdate(transaction ProgressTransaction, objectTyp
 }
 
 // UPDATE ERROR
+func (provider *Provider) queryUpdateError(transaction ProgressTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Ack operation with Error status
+	err = transaction.Update(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // RESPONSE
 func (provider *Provider) queryResponse(transaction ProgressTransaction, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
@@ -514,6 +546,23 @@ func (provider *Provider) queryResponse(transaction ProgressTransaction, objectT
 }
 
 // RESPONSE ERROR
+func (provider *Provider) queryResponseError(transaction ProgressTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Ack operation with Error status
+	err = transaction.Reply(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 //======================================================================//
 //								COUNT									//
@@ -1177,7 +1226,7 @@ func (provider *Provider) deleteRequest(msg *Message) (*ObjectType, *IdentifierL
 }
 
 // RESPONSE
-func (provider *Provider) deleteResponse(transaction RequestTransaction, longList *LongList) error {
+func (provider *Provider) deleteResponse(transaction RequestTransaction, longList LongList) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 

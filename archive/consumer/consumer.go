@@ -312,25 +312,37 @@ func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, Element
 //								QUERY									//
 //======================================================================//
 // StartQueryConsumer : TODO
-func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, error) {
+func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createProgressConsumer(url, providerURI, "consumerQuery", OPERATION_IDENTIFIER_QUERY)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Call Progress function
-	err = consumer.queryProgress(boolean, objectType, archiveQueryList, queryFilterList)
+	errorsList, err := consumer.queryProgress(boolean, objectType, archiveQueryList, queryFilterList)
 	if err != nil {
-		return nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consummer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
 	// Create the interface that will receive all the responses
 	responses := []interface{}{}
 	// Call Update operation
-	respObjType, respIDList, respArchDetList, respElemList, err := consumer.queryUpdate()
+	respObjType, respIDList, respArchDetList, respElemList, errorsList, err := consumer.queryUpdate()
 	if err != nil {
-		return nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consummer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
 	for (respObjType != nil) && (respIDList != nil) && (respArchDetList != nil) && (respElemList != nil) {
@@ -338,68 +350,104 @@ func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 		responses = append(responses, respObjType, respIDList, respArchDetList, respElemList)
 
 		// Call Update operation until it returns nil variables
-		respObjType, respIDList, respArchDetList, respElemList, err = consumer.queryUpdate()
+		respObjType, respIDList, respArchDetList, respElemList, errorsList, err = consumer.queryUpdate()
 		if err != nil {
-			return nil, nil, err
+			// Close consummer
+			consumer.Close()
+			return nil, nil, nil, err
+		} else if errorsList != nil {
+			// Close consummer
+			consumer.Close()
+			return nil, nil, errorsList, nil
 		}
 	}
 
 	// Call Response operation
-	respObjType, respIDList, respArchDetList, respElemList, err = consumer.queryResponse()
+	respObjType, respIDList, respArchDetList, respElemList, errorsList, err = consumer.queryResponse()
 	if err != nil {
-		return nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consummer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
 	// Put the objects in the interface
 	responses = append(responses, respObjType, respIDList, respArchDetList, respElemList)
 
-	return consumer, responses, nil
+	return consumer, responses, nil, nil
 }
 
 // Progress & Ack
-func (consumer *ProgressConsumer) queryProgress(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) error {
+func (consumer *ProgressConsumer) queryProgress(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode Boolean
 	err := boolean.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode ObjectType
 	err = objectType.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode ArchiveQueryList
 	err = archiveQueryList.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode QueryFilterList
 	err = encoder.EncodeAbstractElement(queryFilterList)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Call Progress operation
-	_, err = consumer.op.Progress(encoder.Body())
+	resp, err := consumer.op.Progress(encoder.Body())
 	if err != nil {
-		return err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, err
+			}
+
+			return errorsList, nil
+		}
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Update
-func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
+func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Call Update operation
 	updt, err := consumer.op.GetUpdate()
 	if err != nil {
-		return nil, nil, nil, nil, err
+		// Verify if an error occurs during the operation
+		if updt.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(updt.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, nil, nil, nil, nil, err
+			}
+
+			return nil, nil, nil, nil, errorsList, nil
+		}
+		return nil, nil, nil, nil, nil, err
 	}
 
 	if updt != nil {
@@ -409,38 +457,50 @@ func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *
 		// Decode ObjectType
 		objectType, err := decoder.DecodeElement(NullObjectType)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode IdentifierList
 		identifierList, err := decoder.DecodeElement(NullIdentifierList)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode ArchiveDetailsList
 		archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode ElementList
 		elementList, err := decoder.DecodeAbstractElement()
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, nil, nil, err
 		}
 
-		return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil
+		return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil, nil
 	}
-	return nil, nil, nil, nil, nil
+	return nil, nil, nil, nil, nil, nil
 }
 
 // Response
-func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
+func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Call Update operation
 	resp, err := consumer.op.GetResponse()
 	if err != nil {
-		return nil, nil, nil, nil, err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, nil, nil, nil, nil, err
+			}
+
+			return nil, nil, nil, nil, errorsList, nil
+		}
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// Create the decoder to decode the multiple variables
@@ -449,28 +509,28 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 	// Decode ObjectType
 	objectType, err := decoder.DecodeElement(NullObjectType)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode IdentifierList
 	identifierList, err := decoder.DecodeElement(NullIdentifierList)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode ArchiveDetailsList
 	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode ElementList
 	elementList, err := decoder.DecodeAbstractElement()
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
-	return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil
+	return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil, nil
 }
 
 //======================================================================//

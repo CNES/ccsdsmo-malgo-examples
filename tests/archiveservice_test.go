@@ -22,3 +22,54 @@
  * SOFTWARE.
  */
 package tests
+
+import (
+	"testing"
+
+	. "github.com/ccsdsmo/malgo/com"
+	. "github.com/ccsdsmo/malgo/mal"
+
+	. "github.com/etiennelndr/archiveservice/archive/service"
+	. "github.com/etiennelndr/archiveservice/data"
+	. "github.com/etiennelndr/archiveservice/errors"
+	. "github.com/etiennelndr/archiveservice/main/data"
+)
+
+func TestRetrieveOK(t *testing.T) {
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Create parameters
+	var objectType = ObjectType{
+		UShort(2),
+		UShort(3),
+		UOctet(1),
+		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	var longList = LongList([]*Long{NewLong(0)})
+
+	// Variables to retrieve the return of this function
+	var archiveDetailsList *ArchiveDetailsList
+	var elementList ElementList
+	var errorsList *ServiceError
+	var err error
+	// Start the consumer
+	archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
+
+	if errorsList != nil {
+		t.Fatal("ErrorsList must be nil")
+	}
+	if err != nil {
+		t.Fatal("Err must be nil")
+	}
+	if archiveDetailsList == nil {
+		t.Fatal("ArchiveDetailsList must not be nil")
+	}
+	if elementList == nil {
+		t.Fatal("ElementList must not be nil")
+	}
+}

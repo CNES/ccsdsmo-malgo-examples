@@ -26,7 +26,6 @@ package storage
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -52,7 +51,6 @@ const (
 //                            RETRIEVE                                  //
 //======================================================================//
 func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, objectInstanceIdentifierList LongList) (ArchiveDetailsList, ElementList, error) {
-	fmt.Println("IN: RetrieveInArchive")
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -76,6 +74,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	listShortForm := convertToListShortForm(objectType)
 	// Get Element in the MAL Registry
 	element, err := LookupMALElement(listShortForm)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Create variables to return the elements and information
 	var archiveDetailsList = *NewArchiveDetailsList(0)
@@ -89,8 +90,13 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var encodedElement []byte
 
 			// We can retrieve this object
-			err = tx.QueryRow("SELECT element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? ",
-				*objectInstanceIdentifierList[i]).Scan(&encodedElement, &encodedObjectDetails)
+			err = tx.QueryRow("SELECT element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+				*objectInstanceIdentifierList[i],
+				objectType.Area,
+				objectType.Service,
+				objectType.Version,
+				objectType.Number,
+				domain).Scan(&encodedElement, &encodedObjectDetails)
 			if err != nil {
 				if err.Error() == "sql: no rows in result set" {
 					return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
@@ -151,18 +157,18 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 //======================================================================//
 //                              QUERY                                   //
 //======================================================================//
-func QueryArchive() error {
+func QueryArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ObjectType, *ArchiveDetailsList, *IdentifierList, ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
-		return err
+		return nil, nil, nil, nil, err
 	}
 	defer db.Close()
 
 	// Commit changes
 	tx.Commit()
 
-	return nil
+	return nil, nil, nil, nil, nil
 }
 
 //======================================================================//
@@ -247,7 +253,7 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 					}
 
 					// Insert this new object instance identifier in the returned list
-					longList = append(longList, NewLong(objectInstanceIdentifier))
+					longList.AppendElement(NewLong(objectInstanceIdentifier))
 
 					break
 				}
@@ -275,7 +281,7 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 			}
 
 			// Insert this new object instance identifier in the returned list
-			longList = append(longList, &archiveDetailsList[i].InstId)
+			longList.AppendElement(&archiveDetailsList[i].InstId)
 		}
 	}
 
@@ -345,7 +351,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 //======================================================================//
 //                              DELETE                                  //
 //======================================================================//
-func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longListRequest LongList) (*LongList, error) {
+func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longListRequest LongList) (LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -354,7 +360,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 	defer db.Close()
 
 	// Variable to return
-	var longList = NewLongList(0)
+	var longList LongList
 
 	// Create the domain (It might change in the future)
 	domain := adaptDomain(identifierList)
@@ -521,22 +527,27 @@ func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element []byte
 // resetAutoIncrement take the maximum id in the database and set the
 // AUTO_INCREMENT at this value (actually it's this value to which we added 1)
 func resetAutoIncrement(tx *sql.Tx) error {
+	// Create a value to store the maximum id (to which we added 1)
 	_, err := tx.Exec("SELECT @max := max(id)+1 FROM " + TABLE)
 	if err != nil {
 		return err
 	}
+	// Create the statement (in our case, we use an "alter table" statement)
 	_, err = tx.Exec("SET @alter_statement = CONCAT('ALTER TABLE " + TABLE + " AUTO_INCREMENT = ', @max)")
 	if err != nil {
 		return err
 	}
+	// Prepare the statement
 	_, err = tx.Exec("PREPARE stmt1 FROM @alter_statement;")
 	if err != nil {
 		return err
 	}
+	// Then execute the statement
 	_, err = tx.Exec("EXECUTE stmt1")
 	if err != nil {
 		return err
 	}
+	// Finally, deallocate the statement
 	_, err = tx.Exec("DEALLOCATE PREPARE stmt1;")
 	if err != nil {
 		return err
@@ -544,6 +555,8 @@ func resetAutoIncrement(tx *sql.Tx) error {
 	return nil
 }
 
+// Transform a list of Identifiers to a domain of this
+// type: first.second.third.[...]
 func adaptDomain(identifierList IdentifierList) String {
 	var domain String
 	for i := 0; i < identifierList.Size(); i++ {
@@ -578,7 +591,7 @@ func decodeRetrieveElements(objectInstanceIdentifier Long, _objectDetails []byte
 		return nil, nil, err
 	}
 
-	// Create the new elements
+	// Create the new ArchiveDetails element
 	archiveDetails := &ArchiveDetails{
 		InstId:  objectInstanceIdentifier,
 		Details: *objectDetails,

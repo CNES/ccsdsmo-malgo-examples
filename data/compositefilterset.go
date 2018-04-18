@@ -30,7 +30,7 @@ import (
 )
 
 type CompositeFilterSet struct {
-	filters CompositeFilterList
+	Filters CompositeFilterList
 }
 
 var (
@@ -95,7 +95,7 @@ func (*CompositeFilterSet) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (c *CompositeFilterSet) Encode(encoder Encoder) error {
-	return c.filters.Encode(encoder)
+	return c.Filters.Encode(encoder)
 }
 
 // Decodes and instance of CompositeFilterSet using the supplied decoder

@@ -23,14 +23,8 @@
  */
 package service
 
-import (
-	"sync"
-
-	. "github.com/ccsdsmo/malgo/mal"
-)
-
 type Service interface {
 	CreateService() Service
 
-	LaunchProvider(operation UShort, wg sync.WaitGroup) error
+	LaunchProvider(providerURL string) error
 }

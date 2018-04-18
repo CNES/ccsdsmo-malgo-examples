@@ -26,17 +26,21 @@ package main
 import (
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 
-	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/service"
 	. "github.com/etiennelndr/archiveservice/data"
 	. "github.com/etiennelndr/archiveservice/errors"
 	. "github.com/etiennelndr/archiveservice/main/data"
+)
+
+// Constants for the providers and consumers
+const (
+	providerURL = "maltcp://127.0.0.1:12400"
+	consumerURL = "maltcp://127.0.0.1:14200"
 )
 
 func main() {
@@ -57,21 +61,8 @@ func main() {
 	archiveService = service.(*ArchiveService)
 
 	if args[0] == "provider" {
-		var wg sync.WaitGroup
-		wg.Add(6)
-		// Start the retrieve provider
-		go archiveService.LaunchProvider(OPERATION_IDENTIFIER_RETRIEVE, wg)
-		// Start the query provider
-		go archiveService.LaunchProvider(OPERATION_IDENTIFIER_QUERY, wg)
-		// Start the count provider
-		go archiveService.LaunchProvider(OPERATION_IDENTIFIER_COUNT, wg)
-		// Start the store provider
-		go archiveService.LaunchProvider(OPERATION_IDENTIFIER_STORE, wg)
-		// Start the update provider
-		go archiveService.LaunchProvider(OPERATION_IDENTIFIER_UPDATE, wg)
-		// Start the delete provider
-		go archiveService.LaunchProvider(OPERATION_IDENTIFIER_DELETE, wg)
-		wg.Wait()
+		// Start the providers
+		archiveService.LaunchProvider(providerURL)
 	} else if args[0] == "consumer" {
 		switch args[1] {
 		case "retrieve":
@@ -90,7 +81,7 @@ func main() {
 			var archiveDetailsList *ArchiveDetailsList
 			var elementList ElementList
 			// Start the consumer
-			archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
+			archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(consumerURL, providerURL, objectType, identifierList, longList)
 			if elementList != nil && err == nil {
 				for i := 0; i < elementList.Size(); i++ {
 					element := elementList.GetElementAt(i).(*ValueOfSine)
@@ -116,7 +107,7 @@ func main() {
 			// Variable to retrieve the responses
 			var responses []interface{}
 			// Start the consumer
-			responses, err = archiveService.LaunchQueryConsumer(*boolean, objectType, *archiveQueryList, queryFilterList)
+			responses, err = archiveService.LaunchQueryConsumer(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
 
 			for i := 0; i < len(responses)/4; i++ {
 				fmt.Printf("Responses.#%d\n", i)
@@ -143,7 +134,7 @@ func main() {
 			// Variable to retrieve the return of this function
 			var longList *LongList
 			// Start the consumer
-			longList, err = archiveService.LaunchCountConsumer(objectType, *archiveQueryList, queryFilterList)
+			longList, err = archiveService.LaunchCountConsumer(consumerURL, providerURL, objectType, *archiveQueryList, queryFilterList)
 
 			fmt.Println("Count Consumer received:\n\t>>>", longList)
 
@@ -185,7 +176,7 @@ func main() {
 			// Variable to retrieve the return of this function
 			var longList *LongList
 			// Start the consumer
-			longList, errorsList, err = archiveService.LaunchStoreConsumer(*boolean, objectType, identifierList, archiveDetailsList, elementList)
+			longList, errorsList, err = archiveService.LaunchStoreConsumer(consumerURL, providerURL, *boolean, objectType, identifierList, archiveDetailsList, elementList)
 
 			fmt.Println("Store Consumer received:\n\t>>>", longList,
 				"\n\t>>>", errorsList)
@@ -229,7 +220,7 @@ func main() {
 			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
 
 			// Start the consumer
-			errorsList, err = archiveService.LaunchUpdateConsumer(objectType, identifierList, archiveDetailsList, elementList)
+			errorsList, err = archiveService.LaunchUpdateConsumer(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
 			break
 		case "delete":
@@ -248,7 +239,7 @@ func main() {
 			// Variable to retrieve the return of this function
 			var respLongList *LongList
 			// Start the consumer
-			respLongList, errorsList, err = archiveService.LaunchDeleteConsumer(objectType, identifierList, *longList)
+			respLongList, errorsList, err = archiveService.LaunchDeleteConsumer(consumerURL, providerURL, objectType, identifierList, *longList)
 
 			fmt.Println("Delete Consumer received:\n\t>>>", respLongList)
 

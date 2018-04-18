@@ -47,19 +47,9 @@ type ArchiveService struct {
 	AreaNumber        UShort
 	ServiceNumber     Integer
 	AreaVersion       UOctet
+	Running           bool
+	Wg                sync.WaitGroup
 }
-
-// Constants for the providers and consumers
-const (
-	providerURL         = "maltcp://127.0.0.1:12400"
-	providerURLRetrieve = providerURL + "/providerRetrieve"
-	providerURLQuery    = providerURL + "/providerQuery"
-	providerURLCount    = providerURL + "/providerCount"
-	providerURLStore    = providerURL + "/providerStore"
-	providerURLUpdate   = providerURL + "/providerUpdate"
-	providerURLDelete   = providerURL + "/providerDelete"
-	consumerURL         = "maltcp://127.0.0.1:14200"
-)
 
 // CreateService : TODO
 func (*ArchiveService) CreateService() Service {
@@ -69,6 +59,8 @@ func (*ArchiveService) CreateService() Service {
 		COM_AREA_NUMBER,
 		ARCHIVE_SERVICE_SERVICE_NUMBER,
 		COM_AREA_VERSION,
+		true,
+		*new(sync.WaitGroup),
 	}
 
 	return archiveService
@@ -78,13 +70,13 @@ func (*ArchiveService) CreateService() Service {
 //                          START: Consumer                             //
 //======================================================================//
 // LaunchRetrieveConsumer : TODO
-func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
+func (archiveService *ArchiveService) LaunchRetrieveConsumer(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURLRetrieve)
+	var providerURI = NewURI(providerURL + "/providerRetrieve")
 	// OUT
 	consumer, archiveDetailsList, elementList, errorsList, err := StartRetrieveConsumer(consumerURL,
 		providerURI,
@@ -104,13 +96,13 @@ func (archiveService *ArchiveService) LaunchRetrieveConsumer(objectType ObjectTy
 }
 
 // LaunchQueryConsumer : TODO
-func (archiveService *ArchiveService) LaunchQueryConsumer(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, error) {
+func (archiveService *ArchiveService) LaunchQueryConsumer(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Query Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURLQuery)
+	var providerURI = NewURI(providerURL + "/providerQuery")
 	// OUT
 	consumer, responses, err := StartQueryConsumer(consumerURL,
 		providerURI,
@@ -129,13 +121,13 @@ func (archiveService *ArchiveService) LaunchQueryConsumer(boolean Boolean, objec
 }
 
 // LaunchCountConsumer : TODO
-func (archiveService *ArchiveService) LaunchCountConsumer(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
+func (archiveService *ArchiveService) LaunchCountConsumer(consumerURL string, providerURL string, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Count Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURLCount)
+	var providerURI = NewURI(providerURL + "/providerCount")
 	// OUT
 	consumer, longList, err := StartCountConsumer(consumerURL,
 		providerURI,
@@ -153,13 +145,13 @@ func (archiveService *ArchiveService) LaunchCountConsumer(objectType ObjectType,
 }
 
 // LaunchStoreConsumer : TODO
-func (archiveService *ArchiveService) LaunchStoreConsumer(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) LaunchStoreConsumer(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Store Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURLStore)
+	var providerURI = NewURI(providerURL + "/providerStore")
 	// OUT
 	consumer, longList, errorsList, err := StartStoreConsumer(consumerURL,
 		providerURI,
@@ -181,13 +173,13 @@ func (archiveService *ArchiveService) LaunchStoreConsumer(boolean Boolean, objec
 }
 
 // LaunchUpdateConsumer : TODO
-func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
+func (archiveService *ArchiveService) LaunchUpdateConsumer(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Update Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURLUpdate)
+	var providerURI = NewURI(providerURL + "/providerUpdate")
 	// OUT
 	consumer, errorsList, err := StartUpdateConsumer(consumerURL,
 		providerURI,
@@ -208,13 +200,13 @@ func (archiveService *ArchiveService) LaunchUpdateConsumer(objectType ObjectType
 }
 
 // LaunchDeleteConsumer : TODO
-func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) LaunchDeleteConsumer(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Delete Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURLDelete)
+	var providerURI = NewURI(providerURL + "/providerDelete")
 	// OUT
 	consumer, respLongList, errorsList, err := StartDeleteConsumer(consumerURL,
 		providerURI,
@@ -236,10 +228,30 @@ func (archiveService *ArchiveService) LaunchDeleteConsumer(objectType ObjectType
 //======================================================================//
 //                          START: Provider                             //
 //======================================================================//
+func (archiveService *ArchiveService) LaunchProvider(providerURL string) error {
+	archiveService.Wg.Add(6)
+	// Start the retrieve provider
+	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_RETRIEVE, providerURL)
+	// Start the query provider
+	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_QUERY, providerURL)
+	// Start the count provider
+	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_COUNT, providerURL)
+	// Start the store provider
+	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_STORE, providerURL)
+	// Start the update provider
+	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_UPDATE, providerURL)
+	// Start the delete provider
+	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_DELETE, providerURL)
+	// Wait until the end of the six operations
+	archiveService.Wg.Wait()
+
+	return nil
+}
+
 // LaunchProvider : TODO
-func (archiveService *ArchiveService) LaunchProvider(operation UShort, wg sync.WaitGroup) error {
+func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, providerURL string) error {
 	// Inform the WaitGroup that this goroutine is finished at the end of this function
-	defer wg.Done()
+	defer archiveService.Wg.Done()
 	// Declare variables
 	var provider *Provider
 	var err error
@@ -282,10 +294,8 @@ func (archiveService *ArchiveService) LaunchProvider(operation UShort, wg sync.W
 	defer provider.Close()
 
 	// Start communication
-	var running = true
-	for running == true {
-		time.Sleep(10 * time.Second)
-		//running = false
+	for archiveService.Running == true {
+		time.Sleep(5 * time.Second)
 	}
 
 	return nil

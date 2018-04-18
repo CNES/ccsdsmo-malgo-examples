@@ -132,7 +132,7 @@ func (provider *Provider) retrieveHandler() error {
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			// TODO (AF): do sthg with these objects
+			// TODO: do sthg with these objects
 			fmt.Println("RetrieveHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
@@ -336,7 +336,9 @@ func (provider *Provider) queryHandler() error {
 
 			objType, archDetList, idList, elementList, err := QueryArchive(*objectType, *archiveQueryList, queryFilterList)
 			if err != nil {
-				//TODO: update error
+				// TODO: we may have to check if err is not an "UNKNOWN" error
+				provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				return err
 			}
 
 			// TODO: do sthg with these objects
@@ -359,6 +361,7 @@ func (provider *Provider) queryHandler() error {
 				err = provider.queryUpdate(transaction, objType, idList, archDetList, elementList)
 				if err != nil {
 					// TODO: we're (maybe) supposed to say to the consumer that an error occured
+					provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 					return err
 				}
 			}
@@ -367,6 +370,7 @@ func (provider *Provider) queryHandler() error {
 			err = provider.queryResponse(transaction, objType, idList, archDetList, elementList)
 			if err != nil {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.queryResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 		}
@@ -609,7 +613,7 @@ func (provider *Provider) countHandler() error {
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			// TODO (AF): do sthg with these objects
+			// TODO: do sthg with these objects
 			fmt.Println("CountHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				archiveQueryList, "\n\t>>>",
@@ -745,7 +749,7 @@ func (provider *Provider) storeHandler() error {
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			// TODO (AF): do sthg with these objects
+			// TODO: do sthg with these objects
 			fmt.Println("StoreHandler received:\n\t>>>",
 				boolean, "\n\t>>>",
 				objectType, "\n\t>>>",
@@ -965,7 +969,7 @@ func (provider *Provider) updateHandler() error {
 				return err
 			}
 
-			// TODO (AF): do sthg with these objects
+			// TODO: do sthg with these objects
 			fmt.Println("UpdateHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
@@ -1137,7 +1141,7 @@ func (provider *Provider) deleteHandler() error {
 				return err
 			}
 
-			// TODO (AF): do sthg with these objects
+			// TODO: do sthg with these objects
 			fmt.Println("DeleteHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",

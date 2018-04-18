@@ -69,8 +69,8 @@ func (*ArchiveService) CreateService() Service {
 //======================================================================//
 //                          START: Consumer                             //
 //======================================================================//
-// LaunchRetrieveConsumer : TODO
-func (archiveService *ArchiveService) LaunchRetrieveConsumer(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
+// Retrieve : TODO
+func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
@@ -95,8 +95,8 @@ func (archiveService *ArchiveService) LaunchRetrieveConsumer(consumerURL string,
 	return archiveDetailsList, elementList, nil, nil
 }
 
-// LaunchQueryConsumer : TODO
-func (archiveService *ArchiveService) LaunchQueryConsumer(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, error) {
+// Query : TODO
+func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Query Consumer")
@@ -120,8 +120,8 @@ func (archiveService *ArchiveService) LaunchQueryConsumer(consumerURL string, pr
 	return responses, nil
 }
 
-// LaunchCountConsumer : TODO
-func (archiveService *ArchiveService) LaunchCountConsumer(consumerURL string, providerURL string, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
+// Count : TODO
+func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Count Consumer")
@@ -144,8 +144,8 @@ func (archiveService *ArchiveService) LaunchCountConsumer(consumerURL string, pr
 	return longList, nil
 }
 
-// LaunchStoreConsumer : TODO
-func (archiveService *ArchiveService) LaunchStoreConsumer(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
+// Store : TODO
+func (archiveService *ArchiveService) Store(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Store Consumer")
@@ -172,8 +172,8 @@ func (archiveService *ArchiveService) LaunchStoreConsumer(consumerURL string, pr
 	return longList, nil, nil
 }
 
-// LaunchUpdateConsumer : TODO
-func (archiveService *ArchiveService) LaunchUpdateConsumer(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
+// Update : TODO
+func (archiveService *ArchiveService) Update(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Update Consumer")
@@ -199,8 +199,8 @@ func (archiveService *ArchiveService) LaunchUpdateConsumer(consumerURL string, p
 	return nil, nil
 }
 
-// LaunchDeleteConsumer : TODO
-func (archiveService *ArchiveService) LaunchDeleteConsumer(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
+// Delete : TODO
+func (archiveService *ArchiveService) Delete(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Delete Consumer")
@@ -228,7 +228,7 @@ func (archiveService *ArchiveService) LaunchDeleteConsumer(consumerURL string, p
 //======================================================================//
 //                          START: Provider                             //
 //======================================================================//
-func (archiveService *ArchiveService) LaunchProvider(providerURL string) error {
+func (archiveService *ArchiveService) StartProviders(providerURL string) error {
 	archiveService.Wg.Add(6)
 	// Start the retrieve provider
 	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_RETRIEVE, providerURL)

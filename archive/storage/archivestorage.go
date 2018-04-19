@@ -26,6 +26,7 @@ package storage
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -209,8 +210,7 @@ func QueryArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, quer
 	}
 	defer db.Close()
 
-	// Commit changes
-	tx.Commit()
+	fmt.Println(tx)
 
 	return nil, nil, nil, nil, nil
 }
@@ -226,8 +226,7 @@ func CountInArchive() error {
 	}
 	defer db.Close()
 
-	// Commit changes
-	tx.Commit()
+	fmt.Println(tx)
 
 	return nil
 }

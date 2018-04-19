@@ -96,7 +96,7 @@ func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL s
 }
 
 // Query : TODO
-func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, error) {
+func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Query Consumer")
@@ -104,20 +104,22 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 	// IN
 	var providerURI = NewURI(providerURL + "/providerQuery")
 	// OUT
-	consumer, responses, err := StartQueryConsumer(consumerURL,
+	consumer, responses, errorsList, err := StartQueryConsumer(consumerURL,
 		providerURI,
 		boolean,
 		objectType,
 		archiveQueryList,
 		queryFilterList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	} else if errorsList != nil {
+		return nil, errorsList, nil
 	}
 
 	// Close the consumer
 	consumer.Close()
 
-	return responses, nil
+	return responses, nil, nil
 }
 
 // Count : TODO

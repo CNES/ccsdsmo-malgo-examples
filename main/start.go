@@ -107,7 +107,7 @@ func main() {
 			// Variable to retrieve the responses
 			var responses []interface{}
 			// Start the consumer
-			responses, err = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+			responses, errorsList, err = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
 
 			for i := 0; i < len(responses)/4; i++ {
 				fmt.Printf("Responses.#%d\n", i)
@@ -199,7 +199,7 @@ func main() {
 			// ---- IDENTIFIERLIST ----
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(13)
+			var objectInstanceIdentifier = *NewLong(1)
 			// Variables for ArchiveDetailsList
 			// ---- ARCHIVEDETAILSLIST ----
 			var objectKey = ObjectKey{
@@ -214,7 +214,7 @@ func main() {
 				Related: NewLong(1),
 				Source:  &objectID,
 			}
-			var network = NewIdentifier("network")
+			var network = NewIdentifier("new.network")
 			var fineTime = NewFineTime(time.Now())
 			var uri = NewURI("main/start")
 			var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})

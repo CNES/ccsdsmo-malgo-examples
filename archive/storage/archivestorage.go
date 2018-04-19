@@ -86,17 +86,26 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	if !isAll {
 		for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
 			// Variables to store the different elements present in the database
-			var encodedObjectDetails []byte
+			var encodedObjectId []byte
 			var encodedElement []byte
+			var timestamp time.Time
+			var related *Long
+			var network *Identifier
+			var provider *URI
 
 			// We can retrieve this object
-			err = tx.QueryRow("SELECT element, objectDetails FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			err = tx.QueryRow("SELECT element, timestamp, related, network, provider, source FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
 				*objectInstanceIdentifierList[i],
 				objectType.Area,
 				objectType.Service,
 				objectType.Version,
 				objectType.Number,
-				domain).Scan(&encodedElement, &encodedObjectDetails)
+				domain).Scan(&encodedElement,
+				&timestamp,
+				related,
+				network,
+				provider,
+				&encodedObjectId)
 			if err != nil {
 				if err.Error() == "sql: no rows in result set" {
 					return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
@@ -104,9 +113,22 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 				return nil, nil, err
 			}
 
-			archiveDetails, element, err := decodeRetrieveElements(*objectInstanceIdentifierList[i], encodedObjectDetails, encodedElement)
+			// Decode the Element and the ObjectId for the ArchiveDetails
+			objectId, element, err := decodeElements(encodedObjectId, encodedElement)
 			if err != nil {
 				return nil, nil, err
+			}
+
+			// Create the ArchiveDetails
+			// First, create the ObjectDetails
+			objectDetails := ObjectDetails{related, objectId}
+			// Create the ArchiveDetails
+			archiveDetails := &ArchiveDetails{
+				*objectInstanceIdentifierList[i],
+				objectDetails,
+				network,
+				NewFineTime(timestamp),
+				provider,
 			}
 
 			archiveDetailsList.AppendElement(archiveDetails)
@@ -116,11 +138,15 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		// Retrieve all these elements (no particular object instance iedentifiers)
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
-		var encodedObjectDetails []byte
+		var encodedObjectId []byte
 		var encodedElement []byte
+		var timestamp time.Time
+		var related *Long
+		var network *Identifier
+		var provider *URI
 
 		// Retrieve this object and its archive details in the archive
-		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, objectDetails FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, related, network, provider, source FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
 			objectType.Area,
 			objectType.Service,
 			objectType.Version,
@@ -132,13 +158,31 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 
 		var countElements int
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &encodedElement, &encodedObjectDetails); err != nil {
+			if err = rows.Scan(&objectInstanceIdentifier, &encodedElement,
+				&timestamp,
+				related,
+				network,
+				provider,
+				&encodedObjectId); err != nil {
 				return nil, nil, err
 			}
 
-			archiveDetails, element, err := decodeRetrieveElements(objectInstanceIdentifier, encodedObjectDetails, encodedElement)
+			// Decode the Element and the ObjectId for the ArchiveDetails
+			objectId, element, err := decodeElements(encodedObjectId, encodedElement)
 			if err != nil {
 				return nil, nil, err
+			}
+
+			// Create the ArchiveDetails
+			// First, create the ObjectDetails
+			objectDetails := ObjectDetails{related, objectId}
+			// Create the ArchiveDetails
+			archiveDetails := &ArchiveDetails{
+				objectInstanceIdentifier,
+				objectDetails,
+				network,
+				NewFineTime(timestamp),
+				provider,
 			}
 
 			archiveDetailsList.AppendElement(archiveDetails)
@@ -209,30 +253,6 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 	domain := adaptDomain(identifierList)
 
 	for i := 0; i < archiveDetailsList.Size(); i++ {
-		// First of all, we need to encode the element and the objectDetails
-		factory := new(FixedBinaryEncoding)
-
-		// Create the encoder
-		encoder := factory.NewEncoder(make([]byte, 0, 8192))
-
-		// Encode the Element
-		err := encoder.EncodeAbstractElement(elementList.GetElementAt(i))
-		if err != nil {
-			return nil, err
-		}
-		encodedElement := encoder.Body()
-
-		// Reallocate the encoder
-		encoder = factory.NewEncoder(make([]byte, 0, 8192))
-
-		// Encode the ObjectDetails
-		err = archiveDetailsList[i].Details.Encode(encoder)
-		if err != nil {
-			return nil, err
-		}
-		encodedObjectDetails := encoder.Body()
-
-		//encoder := factory.
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
 			for {
@@ -245,7 +265,7 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 				}
 				if !boolean {
 					// OK, we can insert the object with this instance identifier
-					err := insertInDatabase(tx, objectInstanceIdentifier, encodedElement, objectType, domain, encodedObjectDetails)
+					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i), objectType, domain, *archiveDetailsList[i])
 					if err != nil {
 						// An error occurred, do a rollback
 						tx.Rollback()
@@ -273,7 +293,7 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 			}
 
 			// This object is not present in the archive
-			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), encodedElement, objectType, domain, encodedObjectDetails)
+			err = insertInDatabase(tx, int64(archiveDetailsList[i].InstId), elementList.GetElementAt(i), objectType, domain, *archiveDetailsList[i])
 			if err != nil {
 				// An error occurred, do a rollback
 				tx.Rollback()
@@ -317,6 +337,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 			objectType.Number,
 			domain).Scan(&queryReturn)
 		if err != nil {
+			tx.Rollback()
 			if err.Error() == "sql: no rows in result set" {
 				return errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
 			}
@@ -324,12 +345,19 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 		}
 
 		// TODO: Encode element and objectDetails
-		element, objectDetails, err := encodeUpdateElements(elementList.GetElementAt(i), archiveDetailsList[i].Details)
-
+		encodedElement, encodedObjectId, err := encodeElements(elementList.GetElementAt(i), *archiveDetailsList[i].Details.Source)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 		// If no error, the object is in the archive and we can update it
-		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ? AND objectDetails = ? WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
-			element,
-			objectDetails,
+		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, related = ?, network = ?, provider = ?, source = ? WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			encodedElement,
+			time.Time(*archiveDetailsList[i].Timestamp),
+			*archiveDetailsList[i].Details.Related,
+			*archiveDetailsList[i].Network,
+			*archiveDetailsList[i].Provider,
+			encodedObjectId,
 			archiveDetailsList[i].InstId,
 			objectType.Area,
 			objectType.Service,
@@ -431,6 +459,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 				objectType.Number,
 				domain).Scan(&objInstID)
 			if err != nil {
+				tx.Rollback()
 				if err.Error() == "sql: no rows in result set" {
 					return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
 				}
@@ -508,16 +537,27 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 }
 
 // This function allows insert an element in the archive
-func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element []byte, objectType ObjectType, domain String, objectDetails []byte) error {
-	_, err := tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? , ? , ? , ? , ? , ? , ? )",
+func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element, objectType ObjectType, domain String, archiveDetails ArchiveDetails) error {
+	// Encode the Element and the ObjectId from the ArchiveDetails
+	encodedElement, encodedObjectID, err := encodeElements(element, *archiveDetails.Details.Source)
+	if err != nil {
+		return err
+	}
+
+	// Execute the query to insert all the values in the database
+	_, err = tx.Exec("INSERT INTO "+TABLE+" VALUES ( NULL , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? , ? )",
 		objectInstanceIdentifier,
-		element,
+		encodedElement,
 		objectType.Area,
 		objectType.Service,
 		objectType.Version,
 		objectType.Number,
 		domain,
-		objectDetails)
+		time.Time(*archiveDetails.Timestamp),
+		*archiveDetails.Details.Related,
+		*archiveDetails.Network,
+		*archiveDetails.Provider,
+		encodedObjectID)
 	if err != nil {
 		return err
 	}
@@ -568,19 +608,19 @@ func adaptDomain(identifierList IdentifierList) String {
 	return domain
 }
 
-func decodeRetrieveElements(objectInstanceIdentifier Long, _objectDetails []byte, _element []byte) (*ArchiveDetails, Element, error) {
+func decodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, error) {
 	// Create the factory
 	factory := new(FixedBinaryEncoding)
 
 	// Create the decoder
-	decoder := factory.NewDecoder(_objectDetails)
+	decoder := factory.NewDecoder(_objectId)
 
 	// Decode the ArchiveDetails
-	elem, err := decoder.DecodeElement(NullObjectDetails)
+	elem, err := decoder.DecodeElement(NullObjectId)
 	if err != nil {
 		return nil, nil, err
 	}
-	objectDetails := elem.(*ObjectDetails)
+	objectId := elem.(*ObjectId)
 
 	// Reallocate the decoder
 	decoder = factory.NewDecoder(_element)
@@ -591,16 +631,10 @@ func decodeRetrieveElements(objectInstanceIdentifier Long, _objectDetails []byte
 		return nil, nil, err
 	}
 
-	// Create the new ArchiveDetails element
-	archiveDetails := &ArchiveDetails{
-		InstId:  objectInstanceIdentifier,
-		Details: *objectDetails,
-	}
-
-	return archiveDetails, element, nil
+	return objectId, element, nil
 }
 
-func encodeUpdateElements(_element Element, _objectDetails ObjectDetails) ([]byte, []byte, error) {
+func encodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error) {
 	// Create the factory
 	factory := new(FixedBinaryEncoding)
 
@@ -618,16 +652,16 @@ func encodeUpdateElements(_element Element, _objectDetails ObjectDetails) ([]byt
 	encoder = factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectDetails
-	err = _objectDetails.Encode(encoder)
+	err = _objectId.Encode(encoder)
 	if err != nil {
 		return nil, nil, err
 	}
-	objectDetails := encoder.Body()
+	objectId := encoder.Body()
 
-	return element, objectDetails, nil
+	return element, objectId, nil
 }
 
-// This part is usefull for type short form conversion (from typeShortForm to listShortForm)
+// This part is useful for type short form conversion (from typeShortForm to listShortForm)
 func typeShortFormToShortForm(objectType ObjectType) Long {
 	var typeShortForm = Long(objectType.Number) | 0xFFFFFFF000000
 	var areaVersion = (Long(objectType.Version) << 24) | 0xFFFFF00FFFFFF

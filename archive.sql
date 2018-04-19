@@ -37,7 +37,7 @@ CREATE TABLE `Archive` (
   `provider` text,
   `source` text,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -46,7 +46,6 @@ CREATE TABLE `Archive` (
 
 LOCK TABLES `Archive` WRITE;
 /*!40000 ALTER TABLE `Archive` DISABLE KEYS */;
-INSERT INTO `Archive` VALUES (2,1,'\0\0\0\0?\0\0\0',2,3,1,1,'fr.cnes.archiveservice.test','2018-04-19 13:59:26',1,'new.network','main/start','\0\0\0\0\0\0\0\0\0fr\0\0\0cnes\0\0\0archiveservice\0\0\0test\0\0\0\0\0\0\0');
 /*!40000 ALTER TABLE `Archive` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -59,4 +58,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-04-19 16:33:14
+-- Dump completed on 2018-04-19 16:34:24

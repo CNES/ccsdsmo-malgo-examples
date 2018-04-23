@@ -727,3 +727,26 @@ func createQuery(archiveQuery ArchiveQuery, queryFilter QueryFilter) string {
 
 	return query
 }
+
+func whatExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
+	switch expressionOperator {
+	case COM_EXPRESSIONOPERATOR_EQUAL:
+		return "? = ?"
+	case COM_EXPRESSIONOPERATOR_DIFFER:
+		return "? != ?"
+	case COM_EXPRESSIONOPERATOR_GREATER:
+		return "? > ?"
+	case COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL:
+		return "? >= ?"
+	case COM_EXPRESSIONOPERATOR_LESS:
+		return "? < ?"
+	case COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL:
+		return "? <= ?"
+	case COM_EXPRESSIONOPERATOR_CONTAINS:
+		return "? LIKE '%?%'"
+	case COM_EXPRESSIONOPERATOR_ICONTAINS:
+		return "? NOT LIKE '%?%'"
+	default:
+		return ""
+	}
+}

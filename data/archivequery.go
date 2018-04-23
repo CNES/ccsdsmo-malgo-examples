@@ -29,15 +29,15 @@ import (
 )
 
 type ArchiveQuery struct {
-	Domain        IdentifierList
-	Network       Identifier
-	Provider      URI
+	Domain        *IdentifierList
+	Network       *Identifier
+	Provider      *URI
 	Related       Long
-	Source        ObjectId
-	StartTime     FineTime
-	EndTime       FineTime
-	SortOrder     Boolean
-	SortFieldName String
+	Source        *ObjectId
+	StartTime     *FineTime
+	EndTime       *FineTime
+	SortOrder     *Boolean
+	SortFieldName *String
 }
 
 var (
@@ -49,15 +49,15 @@ const (
 	COM_ARCHIVE_QUERY_SHORT_FORM      Long    = 0x2000201000002
 )
 
-func NewArchiveQuery(domain IdentifierList,
-	network Identifier,
-	provider URI,
+func NewArchiveQuery(domain *IdentifierList,
+	network *Identifier,
+	provider *URI,
 	related Long,
-	source ObjectId,
-	startTime FineTime,
-	endTime FineTime,
-	sortOrder Boolean,
-	sortFieldName String) *ArchiveQuery {
+	source *ObjectId,
+	startTime *FineTime,
+	endTime *FineTime,
+	sortOrder *Boolean,
+	sortFieldName *String) *ArchiveQuery {
 	archiveQuery := &ArchiveQuery{
 		domain,
 		network,
@@ -115,19 +115,19 @@ func (*ArchiveQuery) GetTypeShortForm() Integer {
 // Encodes this element using the supplied encoder
 func (a *ArchiveQuery) Encode(encoder Encoder) error {
 	// Encode domain (NullableIdentifierList)
-	err := a.Domain.Encode(encoder)
+	err := encoder.EncodeNullableElement(a.Domain)
 	if err != nil {
 		return err
 	}
 
 	// Encode network (NullableIdentifier)
-	err = encoder.EncodeNullableIdentifier(&a.Network)
+	err = encoder.EncodeNullableIdentifier(a.Network)
 	if err != nil {
 		return err
 	}
 
 	// Encode provider (NullableURI)
-	err = encoder.EncodeNullableURI(&a.Provider)
+	err = encoder.EncodeNullableURI(a.Provider)
 	if err != nil {
 		return err
 	}
@@ -139,31 +139,31 @@ func (a *ArchiveQuery) Encode(encoder Encoder) error {
 	}
 
 	// Encode source (NullableObjectId)
-	err = encoder.EncodeNullableElement(&a.Source)
+	err = encoder.EncodeNullableElement(a.Source)
 	if err != nil {
 		return err
 	}
 
 	// Encode startTime (NullableFineTime)
-	err = encoder.EncodeNullableFineTime(&a.StartTime)
+	err = encoder.EncodeNullableFineTime(a.StartTime)
 	if err != nil {
 		return err
 	}
 
 	// Encode endTime (NullableFineTime)
-	err = encoder.EncodeNullableFineTime(&a.EndTime)
+	err = encoder.EncodeNullableFineTime(a.EndTime)
 	if err != nil {
 		return err
 	}
 
 	// Encode sortOrder (NullableBoolean)
-	err = encoder.EncodeNullableBoolean(&a.SortOrder)
+	err = encoder.EncodeNullableBoolean(a.SortOrder)
 	if err != nil {
 		return err
 	}
 
 	// Encode sortFieldName (NullableString)
-	return encoder.EncodeNullableString(&a.SortFieldName)
+	return encoder.EncodeNullableString(a.SortFieldName)
 }
 
 // Decodes an instance of ObjectDetails using the supplied decoder
@@ -236,15 +236,15 @@ func DecodeArchiveQuery(decoder Decoder) (*ArchiveQuery, error) {
 	sortFieldName := element.(*String)
 
 	archiveQuery := &ArchiveQuery{
-		*domain,
-		*network,
-		*provider,
+		domain,
+		network,
+		provider,
 		*related,
-		*source,
-		*startTime,
-		*endTime,
-		*sortOrder,
-		*sortFieldName,
+		source,
+		startTime,
+		endTime,
+		sortOrder,
+		sortFieldName,
 	}
 
 	return archiveQuery, nil

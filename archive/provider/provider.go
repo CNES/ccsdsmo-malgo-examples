@@ -334,12 +334,11 @@ func (provider *Provider) queryHandler() error {
 			// Hold on buddy, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			objType, archDetList, idList, elementList, err := QueryArchive(*objectType, *archiveQueryList, queryFilterList)
-			if err != nil {
-				// TODO: we may have to check if err is not an "UNKNOWN" error
-				provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
-				return err
-			}
+			// Variables to send to the consumer
+			var objType *ObjectType
+			var archDetList *ArchiveDetailsList
+			var idList *IdentifierList
+			var elementList ElementList
 
 			// TODO: do sthg with these objects
 			fmt.Println("QueryHandler received:\n\t>>>",
@@ -348,7 +347,7 @@ func (provider *Provider) queryHandler() error {
 				archiveQueryList, "\n\t>>>",
 				queryFilterList)
 
-			if *boolean != true {
+			if boolean == nil || *boolean == false {
 				elementList = nil
 				idList = nil
 			} else {
@@ -357,6 +356,18 @@ func (provider *Provider) queryHandler() error {
 			}
 
 			for i := 0; i < archiveQueryList.Size()-1; i++ {
+				// TODO: we'll have to change all of the following lines
+				// Do a query to the archive
+				if queryFilterList != nil {
+					objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
+				} else {
+					objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[i], nil)
+				}
+				if err != nil {
+					// TODO: we may have to check if err is not an "UNKNOWN" error
+					provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+					return err
+				}
 				// Call Update operation
 				err = provider.queryUpdate(transaction, objType, idList, archDetList, elementList)
 				if err != nil {
@@ -366,7 +377,19 @@ func (provider *Provider) queryHandler() error {
 				}
 			}
 
+			// Do a query to the archive
+			if queryFilterList != nil {
+				objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], queryFilterList.GetElementAt(archiveQueryList.Size()-1))
+			} else {
+				objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], nil)
+			}
+			if err != nil {
+				// TODO: we may have to check if err is not an "UNKNOWN" error
+				provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				return err
+			}
 			// ----- Call Response operation -----
+			// Unless archive query list size is equal to 1 (we didn't enter in the for loop)
 			err = provider.queryResponse(transaction, objType, idList, archDetList, elementList)
 			if err != nil {
 				// TODO: we're (maybe) supposed to say to the consumer that an error occured
@@ -417,9 +440,12 @@ func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *A
 	}
 
 	// Decode QueryFilterList
-	queryFilterList, err := decoder.DecodeAbstractElement()
+	queryFilterList, err := decoder.DecodeNullableAbstractElement()
 	if err != nil {
 		return nil, nil, nil, nil, err
+	}
+	if queryFilterList == nil {
+		return boolean.(*Boolean), objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), nil, nil
 	}
 
 	return boolean.(*Boolean), objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), queryFilterList.(QueryFilterList), nil
@@ -517,25 +543,25 @@ func (provider *Provider) queryResponse(transaction ProgressTransaction, objectT
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectType
-	err := objectType.Encode(encoder)
+	err := encoder.EncodeNullableElement(objectType)
 	if err != nil {
 		return err
 	}
 
 	// Encode IdentifierList
-	err = identifierList.Encode(encoder)
+	err = encoder.EncodeNullableElement(identifierList)
 	if err != nil {
 		return err
 	}
 
 	// Encode ArchiveDetailsList
-	err = archiveDetailsList.Encode(encoder)
+	err = encoder.EncodeNullableElement(archiveDetailsList)
 	if err != nil {
 		return err
 	}
 
 	// Encode ElementList
-	err = encoder.EncodeAbstractElement(elementList)
+	err = encoder.EncodeNullableAbstractElement(elementList)
 	if err != nil {
 		return err
 	}

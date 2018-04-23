@@ -26,13 +26,13 @@ CREATE TABLE `Archive` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `objectInstanceIdentifier` bigint(20) unsigned DEFAULT NULL,
   `element` text,
-  `objectTypeArea` smallint(6) DEFAULT NULL,
-  `objectTypeService` smallint(6) DEFAULT NULL,
-  `objectTypeVersion` tinyint(4) DEFAULT NULL,
-  `objectTypeNumber` smallint(6) DEFAULT NULL,
+  `area` bigint(20) DEFAULT NULL,
+  `service` bigint(20) DEFAULT NULL,
+  `version` bigint(20) DEFAULT NULL,
+  `number` bigint(20) DEFAULT NULL,
   `domain` text,
   `timestamp` datetime DEFAULT NULL,
-  `related` bigint(20) DEFAULT NULL,
+  `details.related` bigint(20) DEFAULT NULL,
   `network` text,
   `provider` text,
   `source` text,
@@ -58,4 +58,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-04-19 16:34:24
+-- Dump completed on 2018-04-23 17:06:41

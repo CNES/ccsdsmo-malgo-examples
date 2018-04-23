@@ -24,6 +24,8 @@
 package consumer
 
 import (
+	"fmt"
+
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -383,6 +385,7 @@ func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 // Progress & Ack
 func (consumer *ProgressConsumer) queryProgress(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
+	fmt.Println("wolo")
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode Boolean
@@ -404,7 +407,7 @@ func (consumer *ProgressConsumer) queryProgress(boolean Boolean, objectType Obje
 	}
 
 	// Encode QueryFilterList
-	err = encoder.EncodeAbstractElement(queryFilterList)
+	err = encoder.EncodeNullableAbstractElement(queryFilterList)
 	if err != nil {
 		return nil, err
 	}
@@ -507,25 +510,25 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
 	// Decode ObjectType
-	objectType, err := decoder.DecodeElement(NullObjectType)
+	objectType, err := decoder.DecodeNullableElement(NullObjectType)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode IdentifierList
-	identifierList, err := decoder.DecodeElement(NullIdentifierList)
+	identifierList, err := decoder.DecodeNullableElement(NullIdentifierList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode ArchiveDetailsList
-	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
+	archiveDetailsList, err := decoder.DecodeNullableElement(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode ElementList
-	elementList, err := decoder.DecodeAbstractElement()
+	elementList, err := decoder.DecodeNullableAbstractElement()
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}

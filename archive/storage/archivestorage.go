@@ -28,6 +28,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
@@ -60,7 +61,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	defer db.Close()
 
 	// Convert domain
-	domain := adaptDomain(identifierList)
+	domain := adaptDomainToString(identifierList)
 
 	// First of all, we need to verity the object instance identifiers values
 	var isAll = false
@@ -95,7 +96,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var provider *URI
 
 			// We can retrieve this object
-			err = tx.QueryRow("SELECT element, timestamp, related, network, provider, source FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			err = tx.QueryRow("SELECT element, timestamp, `details.related`, network, provider, source FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 				*objectInstanceIdentifierList[i],
 				objectType.Area,
 				objectType.Service,
@@ -147,7 +148,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		var provider *URI
 
 		// Retrieve this object and its archive details in the archive
-		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, related, network, provider, source FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, `details.related`, network, provider, source FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			objectType.Area,
 			objectType.Service,
 			objectType.Version,
@@ -202,13 +203,21 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 //======================================================================//
 //                              QUERY                                   //
 //======================================================================//
-func QueryArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ObjectType, *ArchiveDetailsList, *IdentifierList, ElementList, error) {
+func QueryArchive(objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (*ObjectType, *ArchiveDetailsList, *IdentifierList, ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 	defer db.Close()
+
+	var isObjectTypeEqualToZero = objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0
+
+	if isObjectTypeEqualToZero {
+
+	} else {
+
+	}
 
 	fmt.Println(tx)
 
@@ -249,7 +258,7 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 	var longList LongList
 
 	// Create the domain (It might change in the future)
-	domain := adaptDomain(identifierList)
+	domain := adaptDomainToString(identifierList)
 
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
@@ -322,13 +331,13 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 	defer db.Close()
 
 	// Create the domain (It might change in the future)
-	domain := adaptDomain(identifierList)
+	domain := adaptDomainToString(identifierList)
 
 	for i := 0; i < elementList.Size(); i++ {
 		// First of all, we need to verify if the object instance identifier, combined with the object type
 		// and the domain are in the archive
 		var queryReturn int
-		err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+		err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			archiveDetailsList[i].InstId,
 			objectType.Area,
 			objectType.Service,
@@ -343,14 +352,13 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 			return err
 		}
 
-		// TODO: Encode element and objectDetails
 		encodedElement, encodedObjectId, err := encodeElements(elementList.GetElementAt(i), *archiveDetailsList[i].Details.Source)
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 		// If no error, the object is in the archive and we can update it
-		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, related = ?, network = ?, provider = ?, source = ? WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, related = ?, network = ?, provider = ?, source = ? WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			encodedElement,
 			time.Time(*archiveDetailsList[i].Timestamp),
 			*archiveDetailsList[i].Details.Related,
@@ -390,7 +398,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 	var longList LongList
 
 	// Create the domain (It might change in the future)
-	domain := adaptDomain(identifierList)
+	domain := adaptDomainToString(identifierList)
 
 	// Variable to say if we have to delete all of the objects or not
 	var isAll = false
@@ -403,7 +411,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 
 	if isAll {
 		// Retrieve the objectInstanceIdentifier
-		rows, err := tx.Query("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+		rows, err := tx.Query("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			objectType.Area,
 			objectType.Service,
 			objectType.Version,
@@ -429,7 +437,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 		}
 
 		// Delete all these objects
-		_, err = tx.Exec("DELETE FROM "+TABLE+" WHERE objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+		_, err = tx.Exec("DELETE FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			objectType.Area,
 			objectType.Service,
 			objectType.Version,
@@ -450,7 +458,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 		for i := 0; i < longListRequest.Size(); i++ {
 			// Check if the object is in the archive
 			var objInstID int
-			err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 				*longListRequest[i],
 				objectType.Area,
 				objectType.Service,
@@ -465,7 +473,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 				return nil, err
 			}
 
-			_, err = tx.Exec("DELETE FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND objectTypeArea = ? AND objectTypeService = ? AND objectTypeVersion = ? AND objectTypeNumber = ? AND domain = ?",
+			_, err = tx.Exec("DELETE FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 				*longListRequest[i],
 				objectType.Area,
 				objectType.Service,
@@ -596,7 +604,7 @@ func resetAutoIncrement(tx *sql.Tx) error {
 
 // Transform a list of Identifiers to a domain of this
 // type: first.second.third.[...]
-func adaptDomain(identifierList IdentifierList) String {
+func adaptDomainToString(identifierList IdentifierList) String {
 	var domain String
 	for i := 0; i < identifierList.Size(); i++ {
 		domain += String(*identifierList.GetElementAt(i).(*Identifier))
@@ -605,6 +613,15 @@ func adaptDomain(identifierList IdentifierList) String {
 		}
 	}
 	return domain
+}
+
+func adaptDomainToIdentifierList(domain string) IdentifierList {
+	var identifierList = NewIdentifierList(0)
+	var domains = strings.Split(domain, ".")
+	for i := 0; i < len(domains); i++ {
+		identifierList.AppendElement(NewIdentifier(domains[i]))
+	}
+	return *identifierList
 }
 
 func decodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, error) {
@@ -698,4 +715,15 @@ func convertToListShortForm(objectType ObjectType) Long {
 
 	// Force bytes 2, 3 to 1
 	return typeShort | 0x0000000FFFF00
+}
+
+func createQuery(archiveQuery ArchiveQuery, queryFilter QueryFilter) string {
+	var query string
+
+	if queryFilter != nil {
+		// Only CompositeFilterSet type should be used
+		//if
+	}
+
+	return query
 }

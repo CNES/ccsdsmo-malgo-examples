@@ -101,8 +101,21 @@ func main() {
 				UOctet(1),
 				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
-			var archiveQueryList = NewArchiveQueryList(10)
-			var queryFilterList = NewCompositeFilterSetList(10)
+			archiveQueryList := NewArchiveQueryList(0)
+			archiveQuery := &ArchiveQuery{
+				//Domain: IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")}),
+				nil,
+				nil,
+				nil,
+				*NewLong(1),
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			}
+			archiveQueryList.AppendElement(archiveQuery)
+			var queryFilterList *CompositeFilterSetList
 
 			// Variable to retrieve the responses
 			var responses []interface{}
@@ -154,7 +167,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(1)
+			var objectInstanceIdentifier = *NewLong(2)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				Domain: identifierList,

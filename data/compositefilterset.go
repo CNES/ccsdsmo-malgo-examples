@@ -30,7 +30,7 @@ import (
 )
 
 type CompositeFilterSet struct {
-	Filters CompositeFilterList
+	Filters *CompositeFilterList
 }
 
 var (
@@ -42,7 +42,7 @@ const (
 	COM_COMPOSITE_FILTER_SET_FORM            Long    = 0x2000201000004
 )
 
-func NewCompositeFilterSet(filters CompositeFilterList) *CompositeFilterSet {
+func NewCompositeFilterSet(filters *CompositeFilterList) *CompositeFilterSet {
 	compositeFilterSet := &CompositeFilterSet{
 		filters,
 	}
@@ -95,7 +95,7 @@ func (*CompositeFilterSet) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (c *CompositeFilterSet) Encode(encoder Encoder) error {
-	return c.Filters.Encode(encoder)
+	return encoder.EncodeNullableElement(c.Filters)
 }
 
 // Decodes and instance of CompositeFilterSet using the supplied decoder
@@ -105,7 +105,7 @@ func (*CompositeFilterSet) Decode(decoder Decoder) (Element, error) {
 
 func DecodeCompositeFilterSet(decoder Decoder) (*CompositeFilterSet, error) {
 	// Decode CompositeFilterList
-	element, err := decoder.DecodeElement(NullCompositeFilterList)
+	element, err := decoder.DecodeNullableElement(NullCompositeFilterList)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func DecodeCompositeFilterSet(decoder Decoder) (*CompositeFilterSet, error) {
 
 	// Create CompositeFilterList
 	compositeFilterSet := &CompositeFilterSet{
-		*filters,
+		filters,
 	}
 
 	return compositeFilterSet, nil

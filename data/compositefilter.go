@@ -95,7 +95,7 @@ func (*CompositeFilter) GetTypeShortForm() Integer {
 // Encodes this element using the supplied encoder
 func (c *CompositeFilter) Encode(encoder Encoder) error {
 	// FieldName  String
-	err := encoder.EncodeElement(c.FieldName)
+	err := encoder.EncodeNullableElement(c.FieldName)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (*CompositeFilter) Decode(decoder Decoder) (Element, error) {
 
 func DecodeCompositeFilter(decoder Decoder) (*CompositeFilter, error) {
 	// FieldName  String
-	element, err := decoder.DecodeElement(NullString)
+	element, err := decoder.DecodeNullableElement(NullString)
 	if err != nil {
 		return nil, err
 	}

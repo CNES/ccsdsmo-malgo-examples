@@ -347,21 +347,13 @@ func (provider *Provider) queryHandler() error {
 				archiveQueryList, "\n\t>>>",
 				queryFilterList)
 
-			if boolean == nil || *boolean == false {
-				elementList = nil
-				idList = nil
-			} else {
-				idList = NewIdentifierList(0)
-				elementList = NewLongList(0)
-			}
-
 			for i := 0; i < archiveQueryList.Size()-1; i++ {
 				// TODO: we'll have to change all of the following lines
 				// Do a query to the archive
 				if queryFilterList != nil {
-					objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
+					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
 				} else {
-					objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[i], nil)
+					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], nil)
 				}
 				if err != nil {
 					// TODO: we may have to check if err is not an "UNKNOWN" error
@@ -379,9 +371,9 @@ func (provider *Provider) queryHandler() error {
 
 			// Do a query to the archive
 			if queryFilterList != nil {
-				objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], queryFilterList.GetElementAt(archiveQueryList.Size()-1))
+				objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], queryFilterList.GetElementAt(archiveQueryList.Size()-1))
 			} else {
-				objType, archDetList, idList, elementList, err = QueryArchive(*objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], nil)
+				objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], nil)
 			}
 			if err != nil {
 				// TODO: we may have to check if err is not an "UNKNOWN" error

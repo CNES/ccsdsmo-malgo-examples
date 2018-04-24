@@ -24,6 +24,7 @@
 package storage
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -203,7 +204,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 //======================================================================//
 //                              QUERY                                   //
 //======================================================================//
-func QueryArchive(objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (*ObjectType, *ArchiveDetailsList, *IdentifierList, ElementList, error) {
+func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (*ObjectType, *ArchiveDetailsList, *IdentifierList, ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -667,7 +668,7 @@ func encodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error
 	// Reallocate the encoder
 	encoder = factory.NewEncoder(make([]byte, 0, 8192))
 
-	// Encode ObjectDetails
+	// Encode ObjectId
 	err = _objectId.Encode(encoder)
 	if err != nil {
 		return nil, nil, err
@@ -717,18 +718,119 @@ func convertToListShortForm(objectType ObjectType) Long {
 	return typeShort | 0x0000000FFFF00
 }
 
-func createQuery(archiveQuery ArchiveQuery, queryFilter QueryFilter) string {
-	var query string
-
-	if queryFilter != nil {
-		// Only CompositeFilterSet type should be used
-		//if
+func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
+	var queryBuffer bytes.Buffer
+	// Only CompositeFilterSet type should be used
+	queryBuffer.WriteString("SELECT timestamp, `details.related`, network, provider, source")
+	// Check if we need to retrieve the element and its domain
+	if *boolean == true {
+		queryBuffer.WriteString(", element, domain")
+	}
+	// If there's not a wildcard value in one of the object type
+	// fiels then we have to retrieve the entire object type
+	if isObjectTypeEqualToZero == false {
+		queryBuffer.WriteString(", area, service, version, number")
 	}
 
-	return query
+	// Prepare the query for the conditions
+	queryBuffer.WriteString(" FROM " + TABLE + " WHERE")
+
+	var isThereAlreadyACondition = false
+
+	// Add archive query conditions
+	// Domain
+	if archiveQuery.Domain != nil {
+		domain := adaptDomainToString(*archiveQuery.Domain)
+		queryBuffer.WriteString(fmt.Sprintf(" domain = %s", domain))
+		isThereAlreadyACondition = true
+	}
+
+	// Network
+	if archiveQuery.Network != nil {
+		if isThereAlreadyACondition {
+			queryBuffer.WriteString(" AND")
+		} else {
+			isThereAlreadyACondition = true
+		}
+		queryBuffer.WriteString(fmt.Sprintf(" network = %s", *archiveQuery.Network))
+	}
+
+	// Provider
+	if archiveQuery.Provider != nil {
+		if isThereAlreadyACondition {
+			queryBuffer.WriteString(" AND")
+		} else {
+			isThereAlreadyACondition = true
+		}
+		queryBuffer.WriteString(fmt.Sprintf(" provider = %s", *archiveQuery.Provider))
+	}
+
+	// Related (always have to do a query with this condition)
+	if isThereAlreadyACondition {
+		queryBuffer.WriteString(" AND")
+	} else {
+		isThereAlreadyACondition = true
+	}
+	queryBuffer.WriteString(fmt.Sprintf(" related = %d", archiveQuery.Related))
+
+	// Source
+	if archiveQuery.Source != nil {
+		if isThereAlreadyACondition {
+			queryBuffer.WriteString(" AND")
+		} else {
+			isThereAlreadyACondition = true
+		}
+
+		// Encode the ObjectId
+		// Create the factory
+		factory := new(FixedBinaryEncoding)
+
+		// Create the encoder
+		encoder := factory.NewEncoder(make([]byte, 0, 8192))
+
+		// Encode it
+		err := archiveQuery.Source.Encode(encoder)
+		if err != nil {
+			return "", err
+		}
+		queryBuffer.WriteString(fmt.Sprintf(" provider = %s", encoder.Body()))
+	}
+
+	// StartTime
+	if archiveQuery.StartTime != nil {
+		if isThereAlreadyACondition {
+			queryBuffer.WriteString(" AND")
+		} else {
+			isThereAlreadyACondition = true
+		}
+		queryBuffer.WriteString(fmt.Sprintf(" timestamp >= %s", time.Time(*archiveQuery.StartTime)))
+	}
+
+	// EndTime
+	if archiveQuery.EndTime != nil {
+		if isThereAlreadyACondition {
+			queryBuffer.WriteString(" AND")
+		} else {
+			isThereAlreadyACondition = true
+		}
+		queryBuffer.WriteString(fmt.Sprintf(" timestamp <= %s", time.Time(*archiveQuery.EndTime)))
+	}
+
+	// SortOrder
+	if archiveQuery.SortOrder != nil {
+		// SortFieldName
+		queryBuffer.WriteString(fmt.Sprintf(" GROUP BY %s", *archiveQuery.SortFieldName))
+		// If sortOrder is false then we returned values shall be sorted
+		// in descending order (ascending order is the default value)
+		if *archiveQuery.SortOrder == false {
+			queryBuffer.WriteString(" DESC")
+		}
+	}
+
+	return queryBuffer.String(), nil
 }
 
-func whatExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
+func whichExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
 	switch expressionOperator {
 	case COM_EXPRESSIONOPERATOR_EQUAL:
 		return "? = ?"

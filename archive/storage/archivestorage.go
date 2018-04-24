@@ -97,7 +97,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var provider *URI
 
 			// We can retrieve this object
-			err = tx.QueryRow("SELECT element, timestamp, `details.related`, network, provider, source FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
+			err = tx.QueryRow("SELECT element, timestamp, `details.related`, network, provider, `details.source` FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 				*objectInstanceIdentifierList[i],
 				objectType.Area,
 				objectType.Service,
@@ -149,7 +149,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		var provider *URI
 
 		// Retrieve this object and its archive details in the archive
-		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, `details.related`, network, provider, source FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
+		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, `details.related`, network, provider, `details.source` FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			objectType.Area,
 			objectType.Service,
 			objectType.Version,
@@ -214,15 +214,153 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 	var isObjectTypeEqualToZero = objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0
 
-	if isObjectTypeEqualToZero {
-
-	} else {
-
+	// First of all we have to create the query
+	query, err := createQuery(boolean, isObjectTypeEqualToZero, archiveQuery, queryFilter)
+	if err != nil {
+		return nil, nil, nil, nil, err
 	}
 
-	fmt.Println(tx)
+	// Variables to return
+	var objectTypeToReturn *ObjectType
+	var identifierListToReturn *IdentifierList
+	var archiveDetailsListToReturn *ArchiveDetailsList
+	var elementListToReturn ElementList
 
-	return nil, nil, nil, nil, nil
+	if *boolean == true && isObjectTypeEqualToZero == false {
+		// Retrieve all of the elements
+		// Variables to store the different elements present in the database
+		var objectInstanceIdentifier Long
+		var encodedObjectId []byte
+		var encodedElement []byte
+		var timestamp time.Time
+		var related Long
+		var network Identifier
+		var provider URI
+		var area UShort
+		var service UShort
+		var version UOctet
+		var number UShort
+		var domain string
+
+		rows, err := tx.Query(query)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		// Map for the different object types
+		var objectTypeMap map[ObjectType]bool
+		var objectTypeList []ObjectType
+		// Map for the different domains
+		var domainMap map[string]bool
+		var domainList []string
+
+		for rows.Next() {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
+				return nil, nil, nil, nil, err
+			}
+
+			// Verify the object type value
+			objectTypeFromDB := ObjectType{area, service, version, number}
+			if !objectTypeMap[objectTypeFromDB] {
+				objectTypeMap[objectTypeFromDB] = true
+				objectTypeList = append(objectTypeList, objectTypeFromDB)
+			}
+			// Varify the domain value
+			if !domainMap[domain] {
+				domainMap[domain] = true
+				domainList = append(domainList, domain)
+			}
+		}
+	} else if *boolean == true && isObjectTypeEqualToZero == true {
+		// Retrieve all of the elements unless the object type
+		// Variables to store the different elements present in the database
+		var objectInstanceIdentifier Long
+		var encodedObjectId []byte
+		var encodedElement []byte
+		var timestamp time.Time
+		var related Long
+		var network Identifier
+		var provider URI
+		var domain string
+
+		rows, err := tx.Query(query)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		// Map for the different domains
+		var domainMap map[string]bool
+		var domainList []string
+
+		for rows.Next() {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain); err != nil {
+				return nil, nil, nil, nil, err
+			}
+
+			// Varify the domain value
+			if !domainMap[domain] {
+				domainMap[domain] = true
+				domainList = append(domainList, domain)
+			}
+		}
+	} else if *boolean == false && isObjectTypeEqualToZero == false {
+		// Retrieve only the object type and the archive details
+		// Variables to store the different elements present in the database
+		var objectInstanceIdentifier Long
+		var encodedObjectId []byte
+		var timestamp time.Time
+		var related Long
+		var network Identifier
+		var provider URI
+		var area UShort
+		var service UShort
+		var version UOctet
+		var number UShort
+
+		rows, err := tx.Query(query)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		// Map for the different object types
+		var objectTypeMap map[ObjectType]bool
+		var objectTypeList []ObjectType
+
+		for rows.Next() {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &area, &service, &version, &number); err != nil {
+				return nil, nil, nil, nil, err
+			}
+
+			// Verify the object type value
+			objectTypeFromDB := ObjectType{area, service, version, number}
+			if !objectTypeMap[objectTypeFromDB] {
+				objectTypeMap[objectTypeFromDB] = true
+				objectTypeList = append(objectTypeList, objectTypeFromDB)
+			}
+		}
+	} else { // boolean == false and isObjectTypeEqualToZero == false
+		// Retrieve only the archive details
+		// Variables to store the different elements present in the database
+		var objectInstanceIdentifier Long
+		var encodedObjectId []byte
+		var timestamp time.Time
+		var related Long
+		var network Identifier
+		var provider URI
+
+		rows, err := tx.Query(query)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+
+		for rows.Next() {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId); err != nil {
+				return nil, nil, nil, nil, err
+			}
+		}
+	}
+
+	return objectTypeToReturn, archiveDetailsListToReturn, identifierListToReturn, elementListToReturn, nil
 }
 
 //======================================================================//
@@ -359,7 +497,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 			return err
 		}
 		// If no error, the object is in the archive and we can update it
-		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, related = ?, network = ?, provider = ?, source = ? WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
+		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, related = ?, network = ?, provider = ?, `details.source` = ? WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			encodedElement,
 			time.Time(*archiveDetailsList[i].Timestamp),
 			*archiveDetailsList[i].Details.Related,
@@ -688,6 +826,8 @@ func typeShortFormToShortForm(objectType ObjectType) Long {
 	return areaNumber & serviceNumber & areaVersion & typeShortForm
 }
 
+// convertToListShortForm converts an ObjectType to a Long (which
+// will be used for a List Short Form)
 func convertToListShortForm(objectType ObjectType) Long {
 	var listByte []byte
 	listByte = append(listByte, byte(objectType.Area), byte(objectType.Service>>8), byte(objectType.Service), byte(objectType.Version))
@@ -718,10 +858,11 @@ func convertToListShortForm(objectType ObjectType) Long {
 	return typeShort | 0x0000000FFFF00
 }
 
+// createQuery allows the provider to create automatically a query
 func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
 	var queryBuffer bytes.Buffer
 	// Only CompositeFilterSet type should be used
-	queryBuffer.WriteString("SELECT timestamp, `details.related`, network, provider, source")
+	queryBuffer.WriteString("SELECT objectInstanceIdentifier, timestamp, `details.related`, network, provider, `details.source`")
 	// Check if we need to retrieve the element and its domain
 	if *boolean == true {
 		queryBuffer.WriteString(", element, domain")
@@ -735,6 +876,7 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 	// Prepare the query for the conditions
 	queryBuffer.WriteString(" FROM " + TABLE + " WHERE")
 
+	// Attribute to check if there is already a condition before
 	var isThereAlreadyACondition = false
 
 	// Add archive query conditions
@@ -816,6 +958,26 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp <= %s", time.Time(*archiveQuery.EndTime)))
 	}
 
+	// Add query filter conditions
+	if queryFilter != nil {
+		compositerFilterSet := queryFilter.(*CompositeFilterSet)
+
+		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
+			if isThereAlreadyACondition {
+				queryBuffer.WriteString(" AND")
+			} else {
+				isThereAlreadyACondition = true
+			}
+			// Transform the expresion operator
+			expressionOperator := whichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
+
+			//expressionOperator := whichExpressionOperatorIsIt(compositerFilterSet)
+			queryBuffer.WriteString(fmt.Sprintf("%s %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
+				expressionOperator,
+				(*compositerFilterSet.Filters)[i].FieldValue))
+		}
+	}
+
 	// SortOrder
 	if archiveQuery.SortOrder != nil {
 		// SortFieldName
@@ -830,6 +992,7 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 	return queryBuffer.String(), nil
 }
 
+// whichExpressionOperatorIsIt transforms an ExpressionOperator to a string
 func whichExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
 	switch expressionOperator {
 	case COM_EXPRESSIONOPERATOR_EQUAL:

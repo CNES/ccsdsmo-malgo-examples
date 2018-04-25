@@ -360,15 +360,13 @@ func (provider *Provider) queryHandler() error {
 					provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 					return err
 				}
-				for j := 0; j < len(objType); j++ {
-					for k := 0; k < len(idList); k++ {
-						// Call Update operation
-						err = provider.queryUpdate(transaction, objType[j], idList[k], archDetList, elementList)
-						if err != nil {
-							// TODO: we're (maybe) supposed to say to the consumer that an error occured
-							provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
-							return err
-						}
+				for j := 0; j < len(archDetList); j++ {
+					// Call Update operation
+					err = provider.queryUpdate(transaction, objType[j], idList[j], archDetList[j], elementList[j])
+					if err != nil {
+						// TODO: we're (maybe) supposed to say to the consumer that an error occured
+						provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+						return err
 					}
 				}
 			}
@@ -386,24 +384,22 @@ func (provider *Provider) queryHandler() error {
 			}
 			// ----- Call Response operation -----
 			// Unless archive query list size is equal to 1 (we didn't enter in the for loop)
-			for j := 0; j < len(objType); j++ {
-				for k := 0; k < len(idList); k++ {
-					if j == len(objType)-1 && k == len(idList)-1 {
-						// Call Response operation
-						err = provider.queryResponse(transaction, objType[j], idList[k], archDetList, elementList)
-						if err != nil {
-							// TODO: we're (maybe) supposed to say to the consumer that an error occured
-							provider.queryResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
-							return err
-						}
-						break
-					}
-					err = provider.queryUpdate(transaction, objType[j], idList[k], archDetList, elementList)
+			for j := 0; j < len(archDetList); j++ {
+				if j == len(archDetList)-1 {
+					// Call Response operation
+					err = provider.queryResponse(transaction, objType[j], idList[j], archDetList[j], elementList[j])
 					if err != nil {
 						// TODO: we're (maybe) supposed to say to the consumer that an error occured
-						provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+						provider.queryResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 						return err
 					}
+					break
+				}
+				err = provider.queryUpdate(transaction, objType[j], idList[j], archDetList[j], elementList[j])
+				if err != nil {
+					// TODO: we're (maybe) supposed to say to the consumer that an error occured
+					provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+					return err
 				}
 			}
 		}

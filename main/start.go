@@ -147,7 +147,7 @@ func main() {
 			// Variable to retrieve the return of this function
 			var longList *LongList
 			// Start the consumer
-			longList, err = archiveService.Count(consumerURL, providerURL, objectType, *archiveQueryList, queryFilterList)
+			longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, *archiveQueryList, queryFilterList)
 
 			fmt.Println("Count Consumer received:\n\t>>>", longList)
 

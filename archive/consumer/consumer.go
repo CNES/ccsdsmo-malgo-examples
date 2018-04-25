@@ -540,67 +540,103 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 //								COUNT									//
 //======================================================================//
 // StartCountConsumer : TODO
-func StartCountConsumer(url string, providerURI *URI, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, error) {
+func StartCountConsumer(url string, providerURI *URI, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createInvokeConsumer(url, providerURI, "consumerCount", OPERATION_IDENTIFIER_COUNT)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Call Invoke function
-	err = consumer.countInvoke(objectType, archiveQueryList, queryFilterList)
+	errorsList, err := consumer.countInvoke(objectType, archiveQueryList, queryFilterList)
 	if err != nil {
-		return nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consummer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
 	// Call Response function
-	longList, err := consumer.countResponse()
+	longList, errorsList, err := consumer.countResponse()
 	if err != nil {
-		return nil, nil, err
+		// Close consummer
+		consumer.Close()
+		return nil, nil, nil, err
+	} else if errorsList != nil {
+		// Close consummer
+		consumer.Close()
+		return nil, nil, errorsList, nil
 	}
 
-	return consumer, longList, nil
+	return consumer, longList, nil, nil
 }
 
 // Invoke & Ack
-func (consumer *InvokeConsumer) countInvoke(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) error {
+func (consumer *InvokeConsumer) countInvoke(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectType
 	err := objectType.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode ArchiveQueryList
 	err = archiveQueryList.Encode(encoder)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Encode QueryFilterList
 	err = encoder.EncodeAbstractElement(queryFilterList)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Call Invoke operation
 	// TODO: we should retrieve the msg to verify if the ack is an error or not
-	_, err = consumer.op.Invoke(encoder.Body())
+	resp, err := consumer.op.Invoke(encoder.Body())
 	if err != nil {
-		return err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, err
+			}
+
+			return errorsList, nil
+		}
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // Response
-func (consumer *InvokeConsumer) countResponse() (*LongList, error) {
+func (consumer *InvokeConsumer) countResponse() (*LongList, *ServiceError, error) {
 	// Call Response operation
 	resp, err := consumer.op.GetResponse()
 	if err != nil {
-		return nil, err
+		// Verify if an error occurs during the operation
+		if resp.IsErrorMessage {
+			// Create the decoder
+			decoder := consumer.factory.NewDecoder(resp.Body)
+			// Decode the error
+			errorsList, err := DecodeError(decoder)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return nil, errorsList, nil
+		}
+		return nil, nil, err
 	}
 
 	// Create the decoder
@@ -609,10 +645,10 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, error) {
 	// Decode LongList
 	longList, err := decoder.DecodeElement(NullLongList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return longList.(*LongList), nil
+	return longList.(*LongList), nil, nil
 }
 
 //======================================================================//

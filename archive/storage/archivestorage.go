@@ -226,6 +226,9 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	var archiveDetailsListToReturn []*ArchiveDetailsList
 	var elementListToReturn []ElementList
 
+	fmt.Println(*boolean)
+	fmt.Println(isObjectTypeEqualToZero)
+
 	if *boolean == true && isObjectTypeEqualToZero == false {
 		// Retrieve all of the elements
 		// Variables to store the different elements present in the database
@@ -255,6 +258,8 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var domainMap map[string]uint
 		var domainList []string
 		var countDomain uint
+
+		fmt.Println(query)
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
@@ -357,9 +362,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var domainList []string
 		var countDomain uint
 
-		// Set the objectTypeToReturn to nul
-		objectTypeToReturn = append(objectTypeToReturn, nil)
-
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain); err != nil {
 				return nil, nil, nil, nil, err
@@ -401,6 +403,9 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				// IdentifierList
 				idList := adaptDomainToIdentifierList(domain)
 				identifierListToReturn = append(identifierListToReturn, &idList)
+
+				// ObjectType
+				objectTypeToReturn = append(objectTypeToReturn, nil)
 
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
@@ -452,11 +457,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var objectTypeList []ObjectType
 		var countObjectType uint
 
-		// Set the identifierListToReturn to nul
-		identifierListToReturn = append(identifierListToReturn, nil)
-		// Set the ElementList to nul
-		elementListToReturn = nil
-
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
@@ -489,6 +489,9 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				archiveDetailsListToReturn[objectTypeMap[objectTypeFromDB]].AppendElement(archDetails)
 
 			} else {
+				// IdentifierList
+				identifierListToReturn = append(identifierListToReturn, nil)
+
 				// ObjectType
 				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
 
@@ -506,6 +509,9 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
 				archDetailsList.AppendElement(archDetails)
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
+
+				// ElementList
+				elementListToReturn = append(elementListToReturn, nil)
 			}
 		}
 	} else { // boolean == false and isObjectTypeEqualToZero == false
@@ -528,7 +534,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		// Set the objectTypeToReturn to nul
 		objectTypeToReturn = append(objectTypeToReturn, nil)
 		// Set the ElementList to nul
-		elementListToReturn = nil
+		elementListToReturn = append(elementListToReturn, nil)
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId); err != nil {
@@ -688,7 +694,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 			return err
 		}
 		// If no error, the object is in the archive and we can update it
-		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, related = ?, network = ?, provider = ?, `details.source` = ? WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
+		_, err = tx.Exec("UPDATE "+TABLE+" SET element = ?, timestamp = ?, `details.related` = ?, network = ?, provider = ?, `details.source` = ? WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			encodedElement,
 			time.Time(*archiveDetailsList[i].Timestamp),
 			*archiveDetailsList[i].Details.Related,
@@ -1129,7 +1135,7 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 	} else {
 		isThereAlreadyACondition = true
 	}
-	queryBuffer.WriteString(fmt.Sprintf(" related = %d", archiveQuery.Related))
+	queryBuffer.WriteString(fmt.Sprintf(" `details.related` = %d", archiveQuery.Related))
 
 	// Source
 	if archiveQuery.Source != nil {

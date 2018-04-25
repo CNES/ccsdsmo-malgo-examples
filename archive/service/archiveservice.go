@@ -123,7 +123,7 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 }
 
 // Count : TODO
-func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
+func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Count Consumer")
@@ -131,19 +131,21 @@ func (archiveService *ArchiveService) Count(consumerURL string, providerURL stri
 	// IN
 	var providerURI = NewURI(providerURL + "/providerCount")
 	// OUT
-	consumer, longList, err := StartCountConsumer(consumerURL,
+	consumer, longList, errorsList, err := StartCountConsumer(consumerURL,
 		providerURI,
 		objectType,
 		archiveQueryList,
 		queryFilterList)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	} else if errorsList != nil {
+		return nil, errorsList, nil
 	}
 
 	// Close the consumer
 	consumer.Close()
 
-	return longList, nil
+	return longList, nil, nil
 }
 
 // Store : TODO

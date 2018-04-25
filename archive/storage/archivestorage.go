@@ -204,7 +204,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 //======================================================================//
 //                              QUERY                                   //
 //======================================================================//
-func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (*ObjectType, *ArchiveDetailsList, *IdentifierList, ElementList, error) {
+func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) ([]*ObjectType, []*ArchiveDetailsList, []*IdentifierList, []ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -221,10 +221,10 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	}
 
 	// Variables to return
-	var objectTypeToReturn *ObjectType
-	var identifierListToReturn *IdentifierList
-	var archiveDetailsListToReturn *ArchiveDetailsList
-	var elementListToReturn ElementList
+	var objectTypeToReturn []*ObjectType
+	var identifierListToReturn []*IdentifierList
+	var archiveDetailsListToReturn []*ArchiveDetailsList
+	var elementListToReturn []ElementList
 
 	if *boolean == true && isObjectTypeEqualToZero == false {
 		// Retrieve all of the elements
@@ -248,27 +248,91 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different object types
-		var objectTypeMap map[ObjectType]bool
+		var objectTypeMap map[ObjectType]uint
 		var objectTypeList []ObjectType
+		var countObjectType uint
 		// Map for the different domains
-		var domainMap map[string]bool
+		var domainMap map[string]uint
 		var domainList []string
+		var countDomain uint
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
 			}
 
+			//
+			var isAlreadyUsed = true
 			// Verify the object type value
 			objectTypeFromDB := ObjectType{area, service, version, number}
-			if !objectTypeMap[objectTypeFromDB] {
-				objectTypeMap[objectTypeFromDB] = true
+			if _, ok := objectTypeMap[objectTypeFromDB]; !ok {
+				objectTypeMap[objectTypeFromDB] = countObjectType
 				objectTypeList = append(objectTypeList, objectTypeFromDB)
+				countObjectType++
+				isAlreadyUsed = false
 			}
-			// Varify the domain value
-			if !domainMap[domain] {
-				domainMap[domain] = true
+			// Verify the domain value
+			if _, ok := domainMap[domain]; !ok {
+				domainMap[domain] = countDomain
 				domainList = append(domainList, domain)
+				countDomain++
+				isAlreadyUsed = false
+			}
+
+			if isAlreadyUsed {
+				// ArchiveDetailsList
+				// Decode the object id
+				objId, err := decodeObjectId(encodedObjectId)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				objectDet := ObjectDetails{
+					&related,
+					objId,
+				}
+				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				// Append this ArchiveDetails to the desired ArchiveDetailsList
+				archiveDetailsListToReturn[objectTypeMap[objectTypeFromDB]+domainMap[domain]].AppendElement(archDetails)
+
+				// ElementList
+				// Decode the element
+				elem, err := decodeElement(encodedElement)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				elementListToReturn[objectTypeMap[objectTypeFromDB]+domainMap[domain]].AppendElement(elem)
+			} else {
+				// IdentifierList
+				idList := adaptDomainToIdentifierList(domain)
+				identifierListToReturn = append(identifierListToReturn, &idList)
+
+				// ObjectType
+				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
+
+				// ArchiveDetailsList
+				archDetailsList := NewArchiveDetailsList(0)
+				// Decode the object id
+				objId, err := decodeObjectId(encodedObjectId)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				objectDet := ObjectDetails{
+					&related,
+					objId,
+				}
+				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetailsList.AppendElement(archDetails)
+				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
+
+				// ElementList
+				// Decode the element
+				elem, err := decodeElement(encodedElement)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				elementList := ((*new(ElementList)).CreateElement()).(ElementList)
+				elementList.AppendElement(elem)
+				elementListToReturn = append(elementListToReturn, elementList)
 			}
 		}
 	} else if *boolean == true && isObjectTypeEqualToZero == true {
@@ -289,18 +353,79 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different domains
-		var domainMap map[string]bool
+		var domainMap map[string]uint
 		var domainList []string
+		var countDomain uint
+
+		// Set the objectTypeToReturn to nul
+		objectTypeToReturn = append(objectTypeToReturn, nil)
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain); err != nil {
 				return nil, nil, nil, nil, err
 			}
 
-			// Varify the domain value
-			if !domainMap[domain] {
-				domainMap[domain] = true
+			//
+			var isAlreadyUsed = true
+			// Verify the domain value
+			if _, ok := domainMap[domain]; !ok {
+				domainMap[domain] = countDomain
 				domainList = append(domainList, domain)
+				countDomain++
+				isAlreadyUsed = false
+			}
+
+			if isAlreadyUsed {
+				// ArchiveDetailsList
+				// Decode the object id
+				objId, err := decodeObjectId(encodedObjectId)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				objectDet := ObjectDetails{
+					&related,
+					objId,
+				}
+				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				// Append this ArchiveDetails to the desired ArchiveDetailsList
+				archiveDetailsListToReturn[domainMap[domain]].AppendElement(archDetails)
+
+				// ElementList
+				// Decode the element
+				elem, err := decodeElement(encodedElement)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				elementListToReturn[domainMap[domain]].AppendElement(elem)
+			} else {
+				// IdentifierList
+				idList := adaptDomainToIdentifierList(domain)
+				identifierListToReturn = append(identifierListToReturn, &idList)
+
+				// ArchiveDetailsList
+				archDetailsList := NewArchiveDetailsList(0)
+				// Decode the object id
+				objId, err := decodeObjectId(encodedObjectId)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				objectDet := ObjectDetails{
+					&related,
+					objId,
+				}
+				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetailsList.AppendElement(archDetails)
+				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
+
+				// ElementList
+				// Decode the element
+				elem, err := decodeElement(encodedElement)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				elementList := ((*new(ElementList)).CreateElement()).(ElementList)
+				elementList.AppendElement(elem)
+				elementListToReturn = append(elementListToReturn, elementList)
 			}
 		}
 	} else if *boolean == false && isObjectTypeEqualToZero == false {
@@ -323,19 +448,64 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different object types
-		var objectTypeMap map[ObjectType]bool
+		var objectTypeMap map[ObjectType]uint
 		var objectTypeList []ObjectType
+		var countObjectType uint
+
+		// Set the identifierListToReturn to nul
+		identifierListToReturn = append(identifierListToReturn, nil)
+		// Set the ElementList to nul
+		elementListToReturn = nil
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
 			}
 
+			//
+			var isAlreadyUsed = true
 			// Verify the object type value
 			objectTypeFromDB := ObjectType{area, service, version, number}
-			if !objectTypeMap[objectTypeFromDB] {
-				objectTypeMap[objectTypeFromDB] = true
+			if _, ok := objectTypeMap[objectTypeFromDB]; !ok {
+				objectTypeMap[objectTypeFromDB] = countObjectType
 				objectTypeList = append(objectTypeList, objectTypeFromDB)
+				countObjectType++
+				isAlreadyUsed = false
+			}
+
+			if isAlreadyUsed {
+				// ArchiveDetailsList
+				// Decode the object id
+				objId, err := decodeObjectId(encodedObjectId)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				objectDet := ObjectDetails{
+					&related,
+					objId,
+				}
+				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				// Append this ArchiveDetails to the desired ArchiveDetailsList
+				archiveDetailsListToReturn[objectTypeMap[objectTypeFromDB]].AppendElement(archDetails)
+
+			} else {
+				// ObjectType
+				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
+
+				// ArchiveDetailsList
+				archDetailsList := NewArchiveDetailsList(0)
+				// Decode the object id
+				objId, err := decodeObjectId(encodedObjectId)
+				if err != nil {
+					return nil, nil, nil, nil, err
+				}
+				objectDet := ObjectDetails{
+					&related,
+					objId,
+				}
+				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetailsList.AppendElement(archDetails)
+				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 			}
 		}
 	} else { // boolean == false and isObjectTypeEqualToZero == false
@@ -353,10 +523,31 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			return nil, nil, nil, nil, err
 		}
 
+		// Set the identifierListToReturn to nul
+		identifierListToReturn = append(identifierListToReturn, nil)
+		// Set the objectTypeToReturn to nul
+		objectTypeToReturn = append(objectTypeToReturn, nil)
+		// Set the ElementList to nul
+		elementListToReturn = nil
+
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId); err != nil {
 				return nil, nil, nil, nil, err
 			}
+
+			// ArchiveDetailsList
+			// Decode the object id
+			objId, err := decodeObjectId(encodedObjectId)
+			if err != nil {
+				return nil, nil, nil, nil, err
+			}
+			objectDet := ObjectDetails{
+				&related,
+				objId,
+			}
+			archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+			// Append this ArchiveDetails to the desired ArchiveDetailsList
+			archiveDetailsListToReturn[0].AppendElement(archDetails)
 		}
 	}
 
@@ -642,7 +833,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 }
 
 //======================================================================//
-//                          GLOBAL FUNCTIONS                            //
+//                           LOCAL FUNCTIONS                            //
 //======================================================================//
 func createTransaction() (*sql.DB, *sql.Tx, error) {
 	// Create the handle
@@ -741,7 +932,7 @@ func resetAutoIncrement(tx *sql.Tx) error {
 	return nil
 }
 
-// Transform a list of Identifiers to a domain of this
+// adaptDomainToString transforms a list of Identifiers to a domain of this
 // type: first.second.third.[...]
 func adaptDomainToString(identifierList IdentifierList) String {
 	var domain String
@@ -754,6 +945,8 @@ func adaptDomainToString(identifierList IdentifierList) String {
 	return domain
 }
 
+// adaptDomainToIdentifierList transforms a domain of this
+// type: first.second.third.[...] to a list of Identifiers
 func adaptDomainToIdentifierList(domain string) IdentifierList {
 	var identifierList = NewIdentifierList(0)
 	var domains = strings.Split(domain, ".")
@@ -763,25 +956,48 @@ func adaptDomainToIdentifierList(domain string) IdentifierList {
 	return *identifierList
 }
 
-func decodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, error) {
+func decodeObjectId(encodedObjectId []byte) (*ObjectId, error) {
 	// Create the factory
 	factory := new(FixedBinaryEncoding)
 
 	// Create the decoder
-	decoder := factory.NewDecoder(_objectId)
+	decoder := factory.NewDecoder(encodedObjectId)
 
-	// Decode the ArchiveDetails
+	// Decode the ObjectId
 	elem, err := decoder.DecodeElement(NullObjectId)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	objectId := elem.(*ObjectId)
 
-	// Reallocate the decoder
-	decoder = factory.NewDecoder(_element)
+	return objectId, nil
+}
+
+func decodeElement(encodedObjectElement []byte) (Element, error) {
+	// Create the factory
+	factory := new(FixedBinaryEncoding)
+
+	// Create the decoder
+	decoder := factory.NewDecoder(encodedObjectElement)
 
 	// Decode the Element
 	element, err := decoder.DecodeAbstractElement()
+	if err != nil {
+		return nil, err
+	}
+
+	return element, nil
+}
+
+func decodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, error) {
+	// Decode the ObjectId
+	objectId, err := decodeObjectId(_objectId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Decode the Element
+	element, err := decodeElement(_element)
 	if err != nil {
 		return nil, nil, err
 	}

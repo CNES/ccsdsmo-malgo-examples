@@ -227,7 +227,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	var archiveDetailsListToReturn []*ArchiveDetailsList
 	var elementListToReturn []ElementList
 
-	if *boolean == true && isObjectTypeEqualToZero == false {
+	if *boolean == true && isObjectTypeEqualToZero == true {
 		// Retrieve all of the elements
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -249,11 +249,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different object types
-		var objectTypeMap map[ObjectType]uint
+		var objectTypeMap = make(map[ObjectType]uint)
 		var objectTypeList []ObjectType
 		var countObjectType uint
 		// Map for the different domains
-		var domainMap map[string]uint
+		var domainMap = make(map[string]uint)
 		var domainList []string
 		var countDomain uint
 
@@ -331,12 +331,19 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				elementList := ((*new(ElementList)).CreateElement()).(ElementList)
+
+				// Transform Type Short Form to List Short Form
+				listShortForm := convertToListShortForm(objectTypeFromDB)
+				// Get Element in the MAL Registry
+				element, err := LookupMALElement(listShortForm)
+				var elementList = element.(ElementList)
+				elementList = elementList.CreateElement().(ElementList)
+
 				elementList.AppendElement(elem)
 				elementListToReturn = append(elementListToReturn, elementList)
 			}
 		}
-	} else if *boolean == true && isObjectTypeEqualToZero == true {
+	} else if *boolean == true && isObjectTypeEqualToZero == false {
 		// Retrieve all of the elements unless the object type
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -347,6 +354,10 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var network Identifier
 		var provider URI
 		var domain string
+		var area UShort
+		var service UShort
+		var version UOctet
+		var number UShort
 
 		rows, err := tx.Query(query)
 		if err != nil {
@@ -354,12 +365,12 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different domains
-		var domainMap map[string]uint
+		var domainMap = make(map[string]uint)
 		var domainList []string
 		var countDomain uint
 
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain); err != nil {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
 			}
 
@@ -424,12 +435,18 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				elementList := ((*new(ElementList)).CreateElement()).(ElementList)
+				// Transform Type Short Form to List Short Form
+				listShortForm := convertToListShortForm(ObjectType{area, service, version, number})
+				// Get Element in the MAL Registry
+				element, err := LookupMALElement(listShortForm)
+				var elementList = element.(ElementList)
+				elementList = elementList.CreateElement().(ElementList)
+
 				elementList.AppendElement(elem)
 				elementListToReturn = append(elementListToReturn, elementList)
 			}
 		}
-	} else if *boolean == false && isObjectTypeEqualToZero == false {
+	} else if *boolean == false && isObjectTypeEqualToZero == true {
 		// Retrieve only the object type and the archive details
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -449,7 +466,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different object types
-		var objectTypeMap map[ObjectType]uint
+		var objectTypeMap = make(map[ObjectType]uint)
 		var objectTypeList []ObjectType
 		var countObjectType uint
 
@@ -1085,9 +1102,9 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 	if *boolean == true {
 		queryBuffer.WriteString(", element, domain")
 	}
-	// If there's not a wildcard value in one of the object type
-	// fiels then we have to retrieve the entire object type
-	if isObjectTypeEqualToZero == false {
+	// If there's a wildcard value in one of the object type
+	// fields then we have to retrieve the entire object type
+	if isObjectTypeEqualToZero == true || (isObjectTypeEqualToZero == false && *boolean == true) {
 		queryBuffer.WriteString(", area, service, version, number")
 	}
 

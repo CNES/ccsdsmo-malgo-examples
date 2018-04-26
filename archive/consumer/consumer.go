@@ -24,8 +24,6 @@
 package consumer
 
 import (
-	"fmt"
-
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -385,7 +383,6 @@ func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 // Progress & Ack
 func (consumer *ProgressConsumer) queryProgress(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
-	fmt.Println("wolo")
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode Boolean

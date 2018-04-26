@@ -29,6 +29,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"reflect"
 	"strings"
 	"time"
 
@@ -248,13 +249,14 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			return nil, nil, nil, nil, err
 		}
 
+		// Define a slice to sort on the differents values to return
+		// TODO: find a name for this attribute
+		var findASmartName []interface{}
 		// Map for the different object types
 		var objectTypeMap = make(map[ObjectType]uint)
-		var objectTypeList []ObjectType
 		var countObjectType uint
 		// Map for the different domains
 		var domainMap = make(map[string]uint)
-		var domainList []string
 		var countDomain uint
 
 		for rows.Next() {
@@ -268,19 +270,27 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			objectTypeFromDB := ObjectType{area, service, version, number}
 			if _, ok := objectTypeMap[objectTypeFromDB]; !ok {
 				objectTypeMap[objectTypeFromDB] = countObjectType
-				objectTypeList = append(objectTypeList, objectTypeFromDB)
 				countObjectType++
 				isAlreadyUsed = false
 			}
 			// Verify the domain value
 			if _, ok := domainMap[domain]; !ok {
 				domainMap[domain] = countDomain
-				domainList = append(domainList, domain)
 				countDomain++
 				isAlreadyUsed = false
 			}
 
 			if isAlreadyUsed {
+				var index uint
+				// Retrieve the index in the general slice
+				for i := 0; i < len(findASmartName)/2; i++ {
+					duo := []interface{}{objectTypeFromDB, domain}
+					if reflect.DeepEqual(duo, findASmartName[i]) {
+						index = uint(i)
+						break
+					}
+				}
+
 				// ArchiveDetailsList
 				// Decode the object id
 				objId, err := decodeObjectId(encodedObjectId)
@@ -293,7 +303,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
 				// Append this ArchiveDetails to the desired ArchiveDetailsList
-				archiveDetailsListToReturn[objectTypeMap[objectTypeFromDB]+domainMap[domain]].AppendElement(archDetails)
+				archiveDetailsListToReturn[index].AppendElement(archDetails)
 
 				// ElementList
 				// Decode the element
@@ -301,8 +311,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				elementListToReturn[objectTypeMap[objectTypeFromDB]+domainMap[domain]].AppendElement(elem)
+				elementListToReturn[index].AppendElement(elem)
 			} else {
+				// First, append the objectType and the domain in the general slice
+				findASmartName = append(findASmartName, objectTypeFromDB, domain)
+
 				// IdentifierList
 				idList := adaptDomainToIdentifierList(domain)
 				identifierListToReturn = append(identifierListToReturn, &idList)
@@ -366,7 +379,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 		// Map for the different domains
 		var domainMap = make(map[string]uint)
-		var domainList []string
 		var countDomain uint
 
 		for rows.Next() {
@@ -379,7 +391,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			// Verify the domain value
 			if _, ok := domainMap[domain]; !ok {
 				domainMap[domain] = countDomain
-				domainList = append(domainList, domain)
 				countDomain++
 				isAlreadyUsed = false
 			}
@@ -412,7 +423,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				identifierListToReturn = append(identifierListToReturn, &idList)
 
 				// ObjectType
-				objectTypeToReturn = append(objectTypeToReturn, nil)
+				objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
 
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
@@ -467,7 +478,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 		// Map for the different object types
 		var objectTypeMap = make(map[ObjectType]uint)
-		var objectTypeList []ObjectType
 		var countObjectType uint
 
 		for rows.Next() {
@@ -481,7 +491,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			objectTypeFromDB := ObjectType{area, service, version, number}
 			if _, ok := objectTypeMap[objectTypeFromDB]; !ok {
 				objectTypeMap[objectTypeFromDB] = countObjectType
-				objectTypeList = append(objectTypeList, objectTypeFromDB)
 				countObjectType++
 				isAlreadyUsed = false
 			}
@@ -503,7 +512,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 			} else {
 				// IdentifierList
-				identifierListToReturn = append(identifierListToReturn, nil)
+				identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
 
 				// ObjectType
 				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
@@ -524,7 +533,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 
 				// ElementList
-				elementListToReturn = append(elementListToReturn, nil)
+				elementListToReturn = append(elementListToReturn, new(LongList))
 			}
 		}
 	} else { // boolean == false and isObjectTypeEqualToZero == false
@@ -543,11 +552,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Set the identifierListToReturn to nul
-		identifierListToReturn = append(identifierListToReturn, nil)
+		identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
 		// Set the objectTypeToReturn to nul
-		objectTypeToReturn = append(objectTypeToReturn, nil)
+		objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
 		// Set the ElementList to nul
-		elementListToReturn = append(elementListToReturn, nil)
+		elementListToReturn = append(elementListToReturn, new(LongList))
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId); err != nil {
@@ -568,6 +577,16 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			// Append this ArchiveDetails to the desired ArchiveDetailsList
 			archiveDetailsListToReturn[0].AppendElement(archDetails)
 		}
+	}
+
+	// Finally, it is useful to verify the size of the archive details
+	// list (if it is equal to 0 we have to append a nil element to
+	// each list)
+	if len(archiveDetailsListToReturn) == 0 {
+		objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
+		archiveDetailsListToReturn = append(archiveDetailsListToReturn, new(ArchiveDetailsList))
+		identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
+		elementListToReturn = append(elementListToReturn, new(LongList))
 	}
 
 	return objectTypeToReturn, archiveDetailsListToReturn, identifierListToReturn, elementListToReturn, nil

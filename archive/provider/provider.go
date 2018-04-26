@@ -322,7 +322,7 @@ func (provider *Provider) queryHandler() error {
 			}
 
 			// ----- Verify the parameters -----
-			// TODO: form a single query by combining ArchiveQueryList and QueryFilterList
+			// TODO: verify the parameters according to the COM documentation
 
 			// ----- Call Ack operation -----
 			err = provider.queryAck(transaction)
@@ -387,7 +387,7 @@ func (provider *Provider) queryHandler() error {
 			for j := 0; j < len(archDetList); j++ {
 				if j == len(archDetList)-1 {
 					// Call Response operation
-					err = provider.queryResponse(transaction, objType[j], idList[j], archDetList[j], elementList[j])
+					err = provider.queryResponse(transaction, objType[j], idList[j], archDetList[j], elementList[j].(ElementList))
 					if err != nil {
 						// TODO: we're (maybe) supposed to say to the consumer that an error occured
 						provider.queryResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))

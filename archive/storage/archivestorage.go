@@ -92,9 +92,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var encodedObjectId []byte
 			var encodedElement []byte
 			var timestamp time.Time
-			var related *Long
-			var network *Identifier
-			var provider *URI
+			var related Long
+			var network Identifier
+			var provider URI
 
 			// We can retrieve this object
 			err = tx.QueryRow("SELECT element, timestamp, `details.related`, network, provider, `details.source` FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
@@ -105,9 +105,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 				objectType.Number,
 				domain).Scan(&encodedElement,
 				&timestamp,
-				related,
-				network,
-				provider,
+				&related,
+				&network,
+				&provider,
 				&encodedObjectId)
 			if err != nil {
 				if err.Error() == "sql: no rows in result set" {
@@ -124,14 +124,14 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 
 			// Create the ArchiveDetails
 			// First, create the ObjectDetails
-			objectDetails := ObjectDetails{related, objectId}
+			objectDetails := ObjectDetails{&related, objectId}
 			// Create the ArchiveDetails
 			archiveDetails := &ArchiveDetails{
 				*objectInstanceIdentifierList[i],
 				objectDetails,
-				network,
+				&network,
 				NewFineTime(timestamp),
-				provider,
+				&provider,
 			}
 
 			archiveDetailsList.AppendElement(archiveDetails)
@@ -144,9 +144,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related *Long
-		var network *Identifier
-		var provider *URI
+		var related Long
+		var network Identifier
+		var provider URI
 
 		// Retrieve this object and its archive details in the archive
 		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, `details.related`, network, provider, `details.source` FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
@@ -161,11 +161,12 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 
 		var countElements int
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &encodedElement,
+			if err = rows.Scan(&objectInstanceIdentifier,
+				&encodedElement,
 				&timestamp,
-				related,
-				network,
-				provider,
+				&related,
+				&network,
+				&provider,
 				&encodedObjectId); err != nil {
 				return nil, nil, err
 			}
@@ -178,14 +179,14 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 
 			// Create the ArchiveDetails
 			// First, create the ObjectDetails
-			objectDetails := ObjectDetails{related, objectId}
+			objectDetails := ObjectDetails{&related, objectId}
 			// Create the ArchiveDetails
 			archiveDetails := &ArchiveDetails{
 				objectInstanceIdentifier,
 				objectDetails,
-				network,
+				&network,
 				NewFineTime(timestamp),
-				provider,
+				&provider,
 			}
 
 			archiveDetailsList.AppendElement(archiveDetails)
@@ -226,9 +227,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	var archiveDetailsListToReturn []*ArchiveDetailsList
 	var elementListToReturn []ElementList
 
-	fmt.Println(*boolean)
-	fmt.Println(isObjectTypeEqualToZero)
-
 	if *boolean == true && isObjectTypeEqualToZero == false {
 		// Retrieve all of the elements
 		// Variables to store the different elements present in the database
@@ -258,8 +256,6 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var domainMap map[string]uint
 		var domainList []string
 		var countDomain uint
-
-		fmt.Println(query)
 
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
@@ -670,8 +666,8 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 	domain := adaptDomainToString(identifierList)
 
 	for i := 0; i < elementList.Size(); i++ {
-		// First of all, we need to verify if the object instance identifier, combined with the object type
-		// and the domain are in the archive
+		// First of all, we need to verify if the object instance identifier, combined
+		// with the object type and the domain which are in the archive
 		var queryReturn int
 		err := tx.QueryRow("SELECT objectInstanceIdentifier FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
 			archiveDetailsList[i].InstId,
@@ -843,7 +839,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 //======================================================================//
 func createTransaction() (*sql.DB, *sql.Tx, error) {
 	// Create the handle
-	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE)
+	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE+"?parseTime=true")
 	if err != nil {
 		return nil, nil, err
 	}

@@ -619,7 +619,7 @@ func queryVerifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) e
 	// Check sortFieldName value
 	var isSortFieldNameADefinedField = false
 	for i := 0; i < len(databaseFields); i++ {
-		if string(*archiveQuery.SortFieldName) == databaseFields[i] {
+		if archiveQuery.SortFieldName != nil && string(*archiveQuery.SortFieldName) == databaseFields[i] {
 			isSortFieldNameADefinedField = true
 			break
 		}

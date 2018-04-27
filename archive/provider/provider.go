@@ -26,6 +26,7 @@ package provider
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -323,6 +324,10 @@ func (provider *Provider) queryHandler() error {
 
 			// ----- Verify the parameters -----
 			// TODO: verify the parameters according to the COM documentation
+			err = provider.queryVerifyParameters(transaction, archiveQueryList, queryFilterList)
+			if err != nil {
+				return err
+			}
 
 			// ----- Call Ack operation -----
 			err = provider.queryAck(transaction)
@@ -356,7 +361,13 @@ func (provider *Provider) queryHandler() error {
 					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], nil)
 				}
 				if err != nil {
-					// TODO: we may have to check if err is not an "UNKNOWN" error
+					// Send an INVALID error
+					if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
+						err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
+						len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 1 {
+						provider.queryUpdateError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
+					}
+					// Otherwise, send an INTERNAL error
 					provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 					return err
 				}
@@ -364,7 +375,7 @@ func (provider *Provider) queryHandler() error {
 					// Call Update operation
 					err = provider.queryUpdate(transaction, objType[j], idList[j], archDetList[j], elementList[j])
 					if err != nil {
-						// TODO: we're (maybe) supposed to say to the consumer that an error occured
+						// Send an INTERNAL error
 						provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 						return err
 					}
@@ -378,7 +389,13 @@ func (provider *Provider) queryHandler() error {
 				objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], nil)
 			}
 			if err != nil {
-				// TODO: we may have to check if err is not an "UNKNOWN" error
+				// Send an INVALID error
+				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
+					err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
+					len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 1 {
+					provider.queryUpdateError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
+				}
+				// Otherwise, send an INTERNAL error
 				provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
@@ -389,7 +406,7 @@ func (provider *Provider) queryHandler() error {
 					// Call Response operation
 					err = provider.queryResponse(transaction, objType[j], idList[j], archDetList[j], elementList[j].(ElementList))
 					if err != nil {
-						// TODO: we're (maybe) supposed to say to the consumer that an error occured
+						// Send an INTERNAL error
 						provider.queryResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 						return err
 					}
@@ -397,7 +414,7 @@ func (provider *Provider) queryHandler() error {
 				}
 				err = provider.queryUpdate(transaction, objType[j], idList[j], archDetList[j], elementList[j])
 				if err != nil {
-					// TODO: we're (maybe) supposed to say to the consumer that an error occured
+					// Send an INTERNAL error
 					provider.queryUpdateError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 					return err
 				}
@@ -421,6 +438,15 @@ func (provider *Provider) queryHandler() error {
 }
 
 // VERIFY PARAMETERS
+func (provider *Provider) queryVerifyParameters(transaction ProgressTransaction, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) error {
+	if queryFilterList != nil && archiveQueryList.Size() != queryFilterList.Size() {
+		fmt.Println(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR)
+		provider.queryAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR, NewLongList(1))
+		return errors.New(string(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR))
+	}
+
+	return nil
+}
 
 // PROGRESS
 func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *ArchiveQueryList, QueryFilterList, error) {

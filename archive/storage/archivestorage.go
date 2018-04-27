@@ -51,6 +51,22 @@ const (
 	TABLE    = "Archive"
 )
 
+var databaseFields = []string{
+	"id",
+	"objectInstanceIdentifier",
+	"element",
+	"area",
+	"service",
+	"version",
+	"number",
+	"domain",
+	"timestamp",
+	"details.related",
+	"network",
+	"provider",
+	"details.source",
+}
+
 //======================================================================//
 //                            RETRIEVE                                  //
 //======================================================================//
@@ -214,10 +230,16 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	}
 	defer db.Close()
 
+	// Verify the parameters
+	err = queryVerifyParameters(archiveQuery, queryFilter)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	var isObjectTypeEqualToZero = objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0
 
 	// First of all we have to create the query
-	query, err := createQuery(boolean, isObjectTypeEqualToZero, archiveQuery, queryFilter)
+	query, err := createQuery(boolean, objectType, isObjectTypeEqualToZero, archiveQuery, queryFilter)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -586,10 +608,53 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
 		archiveDetailsListToReturn = append(archiveDetailsListToReturn, new(ArchiveDetailsList))
 		identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
-		elementListToReturn = append(elementListToReturn, new(LongList))
+		elementListToReturn = append(elementListToReturn, NewLongList(0))
+		// TODO: maybe find another way to initialize elementListToReturn
 	}
 
 	return objectTypeToReturn, archiveDetailsListToReturn, identifierListToReturn, elementListToReturn, nil
+}
+
+func queryVerifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
+	// Check sortFieldName value
+	var isSortFieldNameADefinedField = false
+	for i := 0; i < len(databaseFields); i++ {
+		if string(*archiveQuery.SortFieldName) == databaseFields[i] {
+			isSortFieldNameADefinedField = true
+			break
+		}
+	}
+	if !isSortFieldNameADefinedField {
+		// Return a new error
+		return errors.New(string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR))
+	}
+
+	// Check if QueryFilter doesn't contain an error
+	compositerFilterSet := queryFilter.(*CompositeFilterSet)
+
+	for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
+		var filter = compositerFilterSet.Filters.GetElementAt(i).(*CompositeFilter)
+		if (filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS ||
+			filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS ||
+			filter.Type == COM_EXPRESSIONOPERATOR_GREATER ||
+			filter.Type == COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL ||
+			filter.Type == COM_EXPRESSIONOPERATOR_LESS ||
+			filter.Type == COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == Attribute(nil) {
+			return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not contain NULL value")
+		}
+		if _, ok := filter.FieldValue.(*Blob); ok {
+			if filter.Type != COM_EXPRESSIONOPERATOR_EQUAL && filter.Type != COM_EXPRESSIONOPERATOR_DIFFER {
+				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a blob")
+			}
+		}
+		if filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
+			if _, ok := filter.FieldValue.(*String); !ok {
+				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a non-String")
+			}
+		}
+	}
+
+	return nil
 }
 
 //======================================================================//
@@ -1112,8 +1177,16 @@ func convertToListShortForm(objectType ObjectType) Long {
 	return typeShort | 0x0000000FFFF00
 }
 
+func checkCondition(cond *bool, buffer *bytes.Buffer) {
+	if *cond {
+		buffer.WriteString(" AND")
+	} else {
+		*cond = true
+	}
+}
+
 // createQuery allows the provider to create automatically a query
-func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
+func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZero bool, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
 	var queryBuffer bytes.Buffer
 	// Only CompositeFilterSet type should be used
 	queryBuffer.WriteString("SELECT objectInstanceIdentifier, timestamp, `details.related`, network, provider, `details.source`")
@@ -1133,49 +1206,55 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 	// Attribute to check if there is already a condition before
 	var isThereAlreadyACondition = false
 
+	// Conditions on the object type attributes
+	// Area
+	if objectType.Area != 0 {
+		queryBuffer.WriteString(fmt.Sprintf(" area = %d", objectType.Area))
+		isThereAlreadyACondition = true
+	}
+	// Service
+	if objectType.Service != 0 {
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		queryBuffer.WriteString(fmt.Sprintf(" service = %d", objectType.Service))
+	}
+	// Version
+	if objectType.Version != 0 {
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		queryBuffer.WriteString(fmt.Sprintf(" version = %d", objectType.Version))
+	}
+	// Number
+	if objectType.Number != 0 {
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		queryBuffer.WriteString(fmt.Sprintf(" number = %d", objectType.Number))
+	}
+
 	// Add archive query conditions
 	// Domain
 	if archiveQuery.Domain != nil {
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 		domain := adaptDomainToString(*archiveQuery.Domain)
 		queryBuffer.WriteString(fmt.Sprintf(" domain = %s", domain))
-		isThereAlreadyACondition = true
 	}
 
 	// Network
 	if archiveQuery.Network != nil {
-		if isThereAlreadyACondition {
-			queryBuffer.WriteString(" AND")
-		} else {
-			isThereAlreadyACondition = true
-		}
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" network = %s", *archiveQuery.Network))
 	}
 
 	// Provider
 	if archiveQuery.Provider != nil {
-		if isThereAlreadyACondition {
-			queryBuffer.WriteString(" AND")
-		} else {
-			isThereAlreadyACondition = true
-		}
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" provider = %s", *archiveQuery.Provider))
 	}
 
 	// Related (always have to do a query with this condition)
-	if isThereAlreadyACondition {
-		queryBuffer.WriteString(" AND")
-	} else {
-		isThereAlreadyACondition = true
-	}
+	checkCondition(&isThereAlreadyACondition, &queryBuffer)
 	queryBuffer.WriteString(fmt.Sprintf(" `details.related` = %d", archiveQuery.Related))
 
 	// Source
 	if archiveQuery.Source != nil {
-		if isThereAlreadyACondition {
-			queryBuffer.WriteString(" AND")
-		} else {
-			isThereAlreadyACondition = true
-		}
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 
 		// Encode the ObjectId
 		// Create the factory
@@ -1194,21 +1273,13 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 
 	// StartTime
 	if archiveQuery.StartTime != nil {
-		if isThereAlreadyACondition {
-			queryBuffer.WriteString(" AND")
-		} else {
-			isThereAlreadyACondition = true
-		}
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp >= %s", time.Time(*archiveQuery.StartTime)))
 	}
 
 	// EndTime
 	if archiveQuery.EndTime != nil {
-		if isThereAlreadyACondition {
-			queryBuffer.WriteString(" AND")
-		} else {
-			isThereAlreadyACondition = true
-		}
+		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp <= %s", time.Time(*archiveQuery.EndTime)))
 	}
 
@@ -1217,26 +1288,32 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 		compositerFilterSet := queryFilter.(*CompositeFilterSet)
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
-			if isThereAlreadyACondition {
-				queryBuffer.WriteString(" AND")
-			} else {
-				isThereAlreadyACondition = true
-			}
+			checkCondition(&isThereAlreadyACondition, &queryBuffer)
 			// Transform the expresion operator
 			expressionOperator := whichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
 
-			//expressionOperator := whichExpressionOperatorIsIt(compositerFilterSet)
-			queryBuffer.WriteString(fmt.Sprintf("%s %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
-				expressionOperator,
-				(*compositerFilterSet.Filters)[i].FieldValue))
+			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
+				queryBuffer.WriteString(fmt.Sprintf(" %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
+					expressionOperator))
+				queryBuffer.WriteString("%'")
+				queryBuffer.WriteString(fmt.Sprintf(" %s", (*compositerFilterSet.Filters)[i].FieldValue))
+			} else {
+				queryBuffer.WriteString(fmt.Sprintf(" %s %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
+					expressionOperator,
+					(*compositerFilterSet.Filters)[i].FieldValue))
+			}
 		}
 	}
 
 	// SortOrder
 	if archiveQuery.SortOrder != nil {
 		// SortFieldName
-		queryBuffer.WriteString(fmt.Sprintf(" GROUP BY %s", *archiveQuery.SortFieldName))
-		// If sortOrder is false then we returned values shall be sorted
+		if archiveQuery.SortFieldName != nil {
+			queryBuffer.WriteString(fmt.Sprintf(" GROUP BY %s", *archiveQuery.SortFieldName))
+		} else {
+			queryBuffer.WriteString(" GROUP BY timestamp")
+		}
+		// If sortOrder is false then returned values shall be sorted
 		// in descending order (ascending order is the default value)
 		if *archiveQuery.SortOrder == false {
 			queryBuffer.WriteString(" DESC")
@@ -1250,21 +1327,21 @@ func createQuery(boolean *Boolean, isObjectTypeEqualToZero bool, archiveQuery Ar
 func whichExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
 	switch expressionOperator {
 	case COM_EXPRESSIONOPERATOR_EQUAL:
-		return "? = ?"
+		return "="
 	case COM_EXPRESSIONOPERATOR_DIFFER:
-		return "? != ?"
+		return "!="
 	case COM_EXPRESSIONOPERATOR_GREATER:
-		return "? > ?"
+		return ">"
 	case COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL:
-		return "? >= ?"
+		return ">="
 	case COM_EXPRESSIONOPERATOR_LESS:
-		return "? < ?"
+		return "<"
 	case COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL:
-		return "? <= ?"
+		return "<="
 	case COM_EXPRESSIONOPERATOR_CONTAINS:
-		return "? LIKE '%?%'"
+		return "LIKE '%"
 	case COM_EXPRESSIONOPERATOR_ICONTAINS:
-		return "? NOT LIKE '%?%'"
+		return "NOT LIKE '%"
 	default:
 		return ""
 	}

@@ -107,7 +107,7 @@ func main() {
 				nil,
 				nil,
 				nil,
-				*NewLong(2),
+				*NewLong(1),
 				nil,
 				nil,
 				nil,
@@ -115,6 +115,7 @@ func main() {
 				nil,
 			}
 			archiveQueryList.AppendElement(archiveQuery)
+			//archiveQueryList.AppendElement(archiveQuery)
 			var queryFilterList *CompositeFilterSetList
 
 			// Variable to retrieve the responses

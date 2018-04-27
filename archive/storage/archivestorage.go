@@ -619,7 +619,8 @@ func queryVerifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) e
 	// Check sortFieldName value
 	var isSortFieldNameADefinedField = false
 	for i := 0; i < len(databaseFields); i++ {
-		if archiveQuery.SortFieldName != nil && string(*archiveQuery.SortFieldName) == databaseFields[i] {
+		if (archiveQuery.SortFieldName != nil && string(*archiveQuery.SortFieldName) == databaseFields[i]) ||
+			archiveQuery.SortFieldName == nil {
 			isSortFieldNameADefinedField = true
 			break
 		}
@@ -630,26 +631,28 @@ func queryVerifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) e
 	}
 
 	// Check if QueryFilter doesn't contain an error
-	compositerFilterSet := queryFilter.(*CompositeFilterSet)
+	if queryFilter != nil {
+		compositerFilterSet := queryFilter.(*CompositeFilterSet)
 
-	for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
-		var filter = compositerFilterSet.Filters.GetElementAt(i).(*CompositeFilter)
-		if (filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS ||
-			filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS ||
-			filter.Type == COM_EXPRESSIONOPERATOR_GREATER ||
-			filter.Type == COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL ||
-			filter.Type == COM_EXPRESSIONOPERATOR_LESS ||
-			filter.Type == COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == Attribute(nil) {
-			return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not contain NULL value")
-		}
-		if _, ok := filter.FieldValue.(*Blob); ok {
-			if filter.Type != COM_EXPRESSIONOPERATOR_EQUAL && filter.Type != COM_EXPRESSIONOPERATOR_DIFFER {
-				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a blob")
+		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
+			var filter = compositerFilterSet.Filters.GetElementAt(i).(*CompositeFilter)
+			if (filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS ||
+				filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS ||
+				filter.Type == COM_EXPRESSIONOPERATOR_GREATER ||
+				filter.Type == COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL ||
+				filter.Type == COM_EXPRESSIONOPERATOR_LESS ||
+				filter.Type == COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == Attribute(nil) {
+				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not contain NULL value")
 			}
-		}
-		if filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
-			if _, ok := filter.FieldValue.(*String); !ok {
-				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a non-String")
+			if _, ok := filter.FieldValue.(*Blob); ok {
+				if filter.Type != COM_EXPRESSIONOPERATOR_EQUAL && filter.Type != COM_EXPRESSIONOPERATOR_DIFFER {
+					return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a blob")
+				}
+			}
+			if filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
+				if _, ok := filter.FieldValue.(*String); !ok {
+					return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a non-String")
+				}
 			}
 		}
 	}

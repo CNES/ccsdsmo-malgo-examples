@@ -1236,19 +1236,19 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 	if archiveQuery.Domain != nil {
 		checkCondition(&isThereAlreadyACondition, &queryBuffer)
 		domain := adaptDomainToString(*archiveQuery.Domain)
-		queryBuffer.WriteString(fmt.Sprintf(" domain = %s", domain))
+		queryBuffer.WriteString(fmt.Sprintf(" domain = '%s'", domain))
 	}
 
 	// Network
 	if archiveQuery.Network != nil {
 		checkCondition(&isThereAlreadyACondition, &queryBuffer)
-		queryBuffer.WriteString(fmt.Sprintf(" network = %s", *archiveQuery.Network))
+		queryBuffer.WriteString(fmt.Sprintf(" network = '%s'", *archiveQuery.Network))
 	}
 
 	// Provider
 	if archiveQuery.Provider != nil {
 		checkCondition(&isThereAlreadyACondition, &queryBuffer)
-		queryBuffer.WriteString(fmt.Sprintf(" provider = %s", *archiveQuery.Provider))
+		queryBuffer.WriteString(fmt.Sprintf(" provider = '%s'", *archiveQuery.Provider))
 	}
 
 	// Related (always have to do a query with this condition)
@@ -1271,7 +1271,7 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 		if err != nil {
 			return "", err
 		}
-		queryBuffer.WriteString(fmt.Sprintf(" provider = %s", encoder.Body()))
+		queryBuffer.WriteString(fmt.Sprintf(" `details.source` = %s", encoder.Body()))
 	}
 
 	// StartTime

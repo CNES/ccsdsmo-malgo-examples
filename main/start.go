@@ -102,9 +102,9 @@ func main() {
 				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
 			archiveQueryList := NewArchiveQueryList(0)
+			var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			archiveQuery := &ArchiveQuery{
-				//Domain: IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")}),
-				nil,
+				&domain,
 				nil,
 				nil,
 				*NewLong(1),

@@ -455,25 +455,25 @@ func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *
 		decoder := consumer.factory.NewDecoder(updt.Body)
 
 		// Decode ObjectType
-		objectType, err := decoder.DecodeElement(NullObjectType)
+		objectType, err := decoder.DecodeNullableElement(NullObjectType)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode IdentifierList
-		identifierList, err := decoder.DecodeElement(NullIdentifierList)
+		identifierList, err := decoder.DecodeNullableElement(NullIdentifierList)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode ArchiveDetailsList
-		archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
+		archiveDetailsList, err := decoder.DecodeNullableElement(NullArchiveDetailsList)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode ElementList
-		elementList, err := decoder.DecodeAbstractElement()
+		elementList, err := decoder.DecodeNullableAbstractElement()
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}

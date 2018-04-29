@@ -102,16 +102,16 @@ func main() {
 				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
 			archiveQueryList := NewArchiveQueryList(0)
-			var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+			//var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			archiveQuery := &ArchiveQuery{
-				&domain,
+				nil, //&domain,
 				nil,
 				nil,
 				*NewLong(1),
 				nil,
 				nil,
 				nil,
-				nil,
+				NewBoolean(true),
 				nil,
 			}
 			archiveQueryList.AppendElement(archiveQuery)
@@ -135,7 +135,6 @@ func main() {
 		case "count":
 			// Start the count consumer
 			// Create parameters
-			// objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList
 			var objectType = ObjectType{
 				UShort(2),
 				UShort(3),
@@ -168,7 +167,7 @@ func main() {
 			}
 			var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(2)
+			var objectInstanceIdentifier = *NewLong(0)
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				Domain: identifierList,

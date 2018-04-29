@@ -133,7 +133,6 @@ func (provider *Provider) retrieveHandler() error {
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			// TODO: do sthg with these objects
 			fmt.Println("RetrieveHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
@@ -345,7 +344,6 @@ func (provider *Provider) queryHandler() error {
 			var idList []*IdentifierList
 			var elementList []ElementList
 
-			// TODO: do sthg with these objects
 			fmt.Println("QueryHandler received:\n\t>>>",
 				boolean, "\n\t>>>",
 				objectType, "\n\t>>>",
@@ -353,7 +351,7 @@ func (provider *Provider) queryHandler() error {
 				queryFilterList)
 
 			for i := 0; i < archiveQueryList.Size()-1; i++ {
-				// TODO: we'll have to change all of the following lines
+				fmt.Println("yolo")
 				// Do a query to the archive
 				if queryFilterList != nil {
 					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
@@ -518,25 +516,25 @@ func (provider *Provider) queryUpdate(transaction ProgressTransaction, objectTyp
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectType
-	err := objectType.Encode(encoder)
+	err := encoder.EncodeNullableElement(objectType)
 	if err != nil {
 		return err
 	}
 
 	// Encode IdentifierList
-	err = identifierList.Encode(encoder)
+	err = encoder.EncodeNullableElement(identifierList)
 	if err != nil {
 		return err
 	}
 
 	// Encode ArchiveDetailsList
-	err = archiveDetailsList.Encode(encoder)
+	err = encoder.EncodeNullableElement(archiveDetailsList)
 	if err != nil {
 		return err
 	}
 
 	// Encode ElementList
-	err = encoder.EncodeAbstractElement(elementList)
+	err = encoder.EncodeNullableAbstractElement(elementList)
 	if err != nil {
 		return err
 	}
@@ -807,7 +805,6 @@ func (provider *Provider) storeHandler() error {
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			// TODO: do sthg with these objects
 			fmt.Println("StoreHandler received:\n\t>>>",
 				boolean, "\n\t>>>",
 				objectType, "\n\t>>>",
@@ -1027,7 +1024,6 @@ func (provider *Provider) updateHandler() error {
 				return err
 			}
 
-			// TODO: do sthg with these objects
 			fmt.Println("UpdateHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
@@ -1189,7 +1185,7 @@ func (provider *Provider) deleteHandler() error {
 			// Call Request operation
 			objectType, identifierList, longListRequest, err := provider.deleteRequest(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.deleteResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 
@@ -1199,7 +1195,6 @@ func (provider *Provider) deleteHandler() error {
 				return err
 			}
 
-			// TODO: do sthg with these objects
 			fmt.Println("DeleteHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",

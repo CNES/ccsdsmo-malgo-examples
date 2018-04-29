@@ -51,6 +51,7 @@ const (
 	TABLE    = "Archive"
 )
 
+// Database columns
 var databaseFields = []string{
 	"id",
 	"objectInstanceIdentifier",
@@ -1312,9 +1313,9 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 	if archiveQuery.SortOrder != nil {
 		// SortFieldName
 		if archiveQuery.SortFieldName != nil {
-			queryBuffer.WriteString(fmt.Sprintf(" GROUP BY %s", *archiveQuery.SortFieldName))
+			queryBuffer.WriteString(fmt.Sprintf(" ORDER BY %s", *archiveQuery.SortFieldName))
 		} else {
-			queryBuffer.WriteString(" GROUP BY timestamp")
+			queryBuffer.WriteString(" ORDER BY timestamp")
 		}
 		// If sortOrder is false then returned values shall be sorted
 		// in descending order (ascending order is the default value)

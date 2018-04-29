@@ -115,7 +115,6 @@ func main() {
 				nil,
 			}
 			archiveQueryList.AppendElement(archiveQuery)
-			//archiveQueryList.AppendElement(archiveQuery)
 			var queryFilterList *CompositeFilterSetList
 
 			// Variable to retrieve the responses
@@ -135,21 +134,41 @@ func main() {
 		case "count":
 			// Start the count consumer
 			// Create parameters
-			var objectType = ObjectType{
+			var objectType = &ObjectType{
 				UShort(2),
 				UShort(3),
 				UOctet(1),
 				UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 			}
-			var archiveQueryList = NewArchiveQueryList(10)
-			var queryFilterList = NewCompositeFilterSetList(10)
+			archiveQueryList := NewArchiveQueryList(0)
+			var domain = IdentifierList([]*Identifier{NewIdentifier("en"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+			archiveQuery := &ArchiveQuery{
+				&domain,
+				nil,
+				nil,
+				*NewLong(1),
+				nil,
+				nil,
+				nil,
+				NewBoolean(true),
+				nil,
+			}
+			archiveQueryList.AppendElement(archiveQuery)
+			var queryFilterList *CompositeFilterSetList
 
 			// Variable to retrieve the return of this function
 			var longList *LongList
 			// Start the consumer
-			longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, *archiveQueryList, queryFilterList)
+			longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
 
 			fmt.Println("Count Consumer received:\n\t>>>", longList)
+
+			if longList != nil {
+				for i := 0; i < longList.Size(); i++ {
+					fmt.Printf("Response.#%d\n", i)
+					fmt.Println("\t> Nbr of elements:", *longList.GetElementAt(i).(*Long))
+				}
+			}
 
 			break
 		case "store":

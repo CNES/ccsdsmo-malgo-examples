@@ -537,7 +537,7 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 //								COUNT									//
 //======================================================================//
 // StartCountConsumer : TODO
-func StartCountConsumer(url string, providerURI *URI, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, *ServiceError, error) {
+func StartCountConsumer(url string, providerURI *URI, objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*InvokeConsumer, *LongList, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createInvokeConsumer(url, providerURI, "consumerCount", OPERATION_IDENTIFIER_COUNT)
 	if err != nil {
@@ -572,24 +572,24 @@ func StartCountConsumer(url string, providerURI *URI, objectType ObjectType, arc
 }
 
 // Invoke & Ack
-func (consumer *InvokeConsumer) countInvoke(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
+func (consumer *InvokeConsumer) countInvoke(objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectType
-	err := objectType.Encode(encoder)
+	err := encoder.EncodeNullableElement(objectType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode ArchiveQueryList
-	err = archiveQueryList.Encode(encoder)
+	err = encoder.EncodeNullableElement(archiveQueryList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode QueryFilterList
-	err = encoder.EncodeAbstractElement(queryFilterList)
+	err = encoder.EncodeNullableAbstractElement(queryFilterList)
 	if err != nil {
 		return nil, err
 	}
@@ -640,7 +640,7 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, *ServiceError, error
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
 	// Decode LongList
-	longList, err := decoder.DecodeElement(NullLongList)
+	longList, err := decoder.DecodeNullableElement(NullLongList)
 	if err != nil {
 		return nil, nil, err
 	}

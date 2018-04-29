@@ -653,34 +653,48 @@ func (provider *Provider) countHandler() error {
 			// Call Invoke operation
 			objectType, archiveQueryList, queryFilterList, err := provider.countInvoke(msg)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.countAckError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLongList(0))
 				return err
 			}
 
 			// ----- Verify the parameters -----
+			err = provider.countVerifyParameters(transaction, archiveQueryList, queryFilterList)
+			if err != nil {
+				return err
+			}
 
 			// Call Ack operation
 			err = provider.retrieveAck(transaction)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.countAckError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 
 			// Hold on, wait a little
 			time.Sleep(SLEEP_TIME * time.Millisecond)
 
-			// TODO: do sthg with these objects
 			fmt.Println("CountHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				archiveQueryList, "\n\t>>>",
 				queryFilterList)
 
 			// This variable will be created automatically in the future
-			var longList = new(LongList)
+			longList, err := CountInArchive(*objectType, *archiveQueryList, queryFilterList)
+			if err != nil {
+				// Send an INVALID error
+				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
+					err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
+					len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 1 {
+					provider.countResponseError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
+				}
+				// Otherwise, send an INTERNAL error
+				provider.countResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				return err
+			}
 			// Call Response operation
 			err = provider.countResponse(transaction, longList)
 			if err != nil {
-				// TODO: we're (maybe) supposed to say to the consumer that an error occured
+				provider.countResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 		}
@@ -702,6 +716,15 @@ func (provider *Provider) countHandler() error {
 }
 
 // VERIFY PARAMETERS
+func (provider *Provider) countVerifyParameters(transaction InvokeTransaction, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) error {
+	if queryFilterList != nil && archiveQueryList.Size() != queryFilterList.Size() {
+		fmt.Println(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR)
+		provider.countAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR, NewLongList(1))
+		return errors.New(string(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR))
+	}
+
+	return nil
+}
 
 // INVOKE
 func (provider *Provider) countInvoke(msg *Message) (*ObjectType, *ArchiveQueryList, QueryFilterList, error) {
@@ -709,21 +732,24 @@ func (provider *Provider) countInvoke(msg *Message) (*ObjectType, *ArchiveQueryL
 	decoder := provider.factory.NewDecoder(msg.Body)
 
 	// Decode ObjectType
-	objectType, err := decoder.DecodeElement(NullObjectType)
+	objectType, err := decoder.DecodeNullableElement(NullObjectType)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// Decode ArchiveQueryList
-	archiveQueryList, err := decoder.DecodeElement(NullArchiveQueryList)
+	archiveQueryList, err := decoder.DecodeNullableElement(NullArchiveQueryList)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// Decode QueryFilterList
-	queryFilterList, err := decoder.DecodeAbstractElement()
+	queryFilterList, err := decoder.DecodeNullableAbstractElement()
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	if queryFilterList == nil {
+		return objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), nil, nil
 	}
 
 	return objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), queryFilterList.(QueryFilterList), nil
@@ -740,6 +766,23 @@ func (provider *Provider) countAck(transaction InvokeTransaction) error {
 }
 
 // ACK ERROR
+func (provider *Provider) countAckError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Ack operation with Error status
+	err = transaction.Ack(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // RESPONSE
 func (provider *Provider) countResponse(transaction InvokeTransaction, longList *LongList) error {
@@ -747,7 +790,7 @@ func (provider *Provider) countResponse(transaction InvokeTransaction, longList 
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode LongList
-	err := longList.Encode(encoder)
+	err := encoder.EncodeNullableElement(longList)
 	if err != nil {
 		return err
 	}
@@ -762,6 +805,23 @@ func (provider *Provider) countResponse(transaction InvokeTransaction, longList 
 }
 
 // RESPONSE ERROR
+func (provider *Provider) countResponseError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
+	// Create the encoder
+	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
+
+	encoder, err := EncodeError(encoder, errorNumber, errorComment, errorExtra)
+	if err != nil {
+		return err
+	}
+
+	// Call Ack operation with Error status
+	err = transaction.Reply(encoder.Body(), true)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 //======================================================================//
 //								STORE									//

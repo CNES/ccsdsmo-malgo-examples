@@ -123,7 +123,7 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 }
 
 // Count : TODO
-func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Count Consumer")

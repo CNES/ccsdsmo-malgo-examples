@@ -232,7 +232,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	defer db.Close()
 
 	// Verify the parameters
-	err = queryVerifyParameters(archiveQuery, queryFilter)
+	err = verifyParameters(archiveQuery, queryFilter)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -616,7 +616,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	return objectTypeToReturn, archiveDetailsListToReturn, identifierListToReturn, elementListToReturn, nil
 }
 
-func queryVerifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
+func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
 	// Check sortFieldName value
 	var isSortFieldNameADefinedField = false
 	for i := 0; i < len(databaseFields); i++ {
@@ -664,17 +664,51 @@ func queryVerifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) e
 //======================================================================//
 //                              COUNT                                   //
 //======================================================================//
-func CountInArchive() error {
+func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer db.Close()
 
-	fmt.Println(tx)
+	//
+	var longList = NewLongList(0)
 
-	return nil
+	for i := 0; i < archiveQueryList.Size(); i++ {
+		// Verify the parameters
+		if queryFilterList != nil {
+			err = verifyParameters(*archiveQueryList[i], queryFilterList.GetElementAt(i))
+		} else {
+			err = verifyParameters(*archiveQueryList[i], nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+		// Create the query
+		var query string
+		if queryFilterList != nil {
+			query, err = createCountQuery(objectType, *archiveQueryList[i], queryFilterList.GetElementAt(i))
+		} else {
+			query, err = createCountQuery(objectType, *archiveQueryList[i], nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		// Create a variable to Store the response
+		var response int64
+		// Execute the query
+		err = tx.QueryRow(query).Scan(&response)
+		if err != nil {
+			return nil, err
+		}
+
+		// Add this response in the long list
+		longList.AppendElement(NewLong(response))
+	}
+
+	return longList, nil
 }
 
 //======================================================================//
@@ -1189,7 +1223,21 @@ func checkCondition(cond *bool, buffer *bytes.Buffer) {
 	}
 }
 
-// createQuery allows the provider to create automatically a query
+// createCountQuery allows the provider to create automatically a query for the Count operation
+func createCountQuery(objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
+	var queryBuffer bytes.Buffer
+	// Only CompositeFilterSet type should be used
+	queryBuffer.WriteString("SELECT COUNT(id)")
+
+	err := createCommonQuery(&queryBuffer, objectType, archiveQuery, queryFilter)
+	if err != nil {
+		return "", err
+	}
+
+	return queryBuffer.String(), nil
+}
+
+// createQuery allows the provider to create automatically a query for the Query operation
 func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZero bool, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
 	var queryBuffer bytes.Buffer
 	// Only CompositeFilterSet type should be used
@@ -1204,6 +1252,16 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 		queryBuffer.WriteString(", area, service, version, number")
 	}
 
+	err := createCommonQuery(&queryBuffer, objectType, archiveQuery, queryFilter)
+	if err != nil {
+		return "", err
+	}
+
+	return queryBuffer.String(), nil
+}
+
+// createCommonQuery is a common way of generating a part of a query
+func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
 	// Prepare the query for the conditions
 	queryBuffer.WriteString(" FROM " + TABLE + " WHERE")
 
@@ -1218,47 +1276,47 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 	}
 	// Service
 	if objectType.Service != 0 {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" service = %d", objectType.Service))
 	}
 	// Version
 	if objectType.Version != 0 {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" version = %d", objectType.Version))
 	}
 	// Number
 	if objectType.Number != 0 {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" number = %d", objectType.Number))
 	}
 
 	// Add archive query conditions
 	// Domain
 	if archiveQuery.Domain != nil {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		domain := adaptDomainToString(*archiveQuery.Domain)
 		queryBuffer.WriteString(fmt.Sprintf(" domain = '%s'", domain))
 	}
 
 	// Network
 	if archiveQuery.Network != nil {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" network = '%s'", *archiveQuery.Network))
 	}
 
 	// Provider
 	if archiveQuery.Provider != nil {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" provider = '%s'", *archiveQuery.Provider))
 	}
 
 	// Related (always have to do a query with this condition)
-	checkCondition(&isThereAlreadyACondition, &queryBuffer)
+	checkCondition(&isThereAlreadyACondition, queryBuffer)
 	queryBuffer.WriteString(fmt.Sprintf(" `details.related` = %d", archiveQuery.Related))
 
 	// Source
 	if archiveQuery.Source != nil {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 
 		// Encode the ObjectId
 		// Create the factory
@@ -1270,20 +1328,20 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 		// Encode it
 		err := archiveQuery.Source.Encode(encoder)
 		if err != nil {
-			return "", err
+			return err
 		}
 		queryBuffer.WriteString(fmt.Sprintf(" `details.source` = %s", encoder.Body()))
 	}
 
 	// StartTime
 	if archiveQuery.StartTime != nil {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp >= %s", time.Time(*archiveQuery.StartTime)))
 	}
 
 	// EndTime
 	if archiveQuery.EndTime != nil {
-		checkCondition(&isThereAlreadyACondition, &queryBuffer)
+		checkCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp <= %s", time.Time(*archiveQuery.EndTime)))
 	}
 
@@ -1292,7 +1350,7 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 		compositerFilterSet := queryFilter.(*CompositeFilterSet)
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
-			checkCondition(&isThereAlreadyACondition, &queryBuffer)
+			checkCondition(&isThereAlreadyACondition, queryBuffer)
 			// Transform the expresion operator
 			expressionOperator := whichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
 
@@ -1324,7 +1382,7 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 		}
 	}
 
-	return queryBuffer.String(), nil
+	return nil
 }
 
 // whichExpressionOperatorIsIt transforms an ExpressionOperator to a string

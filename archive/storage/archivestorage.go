@@ -715,7 +715,7 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 //                              STORE                                   //
 //======================================================================//
 // StoreInArchive : Use this function to store objects in an COM archive
-func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (LongList, error) {
+func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Create the transaction to execute future queries
@@ -726,11 +726,15 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 	defer db.Close()
 
 	// Variable to return all the object instance identifiers
-	var longList LongList
+	var longList *LongList
 
 	// Create the domain (It might change in the future)
 	domain := utils.AdaptDomainToString(identifierList)
 
+	// Init the list to return (if boolean is not equal to false)
+	if boolean {
+		longList = NewLongList(0)
+	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier

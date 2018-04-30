@@ -322,7 +322,6 @@ func (provider *Provider) queryHandler() error {
 			}
 
 			// ----- Verify the parameters -----
-			// TODO: verify the parameters according to the COM documentation
 			err = provider.queryVerifyParameters(transaction, archiveQueryList, queryFilterList)
 			if err != nil {
 				return err
@@ -873,8 +872,8 @@ func (provider *Provider) storeHandler() error {
 				elementList)
 
 			// Store these objects in the archive
-			var longList LongList
-			longList, err = StoreInArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
+			var longList *LongList
+			longList, err = StoreInArchive(*boolean, *objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
 				if err.Error() == string(COM_ERROR_DUPLICATE) {
 					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
@@ -884,15 +883,11 @@ func (provider *Provider) storeHandler() error {
 				return err
 			}
 
-			// TODO: for each object stored, and 'ObjectStored' event may be published
+			// TODO: for each object stored, an 'ObjectStored' event may be published
 			// to the event service
 
-			// If boolean is false then we must send an empty LongList
-			if !(*boolean) {
-				longList = *NewLongList(0)
-			}
 			// Call Response operation
-			err = provider.storeResponse(transaction, &longList)
+			err = provider.storeResponse(transaction, longList)
 			if err != nil {
 				provider.storeResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
@@ -1012,7 +1007,7 @@ func (provider *Provider) storeResponse(transaction RequestTransaction, longList
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode LongList
-	err := longList.Encode(encoder)
+	err := encoder.EncodeNullableElement(longList)
 	if err != nil {
 		return err
 	}
@@ -1100,6 +1095,9 @@ func (provider *Provider) updateHandler() error {
 				}
 				return err
 			}
+
+			// TODO: for each object updated, an 'ObjectUpdated' event may be published
+			// to the event service
 
 			// Call Ack operation
 			err = provider.updateAck(transaction)
@@ -1270,6 +1268,9 @@ func (provider *Provider) deleteHandler() error {
 				}
 				return err
 			}
+
+			// TODO: for each object deleted, an 'ObjectDeleted' event may be published
+			// to the event service
 
 			// Call Response operation
 			err = provider.deleteResponse(transaction, longListResponse)

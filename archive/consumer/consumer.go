@@ -731,7 +731,7 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
 	// Decode LongList
-	longList, err := decoder.DecodeElement(NullLongList)
+	longList, err := decoder.DecodeNullableElement(NullLongList)
 	if err != nil {
 		return nil, nil, err
 	}

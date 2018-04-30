@@ -32,7 +32,7 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/service"
 	. "github.com/etiennelndr/archiveservice/data"
 	. "github.com/etiennelndr/archiveservice/errors"
-	. "github.com/etiennelndr/archiveservice/main/data"
+	. "github.com/etiennelndr/archiveservice/tests/data"
 )
 
 // Constants for the providers and consumers

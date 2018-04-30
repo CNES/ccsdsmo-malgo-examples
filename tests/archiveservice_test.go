@@ -41,6 +41,9 @@ const (
 	consumerURL = "maltcp://127.0.0.1:14200"
 )
 
+//======================================================================//
+//								RETRIEVE								//
+//======================================================================//
 func TestRetrieveOK(t *testing.T) {
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -165,3 +168,108 @@ func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+//======================================================================//
+//								QUERY									//
+//======================================================================//
+func TestQueryOK(t *testing.T) {
+
+}
+
+func TestQueryKO_3_4_4_2_9(t *testing.T) {
+
+}
+
+func TestQueryKO_3_4_4_2_14(t *testing.T) {
+
+}
+
+func TestQueryKO_3_4_4_2_16(t *testing.T) {
+
+}
+
+func TestQueryKO_3_4_4_2_19(t *testing.T) {
+
+}
+
+func TestQueryKO_3_4_4_2_24(t *testing.T) {
+
+}
+
+func TestQueryKO_3_4_4_2_25(t *testing.T) {
+
+}
+
+//======================================================================//
+//								COUNT									//
+//======================================================================//
+func TestCountOK(t *testing.T) {
+
+}
+
+func TestCountKO_3_4_5_2_9(t *testing.T) {
+
+}
+
+func TestCountKO_3_4_5_2_14(t *testing.T) {
+
+}
+
+func TestCountKO_3_4_5_2_16(t *testing.T) {
+
+}
+
+func TestCountKO_3_4_5_2_19(t *testing.T) {
+
+}
+
+func TestCountKO_3_4_5_2_24(t *testing.T) {
+
+}
+
+func TestCountKO_3_4_5_2_25(t *testing.T) {
+
+}
+
+//======================================================================//
+//								STORE									//
+//======================================================================//
+func TestStoreOK(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_1(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_6(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_8(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_9(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_10(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_11(t *testing.T) {
+
+}
+
+func TestStoreKO_3_4_6_2_12(t *testing.T) {
+
+}
+
+//======================================================================//
+//								UPDATE									//
+//======================================================================//
+
+//======================================================================//
+//								DELETE									//
+//======================================================================//

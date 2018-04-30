@@ -177,7 +177,6 @@ func (provider *Provider) retrieveHandler() error {
 func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction, objectType *ObjectType, identifierList *IdentifierList, longList *LongList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
 		provider.retrieveAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
 	}
@@ -185,7 +184,6 @@ func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction
 	// Verify IdentifierList
 	for i := 0; i < identifierList.Size(); i++ {
 		if *(*identifierList)[i] == "*" {
-			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
 			provider.retrieveAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
 		}
@@ -437,7 +435,6 @@ func (provider *Provider) queryHandler() error {
 // VERIFY PARAMETERS
 func (provider *Provider) queryVerifyParameters(transaction ProgressTransaction, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) error {
 	if queryFilterList != nil && archiveQueryList.Size() != queryFilterList.Size() {
-		fmt.Println(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR)
 		provider.queryAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR))
 	}
@@ -717,7 +714,6 @@ func (provider *Provider) countHandler() error {
 // VERIFY PARAMETERS
 func (provider *Provider) countVerifyParameters(transaction InvokeTransaction, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) error {
 	if queryFilterList != nil && archiveQueryList.Size() != queryFilterList.Size() {
-		fmt.Println(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR)
 		provider.countAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR))
 	}
@@ -914,14 +910,12 @@ func (provider *Provider) storeHandler() error {
 func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, boolean *Boolean, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	// The fourth and fifth lists must be the same size
 	if archiveDetailsList.Size() != elementList.Size() {
-		fmt.Println(ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR)
 		provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR))
 	}
 
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
 		provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
 	}
@@ -929,7 +923,6 @@ func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, 
 	// Verify IdentifierList
 	for i := 0; i < identifierList.Size(); i++ {
 		if *(*identifierList)[i] == "*" {
-			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
 			provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
 		}
@@ -952,7 +945,6 @@ func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, 
 	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if mapNetwork[(*archiveDetailsList)[i].Network] || mapTimestamp[(*archiveDetailsList)[i].Timestamp] || mapProvider[(*archiveDetailsList)[i].Provider] {
-			fmt.Println(ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR)
 			provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR))
 		}
@@ -1127,7 +1119,6 @@ func (provider *Provider) updateHandler() error {
 func (provider *Provider) updateVerifyParameters(transaction SubmitTransaction, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
 		provider.updateAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
 	}
@@ -1135,7 +1126,6 @@ func (provider *Provider) updateVerifyParameters(transaction SubmitTransaction, 
 	// Verify IdentifierList
 	for i := 0; i < identifierList.Size(); i++ {
 		if *(identifierList)[i] == "*" {
-			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
 			provider.updateAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
 		}
@@ -1144,7 +1134,6 @@ func (provider *Provider) updateVerifyParameters(transaction SubmitTransaction, 
 	// Verify object instance identifier
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
-			fmt.Println(ARCHIVE_SERVICE_AREA_OBJECT_INSTANCE_IDENTIFIER_VALUE_ERROR)
 			provider.updateAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_AREA_OBJECT_INSTANCE_IDENTIFIER_VALUE_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_AREA_OBJECT_INSTANCE_IDENTIFIER_VALUE_ERROR))
 		}
@@ -1300,7 +1289,6 @@ func (provider *Provider) deleteHandler() error {
 func (provider *Provider) deleteVerifyParameters(transaction RequestTransaction, objectType ObjectType, identifierList IdentifierList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
-		fmt.Println(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR)
 		provider.deleteResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
 		return errors.New(string(ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR))
 	}
@@ -1308,7 +1296,6 @@ func (provider *Provider) deleteVerifyParameters(transaction RequestTransaction,
 	// Verify IdentifierList
 	for i := 0; i < identifierList.Size(); i++ {
 		if *(identifierList)[i] == "*" {
-			fmt.Println(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR)
 			provider.deleteResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR, NewLongList(1))
 			return errors.New(string(ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR))
 		}

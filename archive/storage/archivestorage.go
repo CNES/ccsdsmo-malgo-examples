@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
-	"strings"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
@@ -38,6 +37,7 @@ import (
 	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
+	"github.com/etiennelndr/archiveservice/archive/utils"
 	. "github.com/etiennelndr/archiveservice/data"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -80,7 +80,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	defer db.Close()
 
 	// Convert domain
-	domain := adaptDomainToString(identifierList)
+	domain := utils.AdaptDomainToString(identifierList)
 
 	// First of all, we need to verity the object instance identifiers values
 	var isAll = false
@@ -92,7 +92,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	}
 
 	// Transform Type Short Form to List Short Form
-	listShortForm := convertToListShortForm(objectType)
+	listShortForm := utils.ConvertToListShortForm(objectType)
 	// Get Element in the MAL Registry
 	element, err := LookupMALElement(listShortForm)
 	if err != nil {
@@ -135,7 +135,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			}
 
 			// Decode the Element and the ObjectId for the ArchiveDetails
-			objectId, element, err := decodeElements(encodedObjectId, encodedElement)
+			objectId, element, err := utils.DecodeElements(encodedObjectId, encodedElement)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -190,7 +190,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			}
 
 			// Decode the Element and the ObjectId for the ArchiveDetails
-			objectId, element, err := decodeElements(encodedObjectId, encodedElement)
+			objectId, element, err := utils.DecodeElements(encodedObjectId, encodedElement)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -316,7 +316,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 				// ArchiveDetailsList
 				// Decode the object id
-				objId, err := decodeObjectId(encodedObjectId)
+				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -330,7 +330,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 				// ElementList
 				// Decode the element
-				elem, err := decodeElement(encodedElement)
+				elem, err := utils.DecodeElement(encodedElement)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -340,7 +340,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				findASmartName = append(findASmartName, objectTypeFromDB, domain)
 
 				// IdentifierList
-				idList := adaptDomainToIdentifierList(domain)
+				idList := utils.AdaptDomainToIdentifierList(domain)
 				identifierListToReturn = append(identifierListToReturn, &idList)
 
 				// ObjectType
@@ -349,7 +349,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
 				// Decode the object id
-				objId, err := decodeObjectId(encodedObjectId)
+				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -363,13 +363,13 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 				// ElementList
 				// Decode the element
-				elem, err := decodeElement(encodedElement)
+				elem, err := utils.DecodeElement(encodedElement)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
 
 				// Transform Type Short Form to List Short Form
-				listShortForm := convertToListShortForm(objectTypeFromDB)
+				listShortForm := utils.ConvertToListShortForm(objectTypeFromDB)
 				// Get Element in the MAL Registry
 				element, err := LookupMALElement(listShortForm)
 				var elementList = element.(ElementList)
@@ -421,7 +421,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			if isAlreadyUsed {
 				// ArchiveDetailsList
 				// Decode the object id
-				objId, err := decodeObjectId(encodedObjectId)
+				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -435,14 +435,14 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 				// ElementList
 				// Decode the element
-				elem, err := decodeElement(encodedElement)
+				elem, err := utils.DecodeElement(encodedElement)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
 				elementListToReturn[domainMap[domain]].AppendElement(elem)
 			} else {
 				// IdentifierList
-				idList := adaptDomainToIdentifierList(domain)
+				idList := utils.AdaptDomainToIdentifierList(domain)
 				identifierListToReturn = append(identifierListToReturn, &idList)
 
 				// ObjectType
@@ -451,7 +451,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
 				// Decode the object id
-				objId, err := decodeObjectId(encodedObjectId)
+				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -465,12 +465,12 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 				// ElementList
 				// Decode the element
-				elem, err := decodeElement(encodedElement)
+				elem, err := utils.DecodeElement(encodedElement)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
 				// Transform Type Short Form to List Short Form
-				listShortForm := convertToListShortForm(ObjectType{area, service, version, number})
+				listShortForm := utils.ConvertToListShortForm(ObjectType{area, service, version, number})
 				// Get Element in the MAL Registry
 				element, err := LookupMALElement(listShortForm)
 				var elementList = element.(ElementList)
@@ -521,7 +521,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			if isAlreadyUsed {
 				// ArchiveDetailsList
 				// Decode the object id
-				objId, err := decodeObjectId(encodedObjectId)
+				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -543,7 +543,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
 				// Decode the object id
-				objId, err := decodeObjectId(encodedObjectId)
+				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
@@ -588,7 +588,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 			// ArchiveDetailsList
 			// Decode the object id
-			objId, err := decodeObjectId(encodedObjectId)
+			objId, err := utils.DecodeObjectID(encodedObjectId)
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
@@ -729,7 +729,7 @@ func StoreInArchive(objectType ObjectType, identifierList IdentifierList, archiv
 	var longList LongList
 
 	// Create the domain (It might change in the future)
-	domain := adaptDomainToString(identifierList)
+	domain := utils.AdaptDomainToString(identifierList)
 
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
@@ -802,7 +802,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 	defer db.Close()
 
 	// Create the domain (It might change in the future)
-	domain := adaptDomainToString(identifierList)
+	domain := utils.AdaptDomainToString(identifierList)
 
 	for i := 0; i < elementList.Size(); i++ {
 		// First of all, we need to verify if the object instance identifier, combined
@@ -823,7 +823,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 			return err
 		}
 
-		encodedElement, encodedObjectId, err := encodeElements(elementList.GetElementAt(i), *archiveDetailsList[i].Details.Source)
+		encodedElement, encodedObjectId, err := utils.EncodeElements(elementList.GetElementAt(i), *archiveDetailsList[i].Details.Source)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -869,7 +869,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 	var longList LongList
 
 	// Create the domain (It might change in the future)
-	domain := adaptDomainToString(identifierList)
+	domain := utils.AdaptDomainToString(identifierList)
 
 	// Variable to say if we have to delete all of the objects or not
 	var isAll = false
@@ -1017,7 +1017,7 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 // This function allows insert an element in the archive
 func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element, objectType ObjectType, domain String, archiveDetails ArchiveDetails) error {
 	// Encode the Element and the ObjectId from the ArchiveDetails
-	encodedElement, encodedObjectID, err := encodeElements(element, *archiveDetails.Details.Source)
+	encodedElement, encodedObjectID, err := utils.EncodeElements(element, *archiveDetails.Details.Source)
 	if err != nil {
 		return err
 	}
@@ -1073,156 +1073,6 @@ func resetAutoIncrement(tx *sql.Tx) error {
 	return nil
 }
 
-// adaptDomainToString transforms a list of Identifiers to a domain of this
-// type: first.second.third.[...]
-func adaptDomainToString(identifierList IdentifierList) String {
-	var domain String
-	for i := 0; i < identifierList.Size(); i++ {
-		domain += String(*identifierList.GetElementAt(i).(*Identifier))
-		if i+1 < identifierList.Size() {
-			domain += "."
-		}
-	}
-	return domain
-}
-
-// adaptDomainToIdentifierList transforms a domain of this
-// type: first.second.third.[...] to a list of Identifiers
-func adaptDomainToIdentifierList(domain string) IdentifierList {
-	var identifierList = NewIdentifierList(0)
-	var domains = strings.Split(domain, ".")
-	for i := 0; i < len(domains); i++ {
-		identifierList.AppendElement(NewIdentifier(domains[i]))
-	}
-	return *identifierList
-}
-
-func decodeObjectId(encodedObjectId []byte) (*ObjectId, error) {
-	// Create the factory
-	factory := new(FixedBinaryEncoding)
-
-	// Create the decoder
-	decoder := factory.NewDecoder(encodedObjectId)
-
-	// Decode the ObjectId
-	elem, err := decoder.DecodeElement(NullObjectId)
-	if err != nil {
-		return nil, err
-	}
-	objectId := elem.(*ObjectId)
-
-	return objectId, nil
-}
-
-func decodeElement(encodedObjectElement []byte) (Element, error) {
-	// Create the factory
-	factory := new(FixedBinaryEncoding)
-
-	// Create the decoder
-	decoder := factory.NewDecoder(encodedObjectElement)
-
-	// Decode the Element
-	element, err := decoder.DecodeAbstractElement()
-	if err != nil {
-		return nil, err
-	}
-
-	return element, nil
-}
-
-func decodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, error) {
-	// Decode the ObjectId
-	objectId, err := decodeObjectId(_objectId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Decode the Element
-	element, err := decodeElement(_element)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return objectId, element, nil
-}
-
-func encodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error) {
-	// Create the factory
-	factory := new(FixedBinaryEncoding)
-
-	// Create the encoder
-	encoder := factory.NewEncoder(make([]byte, 0, 8192))
-
-	// Encode Element
-	err := encoder.EncodeAbstractElement(_element)
-	if err != nil {
-		return nil, nil, err
-	}
-	element := encoder.Body()
-
-	// Reallocate the encoder
-	encoder = factory.NewEncoder(make([]byte, 0, 8192))
-
-	// Encode ObjectId
-	err = _objectId.Encode(encoder)
-	if err != nil {
-		return nil, nil, err
-	}
-	objectId := encoder.Body()
-
-	return element, objectId, nil
-}
-
-// This part is useful for type short form conversion (from typeShortForm to listShortForm)
-func typeShortFormToShortForm(objectType ObjectType) Long {
-	var typeShortForm = Long(objectType.Number) | 0xFFFFFFF000000
-	var areaVersion = (Long(objectType.Version) << 24) | 0xFFFFF00FFFFFF
-	var serviceNumber = (Long(objectType.Service) << 32) | 0xF0000FFFFFFFF
-	var areaNumber = (Long(objectType.Area) << 48) | 0x0FFFFFFFFFFFF
-
-	return areaNumber & serviceNumber & areaVersion & typeShortForm
-}
-
-// convertToListShortForm converts an ObjectType to a Long (which
-// will be used for a List Short Form)
-func convertToListShortForm(objectType ObjectType) Long {
-	var listByte []byte
-	listByte = append(listByte, byte(objectType.Area), byte(objectType.Service>>8), byte(objectType.Service), byte(objectType.Version))
-	typeShort := typeShortFormToShortForm(objectType)
-	quatuor5 := (typeShort & 0x0000F0) >> 4
-	if quatuor5 == 0x0 {
-		var b byte
-		for i := 2; i >= 0; i-- {
-			b = byte(typeShort>>uint(i*8)) ^ 255
-			if i == 0 {
-				b++
-			}
-			listByte = append(listByte, b)
-		}
-
-		var byte0 = Long(listByte[6]) | 0xFFFFFFFFFFF00
-		var byte1 = (Long(listByte[5]) << 8) | 0xFFFFFFFFF00FF
-		var byte2 = (Long(listByte[4]) << 16) | 0xFFFFFFF00FFFF
-		var byte3 = (Long(listByte[3]) << 24) | 0xFFFFF00FFFFFF
-		var byte4 = (Long(listByte[2]) << 32) | 0xFFF00FFFFFFFF
-		var byte5 = (Long(listByte[1]) << 40) | 0xF00FFFFFFFFFF
-		var byte6 = (Long(listByte[0]) << 48) | 0x0FFFFFFFFFFFF
-
-		return byte6 & byte5 & byte4 & byte3 & byte2 & byte1 & byte0
-	}
-
-	// Force bytes 2, 3 to 1
-	return typeShort | 0x0000000FFFF00
-}
-
-func checkCondition(cond *bool, buffer *bytes.Buffer) {
-	if *cond {
-		buffer.WriteString(" AND")
-	} else {
-		*cond = true
-	}
-}
-
 // createCountQuery allows the provider to create automatically a query for the Count operation
 func createCountQuery(objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
 	var queryBuffer bytes.Buffer
@@ -1276,47 +1126,47 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 	}
 	// Service
 	if objectType.Service != 0 {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" service = %d", objectType.Service))
 	}
 	// Version
 	if objectType.Version != 0 {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" version = %d", objectType.Version))
 	}
 	// Number
 	if objectType.Number != 0 {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" number = %d", objectType.Number))
 	}
 
 	// Add archive query conditions
 	// Domain
 	if archiveQuery.Domain != nil {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
-		domain := adaptDomainToString(*archiveQuery.Domain)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
+		domain := utils.AdaptDomainToString(*archiveQuery.Domain)
 		queryBuffer.WriteString(fmt.Sprintf(" domain = '%s'", domain))
 	}
 
 	// Network
 	if archiveQuery.Network != nil {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" network = '%s'", *archiveQuery.Network))
 	}
 
 	// Provider
 	if archiveQuery.Provider != nil {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" provider = '%s'", *archiveQuery.Provider))
 	}
 
 	// Related (always have to do a query with this condition)
-	checkCondition(&isThereAlreadyACondition, queryBuffer)
+	utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 	queryBuffer.WriteString(fmt.Sprintf(" `details.related` = %d", archiveQuery.Related))
 
 	// Source
 	if archiveQuery.Source != nil {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 
 		// Encode the ObjectId
 		// Create the factory
@@ -1335,13 +1185,13 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 
 	// StartTime
 	if archiveQuery.StartTime != nil {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp >= %s", time.Time(*archiveQuery.StartTime)))
 	}
 
 	// EndTime
 	if archiveQuery.EndTime != nil {
-		checkCondition(&isThereAlreadyACondition, queryBuffer)
+		utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 		queryBuffer.WriteString(fmt.Sprintf(" timestamp <= %s", time.Time(*archiveQuery.EndTime)))
 	}
 
@@ -1350,9 +1200,9 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 		compositerFilterSet := queryFilter.(*CompositeFilterSet)
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
-			checkCondition(&isThereAlreadyACondition, queryBuffer)
+			utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 			// Transform the expresion operator
-			expressionOperator := whichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
+			expressionOperator := utils.WhichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
 
 			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
 				queryBuffer.WriteString(fmt.Sprintf(" %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
@@ -1383,28 +1233,4 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 	}
 
 	return nil
-}
-
-// whichExpressionOperatorIsIt transforms an ExpressionOperator to a string
-func whichExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
-	switch expressionOperator {
-	case COM_EXPRESSIONOPERATOR_EQUAL:
-		return "="
-	case COM_EXPRESSIONOPERATOR_DIFFER:
-		return "!="
-	case COM_EXPRESSIONOPERATOR_GREATER:
-		return ">"
-	case COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL:
-		return ">="
-	case COM_EXPRESSIONOPERATOR_LESS:
-		return "<"
-	case COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL:
-		return "<="
-	case COM_EXPRESSIONOPERATOR_CONTAINS:
-		return "LIKE '%"
-	case COM_EXPRESSIONOPERATOR_ICONTAINS:
-		return "NOT LIKE '%"
-	default:
-		return ""
-	}
 }

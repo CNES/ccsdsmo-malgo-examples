@@ -35,14 +35,19 @@ import (
 	. "github.com/etiennelndr/archiveservice/main/data"
 )
 
+// Constants for the providers and consumers
+const (
+	providerURL = "maltcp://127.0.0.1:12400"
+	consumerURL = "maltcp://127.0.0.1:14200"
+)
+
 func TestRetrieveOK(t *testing.T) {
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
 	// Create the Archive Service
 	service := archiveService.CreateService()
 	archiveService = service.(*ArchiveService)
-
-	// Create parameters
+	// Variable that defines the ArchiveService
 	var objectType = ObjectType{
 		UShort(2),
 		UShort(3),
@@ -58,18 +63,105 @@ func TestRetrieveOK(t *testing.T) {
 	var errorsList *ServiceError
 	var err error
 	// Start the consumer
-	archiveDetailsList, elementList, errorsList, err = archiveService.LaunchRetrieveConsumer(objectType, identifierList, longList)
+	archiveDetailsList, elementList, errorsList, err = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
 
-	if errorsList != nil {
-		t.Fatal("ErrorsList must be nil")
+	if errorsList != nil || err != nil || archiveDetailsList == nil || elementList == nil {
+		t.FailNow()
 	}
-	if err != nil {
-		t.Fatal("Err must be nil")
+}
+
+func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	var longList = LongList([]*Long{NewLong(0)})
+	var objectType = ObjectType{
+		UShort(0),
+		UShort(3),
+		UOctet(1),
+		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
-	if archiveDetailsList == nil {
-		t.Fatal("ArchiveDetailsList must not be nil")
+	// Start the consumer
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
 	}
-	if elementList == nil {
-		t.Fatal("ElementList must not be nil")
+
+	objectType = ObjectType{
+		UShort(2),
+		UShort(0),
+		UOctet(1),
+		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	// Start the consumer
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		UShort(2),
+		UShort(3),
+		UOctet(0),
+		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	// Start the consumer
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		UShort(2),
+		UShort(3),
+		UOctet(1),
+		UShort(0),
+	}
+	// Start the consumer
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
+	}
+}
+
+func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("*"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
+	var longList = LongList([]*Long{NewLong(0)})
+	var objectType = ObjectType{
+		UShort(2),
+		UShort(3),
+		UOctet(1),
+		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	// Start the consumer
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
+	}
+
+	identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("*"), NewIdentifier("archiveservice")})
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
+	}
+
+	identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("*")})
+	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(70000) {
+		t.FailNow()
 	}
 }

@@ -36,13 +36,12 @@ import (
 // Constants for the providers and consumers
 const (
 	providerURL = "maltcp://127.0.0.1:12400"
-	consumerURL = "maltcp://127.0.0.1:14200"
 )
 
 func main() {
 	args := os.Args[1:]
 
-	if len(args) < 1 || len(args) > 2 {
+	if len(args) != 1 {
 		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go provider")
 		return
 	}

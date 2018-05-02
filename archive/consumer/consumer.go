@@ -24,6 +24,8 @@
 package consumer
 
 import (
+	"fmt"
+
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -708,6 +710,8 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 	if err != nil {
 		return nil, nil, err
 	}
+
+	fmt.Println(len(encoder.Body()))
 
 	// Call Request operation and retrieve the Response
 	resp, err := consumer.op.Request(encoder.Body())

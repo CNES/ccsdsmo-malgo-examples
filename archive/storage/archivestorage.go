@@ -736,6 +736,7 @@ func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList Ident
 		longList = NewLongList(0)
 	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
+		fmt.Println(i)
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
 			for {
@@ -981,19 +982,19 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 //                           LOCAL FUNCTIONS                            //
 //======================================================================//
 func createTransaction() (*sql.DB, *sql.Tx, error) {
-	// Create the handle
+	// Open the database
 	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE+"?parseTime=true")
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Validate DSN data
+	// Validate the connection by pinging it
 	err = db.Ping()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// Create the transaction (me have to use this method to use rollback and commit)
+	// Create the transaction (we have to use this method to use rollback and commit)
 	tx, err := db.Begin()
 	if err != nil {
 		return nil, nil, err

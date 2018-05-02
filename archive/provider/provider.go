@@ -51,11 +51,17 @@ type Provider struct {
 	ctx     *Context
 	cctx    *ClientContext
 	factory EncodingFactory
+	Name    string
 }
 
 // Allow to close the context of a specific provider
 func (provider *Provider) Close() {
-	provider.ctx.Close()
+	locker.Lock()
+	if ctx != nil {
+		ctx.Close()
+		ctx = nil
+	}
+	locker.Unlock()
 }
 
 // Create a provider
@@ -71,14 +77,14 @@ func createProvider(url string, typeOfProvider string) (*Provider, error) {
 	}
 	locker.Unlock()
 
-	cctx, err := NewClientContext(ctx, typeOfProvider)
+	cctx, err := NewClientContext(ctx, "provider"+typeOfProvider)
 	if err != nil {
 		return nil, err
 	}
 
 	factory := new(FixedBinaryEncoding)
 
-	provider := &Provider{ctx, cctx, factory}
+	provider := &Provider{ctx, cctx, factory, typeOfProvider}
 
 	return provider, nil
 }
@@ -89,7 +95,7 @@ func createProvider(url string, typeOfProvider string) (*Provider, error) {
 // StartRetrieveProvider :
 func StartRetrieveProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "providerRetrieve")
+	provider, err := createProvider(url, "Retrieve")
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +298,7 @@ func (provider *Provider) retrieveResponseError(transaction InvokeTransaction, e
 // StartRetrieveProvider :
 func StartQueryProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "providerQuery")
+	provider, err := createProvider(url, "Query")
 	if err != nil {
 		return nil, err
 	}
@@ -626,7 +632,7 @@ func (provider *Provider) queryResponseError(transaction ProgressTransaction, er
 // StartCountProvider :
 func StartCountProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "providerCount")
+	provider, err := createProvider(url, "Count")
 	if err != nil {
 		return nil, err
 	}
@@ -824,7 +830,7 @@ func (provider *Provider) countResponseError(transaction InvokeTransaction, erro
 // StartStoreProvider :
 func StartStoreProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "providerStore")
+	provider, err := createProvider(url, "Store")
 	if err != nil {
 		return nil, err
 	}
@@ -978,6 +984,8 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 		return nil, nil, nil, nil, nil, err
 	}
 
+	fmt.Println(len(msg.Body))
+
 	// Decode ArchiveDetailsList
 	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
@@ -1038,7 +1046,7 @@ func (provider *Provider) storeResponseError(transaction RequestTransaction, err
 // StartUpdateProvider :
 func StartUpdateProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "providerUpdate")
+	provider, err := createProvider(url, "Update")
 	if err != nil {
 		return nil, err
 	}
@@ -1209,7 +1217,7 @@ func (provider *Provider) updateAckError(transaction SubmitTransaction, errorNum
 // StartDeleteProvider :
 func StartDeleteProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "providerDelete")
+	provider, err := createProvider(url, "Delete")
 	if err != nil {
 		return nil, err
 	}

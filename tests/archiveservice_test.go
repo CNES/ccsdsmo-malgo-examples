@@ -24,7 +24,13 @@
 package tests
 
 import (
+	"database/sql"
+	"errors"
+	"math/rand"
 	"testing"
+	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
@@ -41,10 +47,144 @@ const (
 	consumerURL = "maltcp://127.0.0.1:14200"
 )
 
+// Database ids
+const (
+	USERNAME = "archiveService"
+	PASSWORD = "1a2B3c4D!@?"
+	DATABASE = "archive"
+	TABLE    = "Archive"
+)
+
+// isDatabaseInitialized attribute is true when the database has been initialized
+var isDatabaseInitialized = false
+
+// initDatabase is used to init the database
+func initDabase() error {
+	rand.Seed(time.Now().UnixNano())
+
+	// Open the database
+	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE+"?parseTime=true")
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// Validate the connection by pinging it
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+
+	// Create the transaction (we have to use this method to use rollback and commit)
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Delete all the elements of the table Archive
+	_, err = tx.Exec("DELETE FROM " + TABLE)
+	if err != nil {
+		return err
+	}
+
+	// Reset the AUTO_INCREMENT value
+	_, err = tx.Exec("ALTER TABLE " + TABLE + " AUTO_INCREMENT=0")
+	if err != nil {
+		return err
+	}
+
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	archiveService = archiveService.CreateService().(*ArchiveService)
+
+	// Insert elements in the table Archive for future tests
+	var elementList = NewValueOfSineList(0)
+	var boolean = NewBoolean(false)
+	// Variable for the different networks
+	var networks = []*Identifier{
+		NewIdentifier("tests/network1"),
+		NewIdentifier("tests/network2"),
+	}
+	// Variable for the different providers
+	var providers = []*URI{
+		NewURI("tests/provider1"),
+		NewURI("tests/provider2"),
+	}
+
+	var objectType ObjectType
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	var archiveDetailsList = *NewArchiveDetailsList(0)
+
+	// Create elements
+	for i := 0; i < 40; i++ {
+		// Create the value
+		var signe = float64(rand.Int63n(2))
+		if signe == 0 {
+			elementList.AppendElement(NewValueOfSine(Float(rand.Float64())))
+		} else {
+			elementList.AppendElement(NewValueOfSine(Float(-rand.Float64())))
+		}
+		objectType = ObjectType{
+			UShort(2),
+			UShort(3),
+			UOctet(1),
+			UShort((*elementList)[i].GetTypeShortForm()),
+		}
+		// Object instance identifier
+		var objectInstanceIdentifier = *NewLong(int64(i))
+		// Variables for ArchiveDetailsList
+		var objectKey = ObjectKey{
+			Domain: identifierList,
+			InstId: objectInstanceIdentifier,
+		}
+		var objectID = ObjectId{
+			Type: &objectType,
+			Key:  &objectKey,
+		}
+		var objectDetails = ObjectDetails{
+			Related: NewLong(0),
+			Source:  &objectID,
+		}
+		var network = networks[rand.Int63n(int64(len(networks)))]
+		var timestamp = NewFineTime(time.Now())
+		var provider = providers[rand.Int63n(int64(len(providers)))]
+		archiveDetailsList.AppendElement(NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider))
+	}
+	_, errorsList, err := archiveService.Store(consumerURL, providerURL, *boolean, objectType, identifierList, archiveDetailsList, elementList)
+	if errorsList != nil || err != nil {
+		if err != nil {
+			return err
+		} else if errorsList != nil {
+			return errors.New(string(*errorsList.ErrorNumber) + ": " + string(*errorsList.ErrorComment))
+		} else {
+			return errors.New("UNKNOWN ERROR")
+		}
+	}
+
+	return nil
+}
+
+// checkAndInitDatabase Checks if the Archive table is intitializes or not
+// If not, it initializes it and inserts datas in the table Archive
+func checkAndInitDatabase(t *testing.T) {
+	if !isDatabaseInitialized {
+		err := initDabase()
+		if err != nil {
+			t.FailNow()
+		}
+		isDatabaseInitialized = true
+	}
+}
+
 //======================================================================//
 //								RETRIEVE								//
 //======================================================================//
 func TestRetrieveOK(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+	println("aight")
+
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
 	// Create the Archive Service
@@ -74,6 +214,9 @@ func TestRetrieveOK(t *testing.T) {
 }
 
 func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
 	// Variable that defines the ArchiveService
@@ -134,6 +277,9 @@ func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 }
 
 func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
 	// Variable that defines the ArchiveService
@@ -173,97 +319,163 @@ func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
 //								QUERY									//
 //======================================================================//
 func TestQueryOK(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestQueryKO_3_4_4_2_9(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestQueryKO_3_4_4_2_14(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestQueryKO_3_4_4_2_16(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestQueryKO_3_4_4_2_19(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestQueryKO_3_4_4_2_24(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestQueryKO_3_4_4_2_25(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 //======================================================================//
 //								COUNT									//
 //======================================================================//
 func TestCountOK(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestCountKO_3_4_5_2_9(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestCountKO_3_4_5_2_14(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestCountKO_3_4_5_2_16(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestCountKO_3_4_5_2_19(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestCountKO_3_4_5_2_24(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestCountKO_3_4_5_2_25(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 //======================================================================//
 //								STORE									//
 //======================================================================//
 func TestStoreOK(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_1(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_6(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_8(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_9(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_10(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_11(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 func TestStoreKO_3_4_6_2_12(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
 
+	t.FailNow()
 }
 
 //======================================================================//

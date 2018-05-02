@@ -233,7 +233,7 @@ func (archiveService *ArchiveService) Delete(consumerURL string, providerURL str
 //                          START: Provider                             //
 //======================================================================//
 func (archiveService *ArchiveService) StartProviders(providerURL string) error {
-	archiveService.Wg.Add(6)
+	archiveService.Wg.Add(7)
 	// Start the retrieve provider
 	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_RETRIEVE, providerURL)
 	// Start the query provider
@@ -246,13 +246,34 @@ func (archiveService *ArchiveService) StartProviders(providerURL string) error {
 	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_UPDATE, providerURL)
 	// Start the delete provider
 	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_DELETE, providerURL)
+	// Start a simple method to stop the providers
+	go archiveService.stopProviders()
 	// Wait until the end of the six operations
 	archiveService.Wg.Wait()
 
 	return nil
 }
 
-// LaunchProvider : TODO
+// stopProviders Stop the providers
+func (archiveService *ArchiveService) stopProviders() {
+	// Inform the WaitGroup that this goroutine is finished at the end of this function
+	defer archiveService.Wg.Done()
+	// Wait a little bit
+	time.Sleep(200 * time.Millisecond)
+	for archiveService.Running {
+		/*reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Stop providers ? [Yes/No] ")
+		text, _ := reader.ReadString('\n')
+		stop := strings.TrimRight(text, "\n")
+		if strings.ToLower(stop)[0] == []byte("")[0] {
+			// Good bye
+			archiveService.Running = false
+		}*/
+		time.Sleep(5 * time.Second)
+	}
+}
+
+// launchSpecificProvider Start a provider for a specific operation
 func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, providerURL string) error {
 	// Inform the WaitGroup that this goroutine is finished at the end of this function
 	defer archiveService.Wg.Done()
@@ -301,6 +322,8 @@ func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, p
 	for archiveService.Running == true {
 		time.Sleep(5 * time.Second)
 	}
+
+	fmt.Println("Closed:", provider.Name, "provider.")
 
 	return nil
 }

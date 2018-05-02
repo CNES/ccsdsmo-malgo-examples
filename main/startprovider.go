@@ -25,12 +25,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 
 	. "github.com/etiennelndr/archiveservice/archive/service"
+	_ "github.com/etiennelndr/archiveservice/tests/data"
 )
 
 // Constants for the providers and consumers
@@ -39,27 +39,16 @@ const (
 )
 
 func main() {
-	args := os.Args[1:]
-
-	if len(args) != 1 {
-		fmt.Println("ERROR: You must use this program like this:\n\tgo run start.go provider")
-		return
-	}
-
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
 	// Variable to retrieve the error
 	var err error
 	// Create the Archive Service
-	service := archiveService.CreateService()
-	archiveService = service.(*ArchiveService)
+	archiveService = archiveService.CreateService().(*ArchiveService)
 
-	if args[0] == "provider" {
-		// Start the providers
-		err = archiveService.StartProviders(providerURL)
-	}
+	// Start the providers
+	err = archiveService.StartProviders(providerURL)
 
-	// Will never be reached
 	if err != nil {
 		fmt.Println("Error:", err)
 	}

@@ -26,6 +26,7 @@ package tests
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -171,6 +172,7 @@ func checkAndInitDatabase(t *testing.T) {
 	if !isDatabaseInitialized {
 		err := initDabase()
 		if err != nil {
+			fmt.Println(err)
 			t.FailNow()
 		}
 		isDatabaseInitialized = true

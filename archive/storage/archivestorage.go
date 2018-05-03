@@ -217,6 +217,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		}
 	}
 
+	// Commit changes
+	tx.Commit()
+
 	return archiveDetailsList, elementList, nil
 }
 
@@ -613,6 +616,9 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		// TODO: maybe find another way to initialize elementListToReturn
 	}
 
+	// Commit changes
+	tx.Commit()
+
 	return objectTypeToReturn, archiveDetailsListToReturn, identifierListToReturn, elementListToReturn, nil
 }
 
@@ -707,6 +713,9 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 		// Add this response in the long list
 		longList.AppendElement(NewLong(response))
 	}
+
+	// Commit changes
+	tx.Commit()
 
 	return longList, nil
 }

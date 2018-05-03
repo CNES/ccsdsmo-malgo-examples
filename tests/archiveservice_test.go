@@ -136,7 +136,7 @@ func initDabase() error {
 			UShort((*elementList)[i].GetTypeShortForm()),
 		}
 		// Object instance identifier
-		var objectInstanceIdentifier = *NewLong(int64(i))
+		var objectInstanceIdentifier = *NewLong(int64(i + 1))
 		// Variables for ArchiveDetailsList
 		var objectKey = ObjectKey{
 			Domain: identifierList,

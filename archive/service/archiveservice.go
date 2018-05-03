@@ -24,8 +24,11 @@
 package service
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -261,15 +264,14 @@ func (archiveService *ArchiveService) stopProviders() {
 	// Wait a little bit
 	time.Sleep(200 * time.Millisecond)
 	for archiveService.Running {
-		/*reader := bufio.NewReader(os.Stdin)
+		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Stop providers ? [Yes/No] ")
 		text, _ := reader.ReadString('\n')
 		stop := strings.TrimRight(text, "\n")
-		if strings.ToLower(stop)[0] == []byte("")[0] {
+		if strings.ToLower(stop)[0] == []byte("y")[0] {
 			// Good bye
 			archiveService.Running = false
-		}*/
-		time.Sleep(5 * time.Second)
+		}
 	}
 }
 

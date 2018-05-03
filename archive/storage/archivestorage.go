@@ -736,7 +736,6 @@ func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList Ident
 		longList = NewLongList(0)
 	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
-		fmt.Println(i)
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
 			for {

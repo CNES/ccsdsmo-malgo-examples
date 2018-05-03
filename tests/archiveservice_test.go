@@ -26,7 +26,6 @@ package tests
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -68,7 +67,6 @@ func initDabase() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
 
 	// Validate the connection by pinging it
 	err = db.Ping()
@@ -93,6 +91,11 @@ func initDabase() error {
 	if err != nil {
 		return err
 	}
+
+	// Commit changes
+	tx.Commit()
+	// Close the connection with the database
+	db.Close()
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -166,13 +169,12 @@ func initDabase() error {
 	return nil
 }
 
-// checkAndInitDatabase Checks if the Archive table is intitializes or not
+// checkAndInitDatabase Checks if the Archive table is intitialized or not
 // If not, it initializes it and inserts datas in the table Archive
 func checkAndInitDatabase(t *testing.T) {
 	if !isDatabaseInitialized {
 		err := initDabase()
 		if err != nil {
-			fmt.Println(err)
 			t.FailNow()
 		}
 		isDatabaseInitialized = true
@@ -185,7 +187,6 @@ func checkAndInitDatabase(t *testing.T) {
 func TestRetrieveOK(t *testing.T) {
 	// Check if the Archive table is intitializes or not
 	checkAndInitDatabase(t)
-	println("aight")
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService

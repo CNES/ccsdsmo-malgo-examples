@@ -484,7 +484,61 @@ func TestStoreKO_3_4_6_2_12(t *testing.T) {
 //======================================================================//
 //								UPDATE									//
 //======================================================================//
+func TestUpdateOK(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
+
+func TestUpdateKO_3_4_7_2_5(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
+
+func TestUpdateKO_3_4_7_2_8_ObjectType(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
+
+func TestUpdateKO_3_4_7_2_8_ObjectInstanceIdentifier(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
 
 //======================================================================//
 //								DELETE									//
 //======================================================================//
+func TestDeleteOK(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
+
+func TestDeleteKO_3_4_8_2_3_ObjectType(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
+
+func TestDeleteKO_3_4_8_2_3_Domain(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}
+
+func TestDeleteKO_3_4_8_2_6(t *testing.T) {
+	// Check if the Archive table is intitializes or not
+	checkAndInitDatabase(t)
+
+	t.FailNow()
+}

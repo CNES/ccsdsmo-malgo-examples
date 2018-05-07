@@ -62,10 +62,10 @@ var databaseFields = []string{
 	"number",
 	"domain",
 	"timestamp",
-	"details.related",
+	"`details.related`",
 	"network",
 	"provider",
-	"details.source",
+	"`details.source`",
 }
 
 //======================================================================//
@@ -309,8 +309,8 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			if isAlreadyUsed {
 				var index uint
 				// Retrieve the index in the general slice
+				duo := []interface{}{objectTypeFromDB, domain}
 				for i := 0; i < len(findASmartName)/2; i++ {
-					duo := []interface{}{objectTypeFromDB, domain}
 					if reflect.DeepEqual(duo, findASmartName[i]) {
 						index = uint(i)
 						break
@@ -449,7 +449,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				identifierListToReturn = append(identifierListToReturn, &idList)
 
 				// ObjectType
-				objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
+				objectTypeToReturn = append(objectTypeToReturn, nil)
 
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
@@ -538,7 +538,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 			} else {
 				// IdentifierList
-				identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
+				identifierListToReturn = append(identifierListToReturn, nil)
 
 				// ObjectType
 				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
@@ -559,7 +559,8 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 
 				// ElementList
-				elementListToReturn = append(elementListToReturn, new(LongList))
+				var longList *LongList
+				elementListToReturn = append(elementListToReturn, longList)
 			}
 		}
 	} else { // boolean == false and isObjectTypeEqualToZero == false
@@ -577,13 +578,15 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			return nil, nil, nil, nil, err
 		}
 
-		// Set the identifierListToReturn to nul
-		identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
-		// Set the objectTypeToReturn to nul
-		objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
-		// Set the ElementList to nul
-		elementListToReturn = append(elementListToReturn, new(LongList))
+		// Set the identifierListToReturn to null
+		identifierListToReturn = append(identifierListToReturn, nil)
+		// Set the objectTypeToReturn to null
+		objectTypeToReturn = append(objectTypeToReturn, nil)
+		// Set the ElementList to null
+		var longList *LongList
+		elementListToReturn = append(elementListToReturn, longList)
 
+		var isAlreadyUsed = false
 		for rows.Next() {
 			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId); err != nil {
 				return nil, nil, nil, nil, err
@@ -601,7 +604,15 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			}
 			archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
 			// Append this ArchiveDetails to the desired ArchiveDetailsList
-			archiveDetailsListToReturn[0].AppendElement(archDetails)
+			if !isAlreadyUsed {
+				// ArchiveDetailsList
+				archDetailsList := NewArchiveDetailsList(0)
+				archDetailsList.AppendElement(archDetails)
+				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
+				isAlreadyUsed = true
+			} else {
+				archiveDetailsListToReturn[0].AppendElement(archDetails)
+			}
 		}
 	}
 
@@ -609,10 +620,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	// list (if it is equal to 0 we have to append a nil element to
 	// each list)
 	if len(archiveDetailsListToReturn) == 0 {
-		objectTypeToReturn = append(objectTypeToReturn, new(ObjectType))
-		archiveDetailsListToReturn = append(archiveDetailsListToReturn, new(ArchiveDetailsList))
-		identifierListToReturn = append(identifierListToReturn, new(IdentifierList))
-		elementListToReturn = append(elementListToReturn, NewLongList(0))
+		var longList *LongList
+		objectTypeToReturn = append(objectTypeToReturn, nil)
+		archiveDetailsListToReturn = append(archiveDetailsListToReturn, nil)
+		identifierListToReturn = append(identifierListToReturn, nil)
+		elementListToReturn = append(elementListToReturn, longList)
 		// TODO: maybe find another way to initialize elementListToReturn
 	}
 
@@ -643,20 +655,13 @@ func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error 
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
 			var filter = compositerFilterSet.Filters.GetElementAt(i).(*CompositeFilter)
-			if (filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS ||
-				filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS ||
-				filter.Type == COM_EXPRESSIONOPERATOR_GREATER ||
-				filter.Type == COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL ||
-				filter.Type == COM_EXPRESSIONOPERATOR_LESS ||
-				filter.Type == COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == Attribute(nil) {
+			if (filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_GREATER || filter.Type == COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL || filter.Type == COM_EXPRESSIONOPERATOR_LESS || filter.Type == COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == nil {
 				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not contain NULL value")
-			}
-			if _, ok := filter.FieldValue.(*Blob); ok {
+			} else if _, ok := filter.FieldValue.(*Blob); ok {
 				if filter.Type != COM_EXPRESSIONOPERATOR_EQUAL && filter.Type != COM_EXPRESSIONOPERATOR_DIFFER {
 					return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a blob")
 				}
-			}
-			if filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
+			} else if filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
 				if _, ok := filter.FieldValue.(*String); !ok {
 					return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a non-String")
 				}
@@ -1214,18 +1219,22 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
 			utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
+			var fieldValue = (*compositerFilterSet.Filters)[i].FieldValue
 			// Transform the expresion operator
 			expressionOperator := utils.WhichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
-
 			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
-				queryBuffer.WriteString(fmt.Sprintf(" %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
+				queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
 					expressionOperator))
+				queryBuffer.WriteString(fmt.Sprintf("%s", reflect.ValueOf(fieldValue).Elem().Interface()))
 				queryBuffer.WriteString("%'")
-				queryBuffer.WriteString(fmt.Sprintf(" %s", (*compositerFilterSet.Filters)[i].FieldValue))
 			} else {
-				queryBuffer.WriteString(fmt.Sprintf(" %s %s %s", *(*compositerFilterSet.Filters)[i].FieldName,
-					expressionOperator,
-					(*compositerFilterSet.Filters)[i].FieldValue))
+				if fieldValue == nil {
+					queryBuffer.WriteString(fmt.Sprintf(" %s %s %s", (*compositerFilterSet.Filters)[i].FieldName,
+						expressionOperator,
+						"NULL"))
+				} else {
+					queryBuffer.WriteString(fmt.Sprintf(" %s", reflect.ValueOf(fieldValue).Elem().Interface()))
+				}
 			}
 		}
 	}

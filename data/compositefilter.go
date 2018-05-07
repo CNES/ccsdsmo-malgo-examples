@@ -30,7 +30,7 @@ import (
 )
 
 type CompositeFilter struct {
-	FieldName  *String
+	FieldName  String
 	Type       ExpressionOperator
 	FieldValue Attribute
 }
@@ -44,7 +44,7 @@ const (
 	COM_COMPOSITE_FILTER_SHORT_FORM      Long    = 0x2000201000003
 )
 
-func NewCompositeFilter(fieldName *String, _type ExpressionOperator, fieldValue Attribute) *CompositeFilter {
+func NewCompositeFilter(fieldName String, _type ExpressionOperator, fieldValue Attribute) *CompositeFilter {
 	compositeFilter := &CompositeFilter{
 		fieldName,
 		_type,
@@ -95,7 +95,7 @@ func (*CompositeFilter) GetTypeShortForm() Integer {
 // Encodes this element using the supplied encoder
 func (c *CompositeFilter) Encode(encoder Encoder) error {
 	// FieldName  String
-	err := encoder.EncodeNullableElement(c.FieldName)
+	err := encoder.EncodeNullableElement(&c.FieldName)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (c *CompositeFilter) Encode(encoder Encoder) error {
 	}
 
 	// FieldValue Attribute
-	return encoder.EncodeNullableAbstractElement(c.FieldValue)
+	return encoder.EncodeNullableAttribute(c.FieldValue)
 }
 
 // Decodes and instance of CompositeFilter using the supplied decoder
@@ -131,15 +131,14 @@ func DecodeCompositeFilter(decoder Decoder) (*CompositeFilter, error) {
 	_type := ExpressionOperator(elementType)
 
 	// FieldValue Attribute Nullable
-	elementValue, err := decoder.DecodeNullableAbstractElement()
+	fieldValue, err := decoder.DecodeNullableAttribute()
 	if err != nil {
 		return nil, err
 	}
-	fieldValue := elementValue.(Attribute)
 
 	// Create CompositeFilter
 	compositeFilter := &CompositeFilter{
-		fieldName,
+		*fieldName,
 		_type,
 		fieldValue,
 	}

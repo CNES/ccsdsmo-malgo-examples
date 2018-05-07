@@ -354,7 +354,6 @@ func (provider *Provider) queryHandler() error {
 				queryFilterList)
 
 			for i := 0; i < archiveQueryList.Size()-1; i++ {
-				fmt.Println("yolo")
 				// Do a query to the archive
 				if queryFilterList != nil {
 					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
@@ -393,7 +392,7 @@ func (provider *Provider) queryHandler() error {
 				// Send an INVALID error
 				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
 					err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
-					len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 1 {
+					len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 2 {
 					provider.queryUpdateError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
 				}
 				// Otherwise, send an INTERNAL error
@@ -405,7 +404,7 @@ func (provider *Provider) queryHandler() error {
 			for j := 0; j < len(archDetList); j++ {
 				if j == len(archDetList)-1 {
 					// Call Response operation
-					err = provider.queryResponse(transaction, objType[j], idList[j], archDetList[j], elementList[j].(ElementList))
+					err = provider.queryResponse(transaction, objType[j], idList[j], archDetList[j], elementList[j])
 					if err != nil {
 						// Send an INTERNAL error
 						provider.queryResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
@@ -984,8 +983,6 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 		return nil, nil, nil, nil, nil, err
 	}
 
-	fmt.Println(len(msg.Body))
-
 	// Decode ArchiveDetailsList
 	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
 	if err != nil {
@@ -1240,7 +1237,7 @@ func (provider *Provider) deleteHandler() error {
 			// Call Request operation
 			objectType, identifierList, longListRequest, err := provider.deleteRequest(msg)
 			if err != nil {
-				provider.deleteResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
+				provider.deleteResponseError(transaction, MAL_ERROR_BAD_ENCODING, MAL_ERROR_BAD_ENCODING_MESSAGE, NewLongList(0))
 				return err
 			}
 

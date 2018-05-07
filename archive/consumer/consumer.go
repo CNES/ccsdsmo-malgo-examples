@@ -24,8 +24,6 @@
 package consumer
 
 import (
-	"fmt"
-
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/api"
@@ -347,7 +345,7 @@ func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 		return nil, nil, errorsList, nil
 	}
 
-	for (respObjType != nil) && (respIDList != nil) && (respArchDetList != nil) && (respElemList != nil) {
+	for respArchDetList != nil {
 		// Put the objects in the interface
 		responses = append(responses, respObjType, respIDList, respArchDetList, respElemList)
 
@@ -532,6 +530,11 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 		return nil, nil, nil, nil, nil, err
 	}
 
+	// Not a good method but it works...
+	if elementList == nil {
+		return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), nil, nil, nil
+	}
+
 	return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil, nil
 }
 
@@ -710,8 +713,6 @@ func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType Object
 	if err != nil {
 		return nil, nil, err
 	}
-
-	fmt.Println(len(encoder.Body()))
 
 	// Call Request operation and retrieve the Response
 	resp, err := consumer.op.Request(encoder.Body())

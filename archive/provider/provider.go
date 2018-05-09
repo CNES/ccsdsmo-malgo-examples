@@ -364,7 +364,7 @@ func (provider *Provider) queryHandler() error {
 					// Send an INVALID error
 					if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
 						err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
-						len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 1 {
+						strings.Contains(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
 						provider.queryUpdateError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
 					}
 					// Otherwise, send an INTERNAL error
@@ -391,8 +391,7 @@ func (provider *Provider) queryHandler() error {
 			if err != nil {
 				// Send an INVALID error
 				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
-					err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
-					len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 2 {
+					strings.Contains(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
 					provider.queryUpdateError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
 				}
 				// Otherwise, send an INTERNAL error
@@ -453,7 +452,7 @@ func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *A
 	decoder := provider.factory.NewDecoder(msg.Body)
 
 	// Decode Boolean
-	boolean, err := decoder.DecodeElement(NullBoolean)
+	boolean, err := decoder.DecodeNullableElement(NullBoolean)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -684,8 +683,7 @@ func (provider *Provider) countHandler() error {
 			if err != nil {
 				// Send an INVALID error
 				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
-					err.Error() == string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) ||
-					len(strings.Split(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR))) == 1 {
+					strings.Contains(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
 					provider.countResponseError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
 				}
 				// Otherwise, send an INTERNAL error
@@ -874,7 +872,7 @@ func (provider *Provider) storeHandler() error {
 
 			// Store these objects in the archive
 			var longList *LongList
-			longList, err = StoreInArchive(*boolean, *objectType, *identifierList, *archiveDetailsList, elementList)
+			longList, err = StoreInArchive(boolean, *objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
 				if err.Error() == string(COM_ERROR_DUPLICATE) {
 					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
@@ -966,7 +964,7 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 	decoder := provider.factory.NewDecoder(msg.Body)
 
 	// Decode Boolean
-	boolean, err := decoder.DecodeElement(NullBoolean)
+	boolean, err := decoder.DecodeNullableElement(NullBoolean)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}

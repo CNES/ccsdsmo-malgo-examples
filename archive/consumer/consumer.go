@@ -312,7 +312,7 @@ func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, Element
 //								QUERY									//
 //======================================================================//
 // StartQueryConsumer : TODO
-func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, *ServiceError, error) {
+func StartQueryConsumer(url string, providerURI *URI, boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ProgressConsumer, []interface{}, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createProgressConsumer(url, providerURI, "consumerQuery", OPERATION_IDENTIFIER_QUERY)
 	if err != nil {
@@ -381,12 +381,12 @@ func StartQueryConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 }
 
 // Progress & Ack
-func (consumer *ProgressConsumer) queryProgress(boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
+func (consumer *ProgressConsumer) queryProgress(boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode Boolean
-	err := boolean.Encode(encoder)
+	err := encoder.EncodeNullableElement(boolean)
 	if err != nil {
 		return nil, err
 	}
@@ -657,7 +657,7 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, *ServiceError, error
 //								STORE									//
 //======================================================================//
 // StartStoreConsumer : TODO
-func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, *ServiceError, error) {
+func StartStoreConsumer(url string, providerURI *URI, boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*RequestConsumer, *LongList, *ServiceError, error) {
 	// Create the consumer
 	consumer, err := createRequestConsumer(url, providerURI, "consumerStore", OPERATION_IDENTIFIER_STORE)
 	if err != nil {
@@ -680,12 +680,12 @@ func StartStoreConsumer(url string, providerURI *URI, boolean Boolean, objectTyp
 }
 
 // Request & Response
-func (consumer *RequestConsumer) storeRequest(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
+func (consumer *RequestConsumer) storeRequest(boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Create the encoder
 	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode Boolean
-	err := boolean.Encode(encoder)
+	err := encoder.EncodeNullableElement(boolean)
 	if err != nil {
 		return nil, nil, err
 	}

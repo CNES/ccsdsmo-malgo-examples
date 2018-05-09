@@ -254,7 +254,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	var archiveDetailsListToReturn []*ArchiveDetailsList
 	var elementListToReturn []ElementList
 
-	if *boolean == true && isObjectTypeEqualToZero == true {
+	if boolean != nil && *boolean == true && isObjectTypeEqualToZero == true {
 		// Retrieve all of the elements
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -382,7 +382,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				elementListToReturn = append(elementListToReturn, elementList)
 			}
 		}
-	} else if *boolean == true && isObjectTypeEqualToZero == false {
+	} else if boolean != nil && *boolean == true && isObjectTypeEqualToZero == false {
 		// Retrieve all of the elements unless the object type
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -483,7 +483,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				elementListToReturn = append(elementListToReturn, elementList)
 			}
 		}
-	} else if *boolean == false && isObjectTypeEqualToZero == true {
+	} else if (boolean == nil || *boolean == false) && isObjectTypeEqualToZero == true {
 		// Retrieve only the object type and the archive details
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -563,7 +563,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				elementListToReturn = append(elementListToReturn, longList)
 			}
 		}
-	} else { // boolean == false and isObjectTypeEqualToZero == false
+	} else { // (*boolean == false or boolean == nil) and isObjectTypeEqualToZero == false
 		// Retrieve only the archive details
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
@@ -729,7 +729,7 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 //                              STORE                                   //
 //======================================================================//
 // StoreInArchive : Use this function to store objects in an COM archive
-func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
+func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Create the transaction to execute future queries
@@ -746,7 +746,7 @@ func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList Ident
 	domain := utils.AdaptDomainToString(identifierList)
 
 	// Init the list to return (if boolean is not equal to false)
-	if boolean {
+	if boolean != nil && *boolean {
 		longList = NewLongList(0)
 	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
@@ -754,13 +754,13 @@ func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList Ident
 			// We have to create a new and unused object instance identifier
 			for {
 				var objectInstanceIdentifier = rand.Int63n(int64(LONG_MAX))
-				boolean, err := isObjectInstanceIdentifierInDatabase(tx, objectInstanceIdentifier)
+				isObjInstIDInDB, err := isObjectInstanceIdentifierInDatabase(tx, objectInstanceIdentifier)
 				if err != nil {
 					// An error occurred, do a rollback
 					tx.Rollback()
 					return nil, err
 				}
-				if !boolean {
+				if !isObjInstIDInDB {
 					// OK, we can insert the object with this instance identifier
 					err := insertInDatabase(tx, objectInstanceIdentifier, elementList.GetElementAt(i), objectType, domain, *archiveDetailsList[i])
 					if err != nil {
@@ -769,21 +769,23 @@ func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList Ident
 						return nil, err
 					}
 
-					// Insert this new object instance identifier in the returned list
-					longList.AppendElement(NewLong(objectInstanceIdentifier))
+					if boolean != nil && *boolean {
+						// Insert this new object instance identifier in the returned list
+						longList.AppendElement(NewLong(objectInstanceIdentifier))
+					}
 
 					break
 				}
 			}
 		} else {
 			// We must verify if the object instance identifier is not already present in the table
-			boolean, err := isObjectInstanceIdentifierInDatabase(tx, int64(archiveDetailsList[i].InstId))
+			isObjInstIDInDB, err := isObjectInstanceIdentifierInDatabase(tx, int64(archiveDetailsList[i].InstId))
 			if err != nil {
 				// An error occurred, do a rollback
 				tx.Rollback()
 				return nil, err
 			}
-			if boolean {
+			if isObjInstIDInDB {
 				// This object is already in the database, do a rollback and raise a DUPLICATE error
 				tx.Rollback()
 				return nil, errors.New(string(COM_ERROR_DUPLICATE))
@@ -797,8 +799,10 @@ func StoreInArchive(boolean Boolean, objectType ObjectType, identifierList Ident
 				return nil, err
 			}
 
-			// Insert this new object instance identifier in the returned list
-			longList.AppendElement(&archiveDetailsList[i].InstId)
+			if boolean != nil && *boolean {
+				// Insert this new object instance identifier in the returned list
+				longList.AppendElement(NewLong(int64(archiveDetailsList[i].InstId)))
+			}
 		}
 	}
 
@@ -1111,12 +1115,12 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 	// Only CompositeFilterSet type should be used
 	queryBuffer.WriteString("SELECT objectInstanceIdentifier, timestamp, `details.related`, network, provider, `details.source`")
 	// Check if we need to retrieve the element and its domain
-	if *boolean == true {
+	if boolean != nil && *boolean == true {
 		queryBuffer.WriteString(", element, domain")
 	}
 	// If there's a wildcard value in one of the object type
 	// fields then we have to retrieve the entire object type
-	if isObjectTypeEqualToZero == true || (isObjectTypeEqualToZero == false && *boolean == true) {
+	if isObjectTypeEqualToZero == true || (isObjectTypeEqualToZero == false && (boolean != nil && *boolean == true)) {
 		queryBuffer.WriteString(", area, service, version, number")
 	}
 

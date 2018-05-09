@@ -99,7 +99,7 @@ func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL s
 }
 
 // Query : TODO
-func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
+func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Query Consumer")
@@ -152,7 +152,7 @@ func (archiveService *ArchiveService) Count(consumerURL string, providerURL stri
 }
 
 // Store : TODO
-func (archiveService *ArchiveService) Store(consumerURL string, providerURL string, boolean Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Store(consumerURL string, providerURL string, boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Store Consumer")
@@ -322,7 +322,7 @@ func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, p
 
 	// Start communication
 	for archiveService.Running == true {
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 
 	fmt.Println("Closed:", provider.Name, "provider.")

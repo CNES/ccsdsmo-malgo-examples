@@ -28,6 +28,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -58,7 +59,7 @@ const (
 )
 
 const (
-	numberOfRows = 40
+	numberOfRows = 80
 )
 
 // isDatabaseInitialized attribute is true when the database has been initialized
@@ -88,14 +89,15 @@ func initDabase() error {
 
 	// If there are already 40 elements in the Archive table then
 	// it's useless to reset and add new elements to the database
-	var maxID uint64
+	var maxID sql.NullInt64 // Better to use the type sql.NullInt64 to avoid nil error conversion
 	err = tx.QueryRow("SELECT MAX(id) FROM " + TABLE).Scan(&maxID)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
-	if maxID != numberOfRows {
+	// If maxID's Valid parameter is set to false then it means its value is nil
+	if !maxID.Valid || maxID.Int64 != numberOfRows {
 		// Delete all the elements of the table Archive
 		_, err = tx.Exec("DELETE FROM " + TABLE)
 		if err != nil {
@@ -137,7 +139,7 @@ func initDabase() error {
 		var archiveDetailsList = *NewArchiveDetailsList(0)
 
 		// Create elements
-		for i := 0; i < numberOfRows; i++ {
+		for i := 0; i < numberOfRows/2; i++ {
 			// Create the value
 			var signe = float64(rand.Int63n(2))
 			if signe == 0 {
@@ -146,17 +148,17 @@ func initDabase() error {
 				elementList.AppendElement(NewValueOfSine(Float(-rand.Float64())))
 			}
 			objectType = ObjectType{
-				UShort(2),
-				UShort(3),
-				UOctet(1),
-				UShort((*elementList)[i].GetTypeShortForm()),
+				Area:    UShort(2),
+				Service: UShort(3),
+				Version: UOctet(1),
+				Number:  UShort((*elementList)[i].GetTypeShortForm()),
 			}
 			// Object instance identifier
-			var objectInstanceIdentifier = *NewLong(int64(i + 1))
+			var objectInstanceIdentifier = Long(int64(i + 1))
 			// Variables for ArchiveDetailsList
 			var objectKey = ObjectKey{
 				Domain: identifierList,
-				InstId: objectInstanceIdentifier,
+				InstId: Long(0),
 			}
 			var objectID = ObjectId{
 				Type: &objectType,
@@ -171,7 +173,25 @@ func initDabase() error {
 			var provider = providers[rand.Int63n(int64(len(providers)))]
 			archiveDetailsList.AppendElement(NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider))
 		}
-		_, errorsList, err := archiveService.Store(consumerURL, providerURL, *boolean, objectType, identifierList, archiveDetailsList, elementList)
+		_, errorsList, err := archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
+		if errorsList != nil || err != nil {
+			if err != nil {
+				return err
+			} else if errorsList != nil {
+				return errors.New(string(*errorsList.ErrorNumber) + ": " + string(*errorsList.ErrorComment))
+			} else {
+				return errors.New("UNKNOWN ERROR")
+			}
+		}
+
+		// Store fourty new elements (total 80 elements)
+		identifierList = IdentifierList([]*Identifier{NewIdentifier("en"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
+		for i := 0; i < archiveDetailsList.Size(); i++ {
+			var objectInstanceIdentifier = Long(int64(i + 41))
+			archiveDetailsList[i].InstId = objectInstanceIdentifier
+			archiveDetailsList[i].Details.Source.Key.Domain = identifierList
+		}
+		_, errorsList, err = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 		if errorsList != nil || err != nil {
 			if err != nil {
 				return err
@@ -212,10 +232,10 @@ func TestRetrieveOK(t *testing.T) {
 	archiveService = service.(*ArchiveService)
 	// Variable that defines the ArchiveService
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 	var longList = LongList([]*Long{NewLong(0)})
@@ -248,10 +268,10 @@ func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 	var longList = LongList([]*Long{NewLong(0)})
 	var objectType = ObjectType{
-		UShort(0),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(0),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	// Start the consumer
 	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
@@ -260,10 +280,10 @@ func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 	}
 
 	objectType = ObjectType{
-		UShort(2),
-		UShort(0),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(0),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	// Start the consumer
 	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
@@ -272,10 +292,10 @@ func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 	}
 
 	objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(0),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(0),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	// Start the consumer
 	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
@@ -284,10 +304,10 @@ func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 	}
 
 	objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(0),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(0),
 	}
 	// Start the consumer
 	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
@@ -311,10 +331,10 @@ func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
 	var identifierList = IdentifierList([]*Identifier{NewIdentifier("*"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
 	var longList = LongList([]*Long{NewLong(0)})
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	// Start the consumer
 	_, _, errorsList, _ = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
@@ -353,32 +373,26 @@ func TestQueryOK(t *testing.T) {
 	// Create parameters
 	var boolean = NewBoolean(true)
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	//var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		*NewLong(0),
-		nil,
-		nil,
-		nil,
-		NewBoolean(true),
-		nil,
+		Related:   Long(0),
+		SortOrder: NewBoolean(true),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	var queryFilterList *CompositeFilterSetList
 
 	// Variable to retrieve the responses
 	var responses []interface{}
+	var err error
 
 	// Start the consumer
-	responses, errorsList, err := archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	responses, errorsList, err = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	if errorsList != nil || err != nil || responses == nil {
 		t.FailNow()
@@ -400,29 +414,22 @@ func TestQueryKO_3_4_4_2_9(t *testing.T) {
 	// Create parameters
 	var boolean = NewBoolean(true)
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		*NewLong(0),
-		nil,
-		nil,
-		nil,
-		NewBoolean(true),
-		nil,
+		Related:   Long(0),
+		SortOrder: NewBoolean(true),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	archiveQueryList.AppendElement(archiveQuery)
 	var queryFilterList = NewCompositeFilterSetList(1)
 
 	// Start the consumer
-	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) {
 		t.FailNow()
@@ -444,31 +451,41 @@ func TestQueryOK_3_4_4_2_14(t *testing.T) {
 	// Create parameters
 	var boolean = NewBoolean(true)
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		*NewLong(0),
-		nil,
-		nil,
-		nil,
-		NewBoolean(true),
-		NewString("domain"),
+		Related:       Long(0),
+		SortOrder:     NewBoolean(true),
+		SortFieldName: NewString("domain"),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	var queryFilterList *CompositeFilterSetList
 
-	// Start the consumer
-	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	// Variable to retrieve the responses
+	var responses []interface{}
+	var err error
 
-	if errorsList != nil {
+	// Start the consumer
+	responses, errorsList, err = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
+
+	if errorsList != nil || err != nil || responses == nil {
 		t.FailNow()
+	}
+	// Now, verify the responses
+	for i, resp := range responses {
+		if i%4 == 1 {
+			if (i == 1 && *(*resp.(*IdentifierList))[0] != "en") || (i == 5 && *(*resp.(*IdentifierList))[0] != "fr") {
+				t.FailNow()
+			}
+		} else if i%4 == 3 {
+			if resp.(ElementList).Size() != numberOfRows/2 {
+				t.FailNow()
+			}
+		}
 	}
 }
 
@@ -487,28 +504,22 @@ func TestQueryKO_3_4_4_2_14(t *testing.T) {
 	// Create parameters
 	var boolean = NewBoolean(true)
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		*NewLong(0),
-		nil,
-		nil,
-		nil,
-		NewBoolean(true),
-		NewString("invalidname"),
+		Related:       Long(0),
+		SortOrder:     NewBoolean(true),
+		SortFieldName: NewString("invalidname"),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	var queryFilterList *CompositeFilterSetList
 
 	// Start the consumer
-	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) {
 		t.FailNow()
@@ -530,22 +541,14 @@ func TestQueryKO_3_4_4_2_16(t *testing.T) {
 	// Create parameters
 	var boolean = NewBoolean(true)
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		*NewLong(0),
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		Related: Long(0),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	// Create the query filters list
@@ -558,9 +561,10 @@ func TestQueryKO_3_4_4_2_16(t *testing.T) {
 	queryFilterList.AppendElement(queryFilter)
 
 	// Start the consumer
-	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	_, errorsList, _ = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) {
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) || !strings.Contains(string(*errorsList.ErrorComment), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
+		fmt.Println(*errorsList.ErrorComment)
 		t.FailNow()
 	}
 }
@@ -578,28 +582,20 @@ func TestQueryKO_3_4_4_2_19(t *testing.T) {
 	// Create parameters
 	var boolean = NewBoolean(true)
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		*NewLong(0),
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		Related: Long(0),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	var queryFilterList *CompositeFilterSetList
 
 	// Start the consumer WITHOUT any wildcard value in the objectType
-	resp, _, _ := archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	resp, _, _ := archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	for i := 0; i < len(resp)/4; i++ {
 		objType := resp[i*4].(*ObjectType)
@@ -610,7 +606,7 @@ func TestQueryKO_3_4_4_2_19(t *testing.T) {
 
 	// Start the consumer WITH a wildcard value in the objectType
 	objectType.Area = 0
-	resp, _, _ = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	resp, _, _ = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	for i := 0; i < len(resp)/4; i++ {
 		objType := resp[i*4].(*ObjectType)
@@ -631,30 +627,35 @@ func TestQueryKO_3_4_4_2_25(t *testing.T) {
 	archiveService = service.(*ArchiveService)
 
 	// Create parameters
-	var boolean = NewBoolean(true)
+	var boolean *Boolean
 	var objectType = ObjectType{
-		UShort(2),
-		UShort(3),
-		UOctet(1),
-		UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
 	}
 	archiveQueryList := NewArchiveQueryList(0)
 	archiveQuery := &ArchiveQuery{
-		nil, //&domain,
-		nil,
-		nil,
-		Long(0),
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		Related: Long(0),
 	}
 	archiveQueryList.AppendElement(archiveQuery)
 	var queryFilterList *CompositeFilterSetList
 
+	// Start the consumer with the initial Boolean set to NIL
+	var newBoolean *Boolean
+	resp, _, _ := archiveService.Query(consumerURL, providerURL, newBoolean, objectType, *archiveQueryList, queryFilterList)
+
+	fmt.Println(resp)
+	for i := 0; i < len(resp)/4; i++ {
+		elementList := resp[i*4+3]
+		if elementList != ElementList(nil) {
+			t.FailNow()
+		}
+	}
+
 	// Start the consumer with the initial Boolean set to TRUE
-	resp, _, _ := archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	boolean = NewBoolean(true)
+	resp, _, _ = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	for i := 0; i < len(resp)/4; i++ {
 		elementList := resp[i*4+3]
@@ -665,7 +666,7 @@ func TestQueryKO_3_4_4_2_25(t *testing.T) {
 
 	// Start the consumer with the initial Boolean set to FALSE
 	boolean = NewBoolean(false)
-	resp, _, _ = archiveService.Query(consumerURL, providerURL, *boolean, objectType, *archiveQueryList, queryFilterList)
+	resp, _, _ = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
 	fmt.Println(resp)
 	for i := 0; i < len(resp)/4; i++ {
@@ -683,49 +684,223 @@ func TestCountOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
 	checkAndInitDatabase(t)
 
-	// t.FailNow()
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = &ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	archiveQueryList := NewArchiveQueryList(0)
+	var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	archiveQuery := &ArchiveQuery{
+		Domain:    &domain,
+		Related:   Long(0),
+		SortOrder: NewBoolean(true),
+	}
+	archiveQueryList.AppendElement(archiveQuery)
+	domain2 := IdentifierList([]*Identifier{NewIdentifier("en"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
+	archiveQuery2 := &ArchiveQuery{
+		Domain:    &domain2,
+		Related:   Long(0),
+		SortOrder: NewBoolean(true),
+	}
+	archiveQueryList.AppendElement(archiveQuery2)
+	var queryFilterList *CompositeFilterSetList
+
+	// Variable to retrieve the return of this function
+	var longList *LongList
+	var err error
+	// Start the consumer
+	longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
+
+	if errorsList != nil || err != nil || longList == nil {
+		t.FailNow()
+	}
+
+	if longList.Size() != 2 {
+		t.FailNow()
+	}
+	for i := 0; i < longList.Size(); i++ {
+		if *longList.GetElementAt(i).(*Long) != Long(40) {
+			t.FailNow()
+		}
+	}
 }
 
 func TestCountKO_3_4_5_2_9(t *testing.T) {
 	// Check if the Archive table is initialized or not
 	checkAndInitDatabase(t)
 
-	// t.FailNow()
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = &ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	archiveQueryList := NewArchiveQueryList(0)
+	var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	archiveQuery := &ArchiveQuery{
+		Domain:    &domain,
+		Related:   Long(0),
+		SortOrder: NewBoolean(true),
+	}
+	archiveQueryList.AppendElement(archiveQuery)
+	archiveQueryList.AppendElement(archiveQuery)
+	var queryFilterList = NewCompositeFilterSetList(1)
+
+	_, errorsList, _ = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) {
+		t.FailNow()
+	}
+}
+
+func TestCountOK_3_4_5_2_14(t *testing.T) {
+	// Check if the Archive table is initialized or not
+	checkAndInitDatabase(t)
+
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = &ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	archiveQueryList := NewArchiveQueryList(0)
+	var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	archiveQuery := &ArchiveQuery{
+		Domain:        &domain,
+		Related:       Long(0),
+		SortOrder:     NewBoolean(true),
+		SortFieldName: NewString("domain"),
+	}
+	archiveQueryList.AppendElement(archiveQuery)
+
+	var queryFilterList *CompositeFilterSetList
+
+	// Variable to retrieve the return of this function
+	var longList *LongList
+	var err error
+	// Start the consumer
+	longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
+
+	if errorsList != nil || err != nil || longList == nil {
+		t.FailNow()
+	}
+
+	if longList.Size() != 1 {
+		t.FailNow()
+	}
+	for i := 0; i < longList.Size(); i++ {
+		if *longList.GetElementAt(i).(*Long) != Long(40) {
+			t.FailNow()
+		}
+	}
 }
 
 func TestCountKO_3_4_5_2_14(t *testing.T) {
 	// Check if the Archive table is initialized or not
 	checkAndInitDatabase(t)
 
-	// t.FailNow()
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = &ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	archiveQueryList := NewArchiveQueryList(0)
+	var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	archiveQuery := &ArchiveQuery{
+		Domain:        &domain,
+		Related:       Long(0),
+		SortOrder:     NewBoolean(true),
+		SortFieldName: NewString("invalidname"),
+	}
+	archiveQueryList.AppendElement(archiveQuery)
+
+	var queryFilterList *CompositeFilterSetList
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) {
+		t.FailNow()
+	}
 }
 
 func TestCountKO_3_4_5_2_16(t *testing.T) {
 	// Check if the Archive table is initialized or not
 	checkAndInitDatabase(t)
 
-	// t.FailNow()
-}
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
 
-func TestCountKO_3_4_5_2_19(t *testing.T) {
-	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	var objectType = &ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	archiveQueryList := NewArchiveQueryList(0)
+	var domain = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	archiveQuery := &ArchiveQuery{
+		Domain:    &domain,
+		Related:   Long(0),
+		SortOrder: NewBoolean(true),
+	}
+	archiveQueryList.AppendElement(archiveQuery)
 
-	// t.FailNow()
-}
+	// Create the query filters list
+	var nilValue *Identifier
+	var queryFilterList = NewCompositeFilterSetList(0)
+	compositeFilter := NewCompositeFilter(String("domain"), COM_EXPRESSIONOPERATOR_CONTAINS, nilValue)
+	compositeFilterList := NewCompositeFilterList(0)
+	compositeFilterList.AppendElement(compositeFilter)
+	queryFilter := NewCompositeFilterSet(compositeFilterList)
+	queryFilterList.AppendElement(queryFilter)
 
-func TestCountKO_3_4_5_2_24(t *testing.T) {
-	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	// Start the consumer
+	_, errorsList, _ = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
 
-	// t.FailNow()
-}
-
-func TestCountKO_3_4_5_2_25(t *testing.T) {
-	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
-
-	// t.FailNow()
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) || !strings.Contains(string(*errorsList.ErrorComment), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
+		t.FailNow()
+	}
 }
 
 //======================================================================//
@@ -735,7 +910,56 @@ func TestStoreOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
 	checkAndInitDatabase(t)
 
-	// t.FailNow()
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the store consumer
+	// Create parameters
+	// Object that's going to be stored in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0)
+	var boolean = NewBoolean(true)
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
+	// Object instance identifier
+	var objectInstanceIdentifier = *NewLong(81)
+	// Variables for ArchiveDetailsList
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("network")
+	var timestamp = NewFineTime(time.Now())
+	var provider = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider)})
+
+	// Variable to retrieve the return of this function
+	var longList *LongList
+	var err error
+	// Start the consumer
+	longList, errorsList, err = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList != nil || err != nil || longList == nil {
+		t.FailNow()
+	}
 }
 
 func TestStoreKO_3_4_6_2_1(t *testing.T) {

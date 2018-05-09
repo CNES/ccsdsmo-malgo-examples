@@ -77,10 +77,12 @@ func createProvider(url string, typeOfProvider string) (*Provider, error) {
 	}
 	locker.Unlock()
 
+	locker.Lock() // Avoid "concurrent map writes" error in RegisterEndPoint function
 	cctx, err := NewClientContext(ctx, "provider"+typeOfProvider)
 	if err != nil {
 		return nil, err
 	}
+	locker.Unlock()
 
 	factory := new(FixedBinaryEncoding)
 
@@ -913,7 +915,11 @@ func (provider *Provider) storeHandler() error {
 func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, boolean *Boolean, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	// The fourth and fifth lists must be the same size
 	if archiveDetailsList.Size() != elementList.Size() {
-		provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR, NewLongList(1))
+		if archiveDetailsList.Size() <= elementList.Size() {
+			provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR, NewLong(int64(archiveDetailsList.Size())))
+		} else {
+			provider.storeResponseError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR, NewLong(int64(elementList.Size())))
+		}
 		return errors.New(string(ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR))
 	}
 

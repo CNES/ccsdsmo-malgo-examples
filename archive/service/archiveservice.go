@@ -322,7 +322,7 @@ func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, p
 
 	// Start communication
 	for archiveService.Running == true {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 
 	fmt.Println("Closed:", provider.Name, "provider.")

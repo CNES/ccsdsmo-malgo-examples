@@ -61,11 +61,12 @@ const (
 	COM_ERROR_DUPLICATE_MESSAGE String = "Operation specific"
 
 	ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR                       String = "ArchiveDetailsList and ElementList must have the same size"
-	ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR               String = "ObjectType's attributes must not be equal to 'O'"
-	ARCHIVE_SERVICE_STORE_IDENTIFIERLIST_VALUES_ERROR           String = "IdenfierList elements must not be equal to '*'"
+	ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR                     String = "ObjectType's attributes must not be equal to 'O'"
+	ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR                 String = "Domain's elements must not be equal to '*'"
 	ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR       String = "ArchiveDetailsList elements must not be equal to '0', '*' or NULL"
 	ARCHIVE_SERVICE_AREA_OBJECT_INSTANCE_IDENTIFIER_VALUE_ERROR String = "Object instance identifier must not be equal to '0'"
 	ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR                      String = "The size of the two lists must be the same"
 	ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR         String = "SortFieldName parameter doesn't reference a defined field"
 	ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR                    String = "QueryFilter contains an error"
+	ARCHIVE_SERVICE_UNKNOWN_ELEMENT                             String = "Unknown element, cannot find it in the archive"
 )

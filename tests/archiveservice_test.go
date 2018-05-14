@@ -213,14 +213,15 @@ func initDabase() error {
 
 // checkAndInitDatabase Checks if the Archive table is initialized or not
 // If not, it initializes it and inserts datas in the table Archive
-func checkAndInitDatabase(t *testing.T) {
+func checkAndInitDatabase() error {
 	if !isDatabaseInitialized {
 		err := initDabase()
 		if err != nil {
-			t.FailNow()
+			return err
 		}
 		isDatabaseInitialized = true
 	}
+	return nil
 }
 
 //======================================================================//
@@ -228,7 +229,10 @@ func checkAndInitDatabase(t *testing.T) {
 //======================================================================//
 func TestRetrieveOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -249,7 +253,6 @@ func TestRetrieveOK(t *testing.T) {
 	var archiveDetailsList *ArchiveDetailsList
 	var elementList ElementList
 	var errorsList *ServiceError
-	var err error
 	// Start the consumer
 	archiveDetailsList, elementList, errorsList, err = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
 
@@ -260,7 +263,10 @@ func TestRetrieveOK(t *testing.T) {
 
 func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -327,7 +333,10 @@ func TestRetrieveKO_3_4_3_2_2(t *testing.T) {
 
 func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -369,7 +378,10 @@ func TestRetrieveKO_3_4_3_2_4(t *testing.T) {
 //======================================================================//
 func TestQueryOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -398,7 +410,6 @@ func TestQueryOK(t *testing.T) {
 
 	// Variable to retrieve the responses
 	var responses []interface{}
-	var err error
 
 	// Start the consumer
 	responses, errorsList, err = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
@@ -410,7 +421,10 @@ func TestQueryOK(t *testing.T) {
 
 func TestQueryKO_3_4_4_2_9(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -447,7 +461,10 @@ func TestQueryKO_3_4_4_2_9(t *testing.T) {
 
 func TestQueryOK_3_4_4_2_14(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -476,7 +493,6 @@ func TestQueryOK_3_4_4_2_14(t *testing.T) {
 
 	// Variable to retrieve the responses
 	var responses []interface{}
-	var err error
 
 	// Start the consumer
 	responses, errorsList, err = archiveService.Query(consumerURL, providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
@@ -500,7 +516,10 @@ func TestQueryOK_3_4_4_2_14(t *testing.T) {
 
 func TestQueryKO_3_4_4_2_14(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -537,7 +556,10 @@ func TestQueryKO_3_4_4_2_14(t *testing.T) {
 
 func TestQueryKO_3_4_4_2_16(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -580,7 +602,10 @@ func TestQueryKO_3_4_4_2_16(t *testing.T) {
 
 func TestQueryKO_3_4_4_2_19(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -627,7 +652,10 @@ func TestQueryKO_3_4_4_2_19(t *testing.T) {
 
 func TestQueryKO_3_4_4_2_25(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -691,7 +719,10 @@ func TestQueryKO_3_4_4_2_25(t *testing.T) {
 //======================================================================//
 func TestCountOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -726,7 +757,6 @@ func TestCountOK(t *testing.T) {
 
 	// Variable to retrieve the return of this function
 	var longList *LongList
-	var err error
 	// Start the consumer
 	longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
 
@@ -746,7 +776,10 @@ func TestCountOK(t *testing.T) {
 
 func TestCountKO_3_4_5_2_9(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -782,7 +815,10 @@ func TestCountKO_3_4_5_2_9(t *testing.T) {
 
 func TestCountOK_3_4_5_2_14(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -812,7 +848,6 @@ func TestCountOK_3_4_5_2_14(t *testing.T) {
 
 	// Variable to retrieve the return of this function
 	var longList *LongList
-	var err error
 	// Start the consumer
 	longList, errorsList, err = archiveService.Count(consumerURL, providerURL, objectType, archiveQueryList, queryFilterList)
 
@@ -832,7 +867,10 @@ func TestCountOK_3_4_5_2_14(t *testing.T) {
 
 func TestCountKO_3_4_5_2_14(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -870,7 +908,10 @@ func TestCountKO_3_4_5_2_14(t *testing.T) {
 
 func TestCountKO_3_4_5_2_16(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -917,7 +958,10 @@ func TestCountKO_3_4_5_2_16(t *testing.T) {
 //======================================================================//
 func TestStoreOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -962,7 +1006,6 @@ func TestStoreOK(t *testing.T) {
 
 	// Variable to retrieve the return of this function
 	var longList *LongList
-	var err error
 	// Start the consumer
 	longList, errorsList, err = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
@@ -973,7 +1016,10 @@ func TestStoreOK(t *testing.T) {
 
 func TestStoreKO_3_4_6_2_1(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -1046,7 +1092,10 @@ func TestStoreKO_3_4_6_2_1(t *testing.T) {
 
 func TestStoreOK_3_4_6_2_6(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variable that defines the ArchiveService
 	var archiveService *ArchiveService
@@ -1100,7 +1149,10 @@ func TestStoreOK_3_4_6_2_6(t *testing.T) {
 
 func TestStoreKO_3_4_6_2_6(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -1153,7 +1205,10 @@ func TestStoreKO_3_4_6_2_6(t *testing.T) {
 
 func TestStoreKO_3_4_6_2_8(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -1207,7 +1262,10 @@ func TestStoreKO_3_4_6_2_8(t *testing.T) {
 
 func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
 	// Variables to retrieve the return of this function
 	var errorsList *ServiceError
@@ -1254,7 +1312,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
 		t.FailNow()
 	}
 
@@ -1268,7 +1326,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
 		t.FailNow()
 	}
 
@@ -1282,7 +1340,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
 		t.FailNow()
 	}
 
@@ -1296,30 +1354,161 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
 		t.FailNow()
 	}
 }
 
 func TestStoreKO_3_4_6_2_10(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variables to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the store consumer
+	// Create parameters
+	// Object that's going to be stored in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0)
+	var boolean = NewBoolean(true)
+	// Area is equal to 0
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("*"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
+	// Object instance identifier
+	var objectInstanceIdentifier = Long(0)
+	// Variables for ArchiveDetailsList
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("network")
+	var timestamp = NewFineTime(time.Now())
+	var provider = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider)})
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR {
+		t.FailNow()
+	}
 }
 
 func TestStoreKO_3_4_6_2_11(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the store consumer
+	// Create parameters
+	// Object that's going to be stored in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0)
+	var boolean = NewBoolean(true)
+	// Area is equal to 0
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice")})
+	// Object instance identifier
+	var objectInstanceIdentifier = Long(0)
+	// Variables for ArchiveDetailsList
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	// Bad value for the NETWORK
+	var network *Identifier
+	var timestamp = NewFineTime(time.Now())
+	var provider = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider)})
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR {
+		fmt.Println(errorsList)
+		t.FailNow()
+	}
+
+	// Bad value for the TIMESTAMP
+	network = NewIdentifier("network")
+	*timestamp = FineTime(time.Unix(int64(0), int64(0)))
+	archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider)})
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR {
+		fmt.Println(errorsList)
+		t.FailNow()
+	}
+
+	// Bad value for the TIMESTAMP
+	*timestamp = FineTime(time.Now())
+	*provider = URI("*")
+	archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, timestamp, provider)})
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Store(consumerURL, providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR {
+		fmt.Println(errorsList)
+		t.FailNow()
+	}
 }
 
 func TestStoreKO_3_4_6_2_12(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// TODO: do this test
 }
 
 //======================================================================//
@@ -1327,30 +1516,337 @@ func TestStoreKO_3_4_6_2_12(t *testing.T) {
 //======================================================================//
 func TestUpdateOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the update consumer
+	// Create parameters
+	// ---- ELEMENTLIST ----
+	// Object that's going to be updated in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0.5)
+	// ---- OBJECTTYPE ----
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// ---- IDENTIFIERLIST ----
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	// Object instance identifier
+	var objectInstanceIdentifier = *NewLong(1)
+	// Variables for ArchiveDetailsList
+	// ---- ARCHIVEDETAILSLIST ----
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("new.network")
+	var fineTime = NewFineTime(time.Now())
+	var uri = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+
+	// Start the consumer
+	errorsList, err = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList != nil || err != nil {
+		t.FailNow()
+	}
 }
 
 func TestUpdateKO_3_4_7_2_5(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the update consumer
+	// Create parameters
+	// ---- ELEMENTLIST ----
+	// Object that's going to be updated in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0.5)
+	// ---- OBJECTTYPE ----
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// ---- IDENTIFIERLIST ----
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	// Object instance identifier: UNKNOWN
+	var objectInstanceIdentifier = *NewLong(155)
+	// Variables for ArchiveDetailsList
+	// ---- ARCHIVEDETAILSLIST ----
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("new.network")
+	var fineTime = NewFineTime(time.Now())
+	var uri = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != MAL_ERROR_UNKNOWN || *errorsList.ErrorComment != ARCHIVE_SERVICE_UNKNOWN_ELEMENT {
+		t.FailNow()
+	}
 }
 
 func TestUpdateKO_3_4_7_2_8_ObjectType(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the update consumer
+	// Create parameters
+	// ---- ELEMENTLIST ----
+	// Object that's going to be updated in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0.5)
+	// ---- OBJECTTYPE ----
+	var objectType = ObjectType{
+		Area:    UShort(0),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// ---- IDENTIFIERLIST ----
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	// Object instance identifier: UNKNOWN
+	var objectInstanceIdentifier = *NewLong(41)
+	// Variables for ArchiveDetailsList
+	// ---- ARCHIVEDETAILSLIST ----
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("new.network")
+	var fineTime = NewFineTime(time.Now())
+	var uri = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(0),
+		Version: UOctet(1),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(0),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(0),
+	}
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
 }
 
 func TestUpdateKO_3_4_7_2_8_ObjectInstanceIdentifier(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the update consumer
+	// Create parameters
+	// ---- ELEMENTLIST ----
+	// Object that's going to be updated in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0.5)
+	// ---- OBJECTTYPE ----
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// ---- IDENTIFIERLIST ----
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	// Object instance identifier
+	var objectInstanceIdentifier = *NewLong(0)
+	// Variables for ArchiveDetailsList
+	// ---- ARCHIVEDETAILSLIST ----
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("new.network")
+	var fineTime = NewFineTime(time.Now())
+	var uri = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_AREA_OBJECT_INSTANCE_IDENTIFIER_VALUE_ERROR {
+		t.FailNow()
+	}
+}
+
+func TestUpdateKO_3_4_7_2_8_Domain(t *testing.T) {
+	// Check if the Archive table is initialized or not
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
+
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	// Start the update consumer
+	// Create parameters
+	// ---- ELEMENTLIST ----
+	// Object that's going to be updated in the archive
+	var elementList = NewValueOfSineList(1)
+	(*elementList)[0] = NewValueOfSine(0.5)
+	// ---- OBJECTTYPE ----
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort((*elementList)[0].GetTypeShortForm()),
+	}
+	// ---- IDENTIFIERLIST ----
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("*"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	// Object instance identifier
+	var objectInstanceIdentifier = *NewLong(41)
+	// Variables for ArchiveDetailsList
+	// ---- ARCHIVEDETAILSLIST ----
+	var objectKey = ObjectKey{
+		Domain: identifierList,
+		InstId: objectInstanceIdentifier,
+	}
+	var objectID = ObjectId{
+		Type: &objectType,
+		Key:  &objectKey,
+	}
+	var objectDetails = ObjectDetails{
+		Related: NewLong(1),
+		Source:  &objectID,
+	}
+	var network = NewIdentifier("new.network")
+	var fineTime = NewFineTime(time.Now())
+	var uri = NewURI("main/start")
+	var archiveDetailsList = ArchiveDetailsList([]*ArchiveDetails{NewArchiveDetails(objectInstanceIdentifier, objectDetails, network, fineTime, uri)})
+
+	// Start the consumer
+	errorsList, _ = archiveService.Update(consumerURL, providerURL, objectType, identifierList, archiveDetailsList, elementList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR {
+		fmt.Println(*errorsList.ErrorComment)
+		t.FailNow()
+	}
 }
 
 //======================================================================//
@@ -1358,28 +1854,173 @@ func TestUpdateKO_3_4_7_2_8_ObjectInstanceIdentifier(t *testing.T) {
 //======================================================================//
 func TestDeleteOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	var longList = NewLongList(0)
+	longList.AppendElement(NewLong(15))
+
+	// Variable to retrieve the return of this function
+	var respLongList *LongList
+	// Start the consumer
+	respLongList, errorsList, err = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList != nil || err != nil || respLongList == nil {
+		t.FailNow()
+	}
 }
 
 func TestDeleteKO_3_4_8_2_3_ObjectType(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = ObjectType{
+		Area:    UShort(0),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	var longList = NewLongList(0)
+	longList.AppendElement(NewLong(15))
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(0),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	// Start the consumer
+	_, errorsList, _ = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(0),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	// Start the consumer
+	_, errorsList, _ = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
+
+	objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(0),
+	}
+	// Start the consumer
+	_, errorsList, _ = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+		t.FailNow()
+	}
 }
 
 func TestDeleteKO_3_4_8_2_3_Domain(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("*"), NewIdentifier("test")})
+	var longList = NewLongList(0)
+	longList.AppendElement(NewLong(15))
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR {
+		t.FailNow()
+	}
 }
 
 func TestDeleteKO_3_4_8_2_6(t *testing.T) {
 	// Check if the Archive table is initialized or not
-	checkAndInitDatabase(t)
+	err := checkAndInitDatabase()
+	if err != nil {
+		t.FailNow()
+	}
 
-	// t.FailNow()
+	// Variable to retrieve the return of this function
+	var errorsList *ServiceError
+	// Variable that defines the ArchiveService
+	var archiveService *ArchiveService
+	// Create the Archive Service
+	service := archiveService.CreateService()
+	archiveService = service.(*ArchiveService)
+
+	var objectType = ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	var identifierList = IdentifierList([]*Identifier{NewIdentifier("fr"), NewIdentifier("cnes"), NewIdentifier("archiveservice"), NewIdentifier("test")})
+	var longList = NewLongList(0)
+	longList.AppendElement(NewLong(175))
+
+	// Start the consumer
+	_, errorsList, _ = archiveService.Delete(consumerURL, providerURL, objectType, identifierList, *longList)
+
+	if errorsList == nil || *errorsList.ErrorNumber != MAL_ERROR_UNKNOWN || *errorsList.ErrorComment != ARCHIVE_SERVICE_UNKNOWN_ELEMENT {
+		t.FailNow()
+	}
 }

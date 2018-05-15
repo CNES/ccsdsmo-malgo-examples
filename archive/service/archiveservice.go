@@ -268,7 +268,7 @@ func (archiveService *ArchiveService) stopProviders() {
 		fmt.Print("Stop providers ? [Yes/No] ")
 		text, _ := reader.ReadString('\n')
 		stop := strings.TrimRight(text, "\n")
-		if strings.ToLower(stop)[0] == []byte("y")[0] {
+		if len(stop) > 0 && strings.ToLower(stop)[0] == []byte("y")[0] {
 			// Good bye
 			archiveService.Running = false
 		}

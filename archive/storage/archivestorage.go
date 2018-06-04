@@ -1229,7 +1229,7 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
 				queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
 					expressionOperator))
-				queryBuffer.WriteString(fmt.Sprintf("%s", reflect.ValueOf(fieldValue).Elem().Interface()))
+				queryBuffer.WriteString(fmt.Sprintf("%v", reflect.ValueOf(fieldValue).Elem().Interface()))
 				queryBuffer.WriteString("%'")
 			} else {
 				if fieldValue == nil {
@@ -1237,7 +1237,9 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 						expressionOperator,
 						"NULL"))
 				} else {
-					queryBuffer.WriteString(fmt.Sprintf(" %s", reflect.ValueOf(fieldValue).Elem().Interface()))
+					queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
+						expressionOperator))
+					queryBuffer.WriteString(fmt.Sprintf(" %v", reflect.ValueOf(fieldValue).Elem().Interface()))
 				}
 			}
 		}

@@ -27,7 +27,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	. "github.com/ccsdsmo/malgo/com"
@@ -41,77 +40,88 @@ import (
 	. "github.com/etiennelndr/archiveservice/errors"
 )
 
-var (
-	ctx    *Context
-	locker sync.Mutex
-)
-
 // Define Provider's structure
 type Provider struct {
 	ctx     *Context
 	cctx    *ClientContext
 	factory EncodingFactory
-	Name    string
-}
-
-// Allow to close the context of a specific provider
-func (provider *Provider) Close() {
-	locker.Lock()
-	if ctx != nil {
-		ctx.Close()
-		ctx = nil
-	}
-	locker.Unlock()
 }
 
 // Create a provider
-func createProvider(url string, typeOfProvider string) (*Provider, error) {
-	// Declare variables
-	var err error
-	locker.Lock()
-	if ctx == nil {
-		ctx, err = NewContext(url)
-		if err != nil {
-			return nil, err
-		}
-	}
-	locker.Unlock()
-
-	locker.Lock() // Avoid "concurrent map writes" error in RegisterEndPoint function
-	cctx, err := NewClientContext(ctx, "provider"+typeOfProvider)
+func createProvider(url string) (*Provider, error) {
+	ctx, err := NewContext(url)
 	if err != nil {
 		return nil, err
 	}
-	locker.Unlock()
+
+	cctx, err := NewClientContext(ctx, "archiveServiceProvider")
+	if err != nil {
+		return nil, err
+	}
 
 	factory := new(FixedBinaryEncoding)
 
-	provider := &Provider{ctx, cctx, factory, typeOfProvider}
+	provider := &Provider{ctx, cctx, factory}
 
 	return provider, nil
 }
 
-//======================================================================//
-//								RETRIEVE								//
-//======================================================================//
-// StartRetrieveProvider :
-func StartRetrieveProvider(url string) (*Provider, error) {
+// StartProvider :
+func StartProvider(url string) (*Provider, error) {
 	// Create the provider
-	provider, err := createProvider(url, "Retrieve")
+	provider, err := createProvider(url)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create and launch the handler
+	// Create and launch the Retrieve handler
 	err = provider.retrieveHandler()
 	if err != nil {
 		return nil, err
 	}
 
+	// Create and launch the Query handler
+	err = provider.queryHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create and launch the Count handler
+	err = provider.countHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create and launch the Store handler
+	err = provider.storeHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create and launch the Update handler
+	err = provider.updateHandler()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create and launch the Delete handler
+	err = provider.deleteHandler()
+	if err != nil {
+		return nil, err
+	}
+
 	return provider, nil
 }
 
-// Create retrieve handler
+// Close : Allow to close the context of a specific provider
+func (provider *Provider) Close() {
+	provider.ctx.Close()
+}
+
+//======================================================================//
+//								RETRIEVE								//
+//======================================================================//
+// Create a handler for the retrieve operation
 func (provider *Provider) retrieveHandler() error {
 	retrieveHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
@@ -297,24 +307,7 @@ func (provider *Provider) retrieveResponseError(transaction InvokeTransaction, e
 //======================================================================//
 //								QUERY									//
 //======================================================================//
-// StartRetrieveProvider :
-func StartQueryProvider(url string) (*Provider, error) {
-	// Create the provider
-	provider, err := createProvider(url, "Query")
-	if err != nil {
-		return nil, err
-	}
-
-	// Create and launch the handler
-	err = provider.queryHandler()
-	if err != nil {
-		return nil, err
-	}
-
-	return provider, nil
-}
-
-// Create query handler
+// Create a handler for the query operation
 func (provider *Provider) queryHandler() error {
 	queryHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
@@ -629,24 +622,7 @@ func (provider *Provider) queryResponseError(transaction ProgressTransaction, er
 //======================================================================//
 //								COUNT									//
 //======================================================================//
-// StartCountProvider :
-func StartCountProvider(url string) (*Provider, error) {
-	// Create the provider
-	provider, err := createProvider(url, "Count")
-	if err != nil {
-		return nil, err
-	}
-
-	// Create and launch the handler
-	err = provider.countHandler()
-	if err != nil {
-		return nil, err
-	}
-
-	return provider, nil
-}
-
-// Create count handler
+// Create a handler for the count operation
 func (provider *Provider) countHandler() error {
 	countHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
@@ -826,24 +802,7 @@ func (provider *Provider) countResponseError(transaction InvokeTransaction, erro
 //======================================================================//
 //								STORE									//
 //======================================================================//
-// StartStoreProvider :
-func StartStoreProvider(url string) (*Provider, error) {
-	// Create the provider
-	provider, err := createProvider(url, "Store")
-	if err != nil {
-		return nil, err
-	}
-
-	// Create and launch the handler
-	err = provider.storeHandler()
-	if err != nil {
-		return nil, err
-	}
-
-	return provider, nil
-}
-
-// Create store handler
+// Create a handler for the store operation
 func (provider *Provider) storeHandler() error {
 	storeHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
@@ -1032,24 +991,7 @@ func (provider *Provider) storeResponseError(transaction RequestTransaction, err
 //======================================================================//
 //								UPDATE									//
 //======================================================================//
-// StartUpdateProvider :
-func StartUpdateProvider(url string) (*Provider, error) {
-	// Create the provider
-	provider, err := createProvider(url, "Update")
-	if err != nil {
-		return nil, err
-	}
-
-	// Create and launch the handler
-	err = provider.updateHandler()
-	if err != nil {
-		return nil, err
-	}
-
-	return provider, nil
-}
-
-// Create update handler
+// Create a handler for the update operation
 func (provider *Provider) updateHandler() error {
 	updateHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {
@@ -1203,24 +1145,7 @@ func (provider *Provider) updateAckError(transaction SubmitTransaction, errorNum
 //======================================================================//
 //								DELETE									//
 //======================================================================//
-// StartDeleteProvider :
-func StartDeleteProvider(url string) (*Provider, error) {
-	// Create the provider
-	provider, err := createProvider(url, "Delete")
-	if err != nil {
-		return nil, err
-	}
-
-	// Create and launch the handler
-	err = provider.deleteHandler()
-	if err != nil {
-		return nil, err
-	}
-
-	return provider, nil
-}
-
-// Create delete handler
+// Create a handler for the delete operation
 func (provider *Provider) deleteHandler() error {
 	deleteHandler := func(msg *Message, t Transaction) error {
 		if msg != nil {

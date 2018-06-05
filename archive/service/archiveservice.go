@@ -25,7 +25,6 @@ package service
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -79,7 +78,7 @@ func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL s
 	fmt.Println("Creation : Retrieve Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/providerRetrieve")
+	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
 	consumer, archiveDetailsList, elementList, errorsList, err := StartRetrieveConsumer(consumerURL,
 		providerURI,
@@ -105,7 +104,7 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 	fmt.Println("Creation : Query Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/providerQuery")
+	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
 	consumer, responses, errorsList, err := StartQueryConsumer(consumerURL,
 		providerURI,
@@ -132,7 +131,7 @@ func (archiveService *ArchiveService) Count(consumerURL string, providerURL stri
 	fmt.Println("Creation : Count Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/providerCount")
+	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
 	consumer, longList, errorsList, err := StartCountConsumer(consumerURL,
 		providerURI,
@@ -158,7 +157,7 @@ func (archiveService *ArchiveService) Store(consumerURL string, providerURL stri
 	fmt.Println("Creation : Store Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/providerStore")
+	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
 	consumer, longList, errorsList, err := StartStoreConsumer(consumerURL,
 		providerURI,
@@ -186,7 +185,7 @@ func (archiveService *ArchiveService) Update(consumerURL string, providerURL str
 	fmt.Println("Creation : Update Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/providerUpdate")
+	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
 	consumer, errorsList, err := StartUpdateConsumer(consumerURL,
 		providerURI,
@@ -213,7 +212,7 @@ func (archiveService *ArchiveService) Delete(consumerURL string, providerURL str
 	fmt.Println("Creation : Delete Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/providerDelete")
+	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
 	consumer, respLongList, errorsList, err := StartDeleteConsumer(consumerURL,
 		providerURI,
@@ -235,20 +234,10 @@ func (archiveService *ArchiveService) Delete(consumerURL string, providerURL str
 //======================================================================//
 //                          START: Provider                             //
 //======================================================================//
-func (archiveService *ArchiveService) StartProviders(providerURL string) error {
-	archiveService.Wg.Add(7)
+func (archiveService *ArchiveService) StartProvider(providerURL string) error {
+	archiveService.Wg.Add(2)
 	// Start the retrieve provider
-	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_RETRIEVE, providerURL)
-	// Start the query provider
-	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_QUERY, providerURL)
-	// Start the count provider
-	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_COUNT, providerURL)
-	// Start the store provider
-	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_STORE, providerURL)
-	// Start the update provider
-	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_UPDATE, providerURL)
-	// Start the delete provider
-	go archiveService.launchSpecificProvider(OPERATION_IDENTIFIER_DELETE, providerURL)
+	go archiveService.launchProvider(providerURL)
 	// Start a simple method to stop the providers
 	go archiveService.stopProviders()
 	// Wait until the end of the six operations
@@ -276,7 +265,7 @@ func (archiveService *ArchiveService) stopProviders() {
 }
 
 // launchSpecificProvider Start a provider for a specific operation
-func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, providerURL string) error {
+func (archiveService *ArchiveService) launchProvider(providerURL string) error {
 	// Inform the WaitGroup that this goroutine is finished at the end of this function
 	defer archiveService.Wg.Done()
 	// Declare variables
@@ -284,35 +273,7 @@ func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, p
 	var err error
 
 	// Start Operation
-	switch operation {
-	case OPERATION_IDENTIFIER_RETRIEVE:
-		fmt.Println("Creation : Retrieve Provider")
-		provider, err = StartRetrieveProvider(providerURL)
-		break
-	case OPERATION_IDENTIFIER_QUERY:
-		fmt.Println("Creation : Query Provider")
-		provider, err = StartQueryProvider(providerURL)
-		break
-	case OPERATION_IDENTIFIER_COUNT:
-		fmt.Println("Creation : Count Provider")
-		provider, err = StartCountProvider(providerURL)
-		break
-	case OPERATION_IDENTIFIER_STORE:
-		fmt.Println("Creation : Store Provider")
-		provider, err = StartStoreProvider(providerURL)
-		break
-	case OPERATION_IDENTIFIER_UPDATE:
-		fmt.Println("Creation : Update Provider")
-		provider, err = StartUpdateProvider(providerURL)
-		break
-	case OPERATION_IDENTIFIER_DELETE:
-		fmt.Println("Creation : Delete Provider")
-		provider, err = StartDeleteProvider(providerURL)
-		break
-	default:
-		return errors.New("Unknown operation")
-	}
-
+	provider, err = StartProvider(providerURL)
 	if err != nil {
 		return err
 	}
@@ -324,8 +285,6 @@ func (archiveService *ArchiveService) launchSpecificProvider(operation UShort, p
 	for archiveService.Running == true {
 		time.Sleep(1 * time.Second)
 	}
-
-	fmt.Println("Closed:", provider.Name, "provider.")
 
 	return nil
 }

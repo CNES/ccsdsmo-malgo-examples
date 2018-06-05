@@ -47,7 +47,7 @@ func main() {
 	archiveService = archiveService.CreateService().(*ArchiveService)
 
 	// Start the providers
-	err = archiveService.StartProviders(providerURL)
+	err = archiveService.StartProvider(providerURL)
 
 	if err != nil {
 		fmt.Println("Error:", err)

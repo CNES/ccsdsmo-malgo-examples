@@ -26,5 +26,5 @@ package service
 type Service interface {
 	CreateService() Service
 
-	StartProviders(providerURL string) error
+	StartProvider(providerURL string) error
 }

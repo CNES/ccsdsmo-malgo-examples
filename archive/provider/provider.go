@@ -35,7 +35,7 @@ import (
 	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
-	. "github.com/etiennelndr/archiveservice/archive/storage"
+	arch "github.com/etiennelndr/archiveservice/archive/storage"
 	. "github.com/etiennelndr/archiveservice/data"
 	. "github.com/etiennelndr/archiveservice/errors"
 )
@@ -66,7 +66,7 @@ func createProvider(url string) (*Provider, error) {
 	return provider, nil
 }
 
-// StartProvider :
+// StartProvider : TODO:
 func StartProvider(url string) (*Provider, error) {
 	// Create the provider
 	provider, err := createProvider(url)
@@ -148,16 +148,13 @@ func (provider *Provider) retrieveHandler() error {
 				return err
 			}
 
-			// Hold on, wait a little
-			time.Sleep(SLEEP_TIME * time.Millisecond)
-
 			fmt.Println("RetrieveHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				identifierList, "\n\t>>>",
 				longList)
 
 			// Retrieve these objects in the archive
-			archiveDetailsList, elementList, err := RetrieveInArchive(*objectType, *identifierList, *longList)
+			archiveDetailsList, elementList, err := arch.RetrieveInArchive(*objectType, *identifierList, *longList)
 			if err != nil {
 				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
 					provider.retrieveResponseError(transaction, MAL_ERROR_UNKNOWN, MAL_ERROR_UNKNOWN_MESSAGE, NewLongList(0))
@@ -191,7 +188,7 @@ func (provider *Provider) retrieveHandler() error {
 	return nil
 }
 
-// VERIFY PARAMETERS
+// VERIFY PARAMETERS : TODO:
 func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction, objectType *ObjectType, identifierList *IdentifierList, longList *LongList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
@@ -210,7 +207,7 @@ func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction
 	return nil
 }
 
-// INVOKE
+// INVOKE : TODO:
 func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
 	decoder := provider.factory.NewDecoder(msg.Body)
 
@@ -235,7 +232,7 @@ func (provider *Provider) retrieveInvoke(msg *Message) (*ObjectType, *Identifier
 	return objectType, identifierList, longList, nil
 }
 
-// ACK
+// ACK : TODO:
 func (provider *Provider) retrieveAck(transaction InvokeTransaction) error {
 	err := transaction.Ack(nil, false)
 	if err != nil {
@@ -244,7 +241,7 @@ func (provider *Provider) retrieveAck(transaction InvokeTransaction) error {
 	return nil
 }
 
-// ACK ERROR
+// ACK ERROR : TODO:
 func (provider *Provider) retrieveAckError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -263,7 +260,7 @@ func (provider *Provider) retrieveAckError(transaction InvokeTransaction, errorN
 	return nil
 }
 
-// RESPONSE
+// RESPONSE : TODO:
 func (provider *Provider) retrieveResponse(transaction InvokeTransaction, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
 
@@ -285,7 +282,7 @@ func (provider *Provider) retrieveResponse(transaction InvokeTransaction, archiv
 	return nil
 }
 
-// RESPONSE ERROR
+// RESPONSE ERROR : TODO:
 func (provider *Provider) retrieveResponseError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -333,9 +330,6 @@ func (provider *Provider) queryHandler() error {
 				return err
 			}
 
-			// Hold on buddy, wait a little
-			time.Sleep(SLEEP_TIME * time.Millisecond)
-
 			// Variables to send to the consumer
 			var objType []*ObjectType
 			var archDetList []*ArchiveDetailsList
@@ -351,9 +345,9 @@ func (provider *Provider) queryHandler() error {
 			for i := 0; i < archiveQueryList.Size()-1; i++ {
 				// Do a query to the archive
 				if queryFilterList != nil {
-					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
+					objType, archDetList, idList, elementList, err = arch.QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], queryFilterList.GetElementAt(i))
 				} else {
-					objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], nil)
+					objType, archDetList, idList, elementList, err = arch.QueryArchive(boolean, *objectType, *(*archiveQueryList)[i], nil)
 				}
 				if err != nil {
 					// Send an INVALID error
@@ -379,9 +373,9 @@ func (provider *Provider) queryHandler() error {
 
 			// Do a query to the archive
 			if queryFilterList != nil {
-				objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], queryFilterList.GetElementAt(archiveQueryList.Size()-1))
+				objType, archDetList, idList, elementList, err = arch.QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], queryFilterList.GetElementAt(archiveQueryList.Size()-1))
 			} else {
-				objType, archDetList, idList, elementList, err = QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], nil)
+				objType, archDetList, idList, elementList, err = arch.QueryArchive(boolean, *objectType, *(*archiveQueryList)[archiveQueryList.Size()-1], nil)
 			}
 			if err != nil {
 				// Send an INVALID error
@@ -394,7 +388,7 @@ func (provider *Provider) queryHandler() error {
 				return err
 			}
 			// ----- Call Response operation -----
-			// Unless archive query list size is equal to 1 (we didn't enter in the for loop)
+			// Unless archive query list size is equal to 1 (we didn't enter in the previous loop)
 			for j := 0; j < len(archDetList); j++ {
 				if j == len(archDetList)-1 {
 					// Call Response operation
@@ -431,7 +425,7 @@ func (provider *Provider) queryHandler() error {
 	return nil
 }
 
-// VERIFY PARAMETERS
+// VERIFY PARAMETERS : TODO:
 func (provider *Provider) queryVerifyParameters(transaction ProgressTransaction, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) error {
 	if queryFilterList != nil && archiveQueryList.Size() != queryFilterList.Size() {
 		provider.queryAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR, NewLongList(1))
@@ -441,7 +435,7 @@ func (provider *Provider) queryVerifyParameters(transaction ProgressTransaction,
 	return nil
 }
 
-// PROGRESS
+// PROGRESS : TODO:
 func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *ArchiveQueryList, QueryFilterList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
@@ -476,7 +470,7 @@ func (provider *Provider) queryProgress(msg *Message) (*Boolean, *ObjectType, *A
 	return boolean.(*Boolean), objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), queryFilterList.(QueryFilterList), nil
 }
 
-// ACK
+// ACK : TODO:
 func (provider *Provider) queryAck(transaction ProgressTransaction) error {
 	// Call Ack operation
 	err := transaction.Ack(nil, false)
@@ -486,7 +480,7 @@ func (provider *Provider) queryAck(transaction ProgressTransaction) error {
 	return nil
 }
 
-// ACK ERROR
+// ACK ERROR : TODO:
 func (provider *Provider) queryAckError(transaction ProgressTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -505,7 +499,7 @@ func (provider *Provider) queryAckError(transaction ProgressTransaction, errorNu
 	return nil
 }
 
-// UPDATE
+// UPDATE : TODO:
 func (provider *Provider) queryUpdate(transaction ProgressTransaction, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -543,7 +537,7 @@ func (provider *Provider) queryUpdate(transaction ProgressTransaction, objectTyp
 	return nil
 }
 
-// UPDATE ERROR
+// UPDATE ERROR : TODO:
 func (provider *Provider) queryUpdateError(transaction ProgressTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -562,7 +556,7 @@ func (provider *Provider) queryUpdateError(transaction ProgressTransaction, erro
 	return nil
 }
 
-// RESPONSE
+// RESPONSE : TODO:
 func (provider *Provider) queryResponse(transaction ProgressTransaction, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -600,7 +594,7 @@ func (provider *Provider) queryResponse(transaction ProgressTransaction, objectT
 	return nil
 }
 
-// RESPONSE ERROR
+// RESPONSE ERROR : TODO:
 func (provider *Provider) queryResponseError(transaction ProgressTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -648,16 +642,13 @@ func (provider *Provider) countHandler() error {
 				return err
 			}
 
-			// Hold on, wait a little
-			time.Sleep(SLEEP_TIME * time.Millisecond)
-
 			fmt.Println("CountHandler received:\n\t>>>",
 				objectType, "\n\t>>>",
 				archiveQueryList, "\n\t>>>",
 				queryFilterList)
 
 			// This variable will be created automatically in the future
-			longList, err := CountInArchive(*objectType, *archiveQueryList, queryFilterList)
+			longList, err := arch.CountInArchive(*objectType, *archiveQueryList, queryFilterList)
 			if err != nil {
 				// Send an INVALID error
 				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
@@ -692,7 +683,7 @@ func (provider *Provider) countHandler() error {
 	return nil
 }
 
-// VERIFY PARAMETERS
+// VERIFY PARAMETERS : TODO:
 func (provider *Provider) countVerifyParameters(transaction InvokeTransaction, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) error {
 	if queryFilterList != nil && archiveQueryList.Size() != queryFilterList.Size() {
 		provider.countAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_QUERY_LISTS_SIZE_ERROR, NewLongList(1))
@@ -702,7 +693,7 @@ func (provider *Provider) countVerifyParameters(transaction InvokeTransaction, a
 	return nil
 }
 
-// INVOKE
+// INVOKE : TODO:
 func (provider *Provider) countInvoke(msg *Message) (*ObjectType, *ArchiveQueryList, QueryFilterList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
@@ -731,7 +722,7 @@ func (provider *Provider) countInvoke(msg *Message) (*ObjectType, *ArchiveQueryL
 	return objectType.(*ObjectType), archiveQueryList.(*ArchiveQueryList), queryFilterList.(QueryFilterList), nil
 }
 
-// ACK
+// ACK : TODO:
 func (provider *Provider) countAck(transaction InvokeTransaction) error {
 	// Call Ack operation
 	err := transaction.Ack(nil, false)
@@ -741,7 +732,7 @@ func (provider *Provider) countAck(transaction InvokeTransaction) error {
 	return nil
 }
 
-// ACK ERROR
+// ACK ERROR : TODO:
 func (provider *Provider) countAckError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -760,7 +751,7 @@ func (provider *Provider) countAckError(transaction InvokeTransaction, errorNumb
 	return nil
 }
 
-// RESPONSE
+// RESPONSE : TODO:
 func (provider *Provider) countResponse(transaction InvokeTransaction, longList *LongList) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -780,7 +771,7 @@ func (provider *Provider) countResponse(transaction InvokeTransaction, longList 
 	return nil
 }
 
-// RESPONSE ERROR
+// RESPONSE ERROR : TODO:
 func (provider *Provider) countResponseError(transaction InvokeTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -821,9 +812,6 @@ func (provider *Provider) storeHandler() error {
 				return err
 			}
 
-			// Hold on, wait a little
-			time.Sleep(SLEEP_TIME * time.Millisecond)
-
 			fmt.Println("StoreHandler received:\n\t>>>",
 				boolean, "\n\t>>>",
 				objectType, "\n\t>>>",
@@ -833,7 +821,7 @@ func (provider *Provider) storeHandler() error {
 
 			// Store these objects in the archive
 			var longList *LongList
-			longList, err = StoreInArchive(boolean, *objectType, *identifierList, *archiveDetailsList, elementList)
+			longList, err = arch.StoreInArchive(boolean, *objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
 				if err.Error() == string(COM_ERROR_DUPLICATE) {
 					provider.storeResponseError(transaction, COM_ERROR_DUPLICATE, COM_ERROR_DUPLICATE_MESSAGE, NewLongList(0))
@@ -870,7 +858,7 @@ func (provider *Provider) storeHandler() error {
 	return nil
 }
 
-// VERIFY PARAMETERS
+// VERIFY PARAMETERS : TODO:
 func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, boolean *Boolean, objectType *ObjectType, identifierList *IdentifierList, archiveDetailsList *ArchiveDetailsList, elementList ElementList) error {
 	// The fourth and fifth lists must be the same size
 	if archiveDetailsList.Size() != elementList.Size() {
@@ -911,7 +899,7 @@ func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, 
 	return nil
 }
 
-// REQUEST
+// REQUEST : TODO:
 func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
@@ -949,7 +937,7 @@ func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *Id
 	return boolean.(*Boolean), objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil
 }
 
-// RESPONSE
+// RESPONSE : TODO:
 func (provider *Provider) storeResponse(transaction RequestTransaction, longList *LongList) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -969,7 +957,7 @@ func (provider *Provider) storeResponse(transaction RequestTransaction, longList
 	return nil
 }
 
-// RESPONSE ERROR
+// RESPONSE ERROR : TODO:
 func (provider *Provider) storeResponseError(transaction RequestTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -1017,7 +1005,7 @@ func (provider *Provider) updateHandler() error {
 				elementList)
 
 			// Update these objects
-			err = UpdateArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
+			err = arch.UpdateArchive(*objectType, *identifierList, *archiveDetailsList, elementList)
 			if err != nil {
 				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
 					provider.updateAckError(transaction, MAL_ERROR_UNKNOWN, ARCHIVE_SERVICE_UNKNOWN_ELEMENT, NewLongList(0))
@@ -1054,7 +1042,7 @@ func (provider *Provider) updateHandler() error {
 	return nil
 }
 
-// VERIFY PARAMETERS
+// VERIFY PARAMETERS : TODO:
 func (provider *Provider) updateVerifyParameters(transaction SubmitTransaction, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
@@ -1081,7 +1069,7 @@ func (provider *Provider) updateVerifyParameters(transaction SubmitTransaction, 
 	return nil
 }
 
-// SUBMIT
+// SUBMIT : TODO:
 func (provider *Provider) updateSubmit(msg *Message) (*ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
@@ -1113,7 +1101,7 @@ func (provider *Provider) updateSubmit(msg *Message) (*ObjectType, *IdentifierLi
 	return objectType.(*ObjectType), identifierList.(*IdentifierList), archiveDetailsList.(*ArchiveDetailsList), elementList.(ElementList), nil
 }
 
-// ACK
+// ACK : TODO:
 func (provider *Provider) updateAck(transaction SubmitTransaction) error {
 	// Call Ack operation
 	err := transaction.Ack(nil, false)
@@ -1123,7 +1111,7 @@ func (provider *Provider) updateAck(transaction SubmitTransaction) error {
 	return nil
 }
 
-// ACK ERROR
+// ACK ERROR : TODO:
 func (provider *Provider) updateAckError(transaction SubmitTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -1170,7 +1158,7 @@ func (provider *Provider) deleteHandler() error {
 				longListRequest)
 
 			// Delete these objects
-			longListResponse, err := DeleteInArchive(*objectType, *identifierList, *longListRequest)
+			longListResponse, err := arch.DeleteInArchive(*objectType, *identifierList, *longListRequest)
 			if err != nil {
 				if err.Error() == string(MAL_ERROR_UNKNOWN_MESSAGE) {
 					provider.deleteResponseError(transaction, MAL_ERROR_UNKNOWN, ARCHIVE_SERVICE_UNKNOWN_ELEMENT, NewLongList(0))
@@ -1207,7 +1195,7 @@ func (provider *Provider) deleteHandler() error {
 	return nil
 }
 
-// VERIFY PARAMETERS
+// VERIFY PARAMETERS : TODO:
 func (provider *Provider) deleteVerifyParameters(transaction RequestTransaction, objectType ObjectType, identifierList IdentifierList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
@@ -1226,7 +1214,7 @@ func (provider *Provider) deleteVerifyParameters(transaction RequestTransaction,
 	return nil
 }
 
-// REQUEST
+// REQUEST : TODO:
 func (provider *Provider) deleteRequest(msg *Message) (*ObjectType, *IdentifierList, *LongList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
@@ -1252,7 +1240,7 @@ func (provider *Provider) deleteRequest(msg *Message) (*ObjectType, *IdentifierL
 	return objectType.(*ObjectType), identifierList.(*IdentifierList), longList.(*LongList), nil
 }
 
-// RESPONSE
+// RESPONSE : TODO:
 func (provider *Provider) deleteResponse(transaction RequestTransaction, longList LongList) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))
@@ -1272,7 +1260,7 @@ func (provider *Provider) deleteResponse(transaction RequestTransaction, longLis
 	return nil
 }
 
-// RESPONSE ERROR
+// RESPONSE ERROR : TODO:
 func (provider *Provider) deleteResponseError(transaction RequestTransaction, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Create the encoder
 	encoder := provider.factory.NewEncoder(make([]byte, 0, 8192))

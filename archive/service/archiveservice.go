@@ -39,30 +39,35 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/consumer"
 	. "github.com/etiennelndr/archiveservice/archive/provider"
 	. "github.com/etiennelndr/archiveservice/data"
+	_ "github.com/etiennelndr/archiveservice/data"
+	_ "github.com/etiennelndr/archiveservice/data/implementation"
+	_ "github.com/etiennelndr/archiveservice/data/tests"
 	. "github.com/etiennelndr/archiveservice/errors"
 	. "github.com/etiennelndr/archiveservice/service"
 )
 
+// ArchiveService : TODO:
 type ArchiveService struct {
 	AreaIdentifier    Identifier
 	ServiceIdentifier Identifier
 	AreaNumber        UShort
 	ServiceNumber     Integer
 	AreaVersion       UOctet
-	Running           bool
-	Wg                sync.WaitGroup
+
+	running bool
+	wg      sync.WaitGroup
 }
 
-// CreateService : TODO
+// CreateService : TODO:
 func (*ArchiveService) CreateService() Service {
 	archiveService := &ArchiveService{
-		ARCHIVE_SERVICE_AREA_IDENTIFIER,
-		ARCHIVE_SERVICE_SERVICE_IDENTIFIER,
-		COM_AREA_NUMBER,
-		ARCHIVE_SERVICE_SERVICE_NUMBER,
-		COM_AREA_VERSION,
-		true,
-		*new(sync.WaitGroup),
+		AreaIdentifier:    ARCHIVE_SERVICE_AREA_IDENTIFIER,
+		ServiceIdentifier: ARCHIVE_SERVICE_SERVICE_IDENTIFIER,
+		AreaNumber:        COM_AREA_NUMBER,
+		ServiceNumber:     ARCHIVE_SERVICE_SERVICE_NUMBER,
+		AreaVersion:       COM_AREA_VERSION,
+		running:           true,
+		wg:                *new(sync.WaitGroup),
 	}
 
 	return archiveService
@@ -71,7 +76,8 @@ func (*ArchiveService) CreateService() Service {
 //======================================================================//
 //                          START: Consumer                             //
 //======================================================================//
-// Retrieve : TODO
+
+// Retrieve : TODO:
 func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
@@ -97,7 +103,7 @@ func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL s
 	return archiveDetailsList, elementList, nil, nil
 }
 
-// Query : TODO
+// Query : TODO:
 func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
@@ -124,7 +130,7 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 	return responses, nil, nil
 }
 
-// Count : TODO
+// Count : TODO:
 func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
@@ -150,7 +156,7 @@ func (archiveService *ArchiveService) Count(consumerURL string, providerURL stri
 	return longList, nil, nil
 }
 
-// Store : TODO
+// Store : TODO:
 func (archiveService *ArchiveService) Store(consumerURL string, providerURL string, boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
@@ -178,7 +184,7 @@ func (archiveService *ArchiveService) Store(consumerURL string, providerURL stri
 	return longList, nil, nil
 }
 
-// Update : TODO
+// Update : TODO:
 func (archiveService *ArchiveService) Update(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
@@ -205,7 +211,7 @@ func (archiveService *ArchiveService) Update(consumerURL string, providerURL str
 	return nil, nil
 }
 
-// Delete : TODO
+// Delete : TODO:
 func (archiveService *ArchiveService) Delete(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
@@ -234,14 +240,16 @@ func (archiveService *ArchiveService) Delete(consumerURL string, providerURL str
 //======================================================================//
 //                          START: Provider                             //
 //======================================================================//
+
+// StartProvider : TODO:
 func (archiveService *ArchiveService) StartProvider(providerURL string) error {
-	archiveService.Wg.Add(2)
+	archiveService.wg.Add(2)
 	// Start the retrieve provider
 	go archiveService.launchProvider(providerURL)
 	// Start a simple method to stop the providers
 	go archiveService.stopProviders()
 	// Wait until the end of the six operations
-	archiveService.Wg.Wait()
+	archiveService.wg.Wait()
 
 	return nil
 }
@@ -249,17 +257,17 @@ func (archiveService *ArchiveService) StartProvider(providerURL string) error {
 // stopProviders Stop the providers
 func (archiveService *ArchiveService) stopProviders() {
 	// Inform the WaitGroup that this goroutine is finished at the end of this function
-	defer archiveService.Wg.Done()
+	defer archiveService.wg.Done()
 	// Wait a little bit
 	time.Sleep(200 * time.Millisecond)
-	for archiveService.Running {
+	for archiveService.running {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Stop providers ? [Yes/No] ")
 		text, _ := reader.ReadString('\n')
 		stop := strings.TrimRight(text, "\n")
 		if len(stop) > 0 && strings.ToLower(stop)[0] == []byte("y")[0] {
 			// Good bye
-			archiveService.Running = false
+			archiveService.running = false
 		}
 	}
 }
@@ -267,7 +275,7 @@ func (archiveService *ArchiveService) stopProviders() {
 // launchSpecificProvider Start a provider for a specific operation
 func (archiveService *ArchiveService) launchProvider(providerURL string) error {
 	// Inform the WaitGroup that this goroutine is finished at the end of this function
-	defer archiveService.Wg.Done()
+	defer archiveService.wg.Done()
 	// Declare variables
 	var provider *Provider
 	var err error
@@ -282,7 +290,7 @@ func (archiveService *ArchiveService) launchProvider(providerURL string) error {
 	defer provider.Close()
 
 	// Start communication
-	for archiveService.Running == true {
+	for archiveService.running == true {
 		time.Sleep(1 * time.Second)
 	}
 

@@ -48,10 +48,6 @@ const (
 	OPERATION_IDENTIFIER_DELETE
 )
 
-const (
-	SLEEP_TIME = 250
-)
-
 // Constants for all the errors
 const (
 	COM_ERROR_INVALID   UInteger = 70000

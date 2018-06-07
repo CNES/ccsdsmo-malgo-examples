@@ -71,6 +71,8 @@ var databaseFields = []string{
 //======================================================================//
 //                            RETRIEVE                                  //
 //======================================================================//
+
+// RetrieveInArchive : TODO:
 func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, objectInstanceIdentifierList LongList) (ArchiveDetailsList, ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -98,6 +100,10 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// select a.objectInstanceIdentifier, t, y, timestamp, `details.related`, network,
+	// provider, `details.source` from Archive a INNER JOIN Sine s ON
+	// a.objectInstanceIdentifier = s.objectInstanceIdentifier;
 
 	// Create variables to return the elements and information
 	var archiveDetailsList = *NewArchiveDetailsList(0)
@@ -156,7 +162,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			elementList.AppendElement(element)
 		}
 	} else {
-		// Retrieve all these elements (no particular object instance iedentifiers)
+		// Retrieve all these elements (no particular object instance identifiers)
 		// Variables to store the different elements present in the database
 		var objectInstanceIdentifier Long
 		var encodedObjectId []byte
@@ -226,6 +232,8 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 //======================================================================//
 //                              QUERY                                   //
 //======================================================================//
+
+// QueryArchive : TODO:
 func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) ([]*ObjectType, []*ArchiveDetailsList, []*IdentifierList, []ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -634,6 +642,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	return objectTypeToReturn, archiveDetailsListToReturn, identifierListToReturn, elementListToReturn, nil
 }
 
+// verifyParameters : TODO:
 func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
 	// Check sortFieldName value
 	var isSortFieldNameADefinedField = false
@@ -675,6 +684,8 @@ func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error 
 //======================================================================//
 //                              COUNT                                   //
 //======================================================================//
+
+// CountInArchive : TODO:
 func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -728,6 +739,7 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 //======================================================================//
 //                              STORE                                   //
 //======================================================================//
+
 // StoreInArchive : Use this function to store objects in an COM archive
 func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
 	rand.Seed(time.Now().UnixNano())
@@ -815,6 +827,8 @@ func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList Iden
 //======================================================================//
 //                              UPDATE                                  //
 //======================================================================//
+
+// UpdateArchive : TODO:
 func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -879,6 +893,8 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 //======================================================================//
 //                              DELETE                                  //
 //======================================================================//
+
+// DeleteInArchive : TODO:
 func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longListRequest LongList) (LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
@@ -998,6 +1014,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 //======================================================================//
 //                           LOCAL FUNCTIONS                            //
 //======================================================================//
+// createTransaction : TODO:
 func createTransaction() (*sql.DB, *sql.Tx, error) {
 	// Open the database
 	db, err := sql.Open("mysql", USERNAME+":"+PASSWORD+"@/"+DATABASE+"?parseTime=true")
@@ -1020,7 +1037,8 @@ func createTransaction() (*sql.DB, *sql.Tx, error) {
 	return db, tx, nil
 }
 
-// This function allows to verify if an instance of an object is already in the archive
+// isObjectInstanceIdentifierInDatabase: This function allows to verify if an instance of
+// an object is already in the archive
 func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier int64) (bool, error) {
 	// Execute the query
 	// Before, create a variable to retrieve the result
@@ -1036,7 +1054,7 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 	return true, nil
 }
 
-// This function allows insert an element in the archive
+// insertInDatabase: This function allows to insert an element in the archive
 func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element, objectType ObjectType, domain String, archiveDetails ArchiveDetails) error {
 	// Encode the Element and the ObjectId from the ArchiveDetails
 	encodedElement, encodedObjectID, err := utils.EncodeElements(element, *archiveDetails.Details.Source)
@@ -1064,7 +1082,7 @@ func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Elemen
 	return nil
 }
 
-// resetAutoIncrement take the maximum id in the database and set the
+// resetAutoIncrement takes the maximum id in the database and set the
 // AUTO_INCREMENT at this value (actually it's this value to which we added 1)
 func resetAutoIncrement(tx *sql.Tx) error {
 	// Create a value to store the maximum id (to which we added 1)

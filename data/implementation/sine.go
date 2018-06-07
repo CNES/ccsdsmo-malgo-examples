@@ -38,8 +38,8 @@ var (
 )
 
 const (
-	COM_SINE_TYPE_SHORT_FORM Integer = 0x01
-	COM_SINE_SHORT_FORM      Long    = 0x2000301000001
+	COM_SINE_TYPE_SHORT_FORM Integer = 0x02
+	COM_SINE_SHORT_FORM      Long    = 0x2000301000002
 )
 
 func NewSine(t Long, y Float) *Sine {

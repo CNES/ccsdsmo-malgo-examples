@@ -40,8 +40,8 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/service"
 	. "github.com/etiennelndr/archiveservice/data"
+	. "github.com/etiennelndr/archiveservice/data/tests"
 	. "github.com/etiennelndr/archiveservice/errors"
-	. "github.com/etiennelndr/archiveservice/tests/data"
 )
 
 // Constants for the providers and consumers
@@ -87,7 +87,7 @@ func initDabase() error {
 		return err
 	}
 
-	// If there are already 40 elements in the Archive table then
+	// If there are already 80 elements in the Archive table then
 	// it's useless to reset and add new elements to the database
 	var maxID sql.NullInt64 // Better to use the type sql.NullInt64 to avoid nil error conversion
 	err = tx.QueryRow("SELECT MAX(id) FROM " + TABLE).Scan(&maxID)
@@ -179,8 +179,6 @@ func initDabase() error {
 				return err
 			} else if errorsList != nil {
 				return errors.New(string(*errorsList.ErrorNumber) + ": " + string(*errorsList.ErrorComment))
-			} else {
-				return errors.New("UNKNOWN ERROR")
 			}
 		}
 
@@ -231,6 +229,7 @@ func TestRetrieveOK(t *testing.T) {
 	// Check if the Archive table is initialized or not
 	err := checkAndInitDatabase()
 	if err != nil {
+		println(err.Error())
 		t.FailNow()
 	}
 
@@ -257,6 +256,7 @@ func TestRetrieveOK(t *testing.T) {
 	archiveDetailsList, elementList, errorsList, err = archiveService.Retrieve(consumerURL, providerURL, objectType, identifierList, longList)
 
 	if errorsList != nil || err != nil || archiveDetailsList == nil || elementList == nil {
+		println(errorsList)
 		t.FailNow()
 	}
 }

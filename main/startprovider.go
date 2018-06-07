@@ -30,7 +30,6 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 
 	. "github.com/etiennelndr/archiveservice/archive/service"
-	_ "github.com/etiennelndr/archiveservice/tests/data"
 )
 
 // Constants for the providers and consumers

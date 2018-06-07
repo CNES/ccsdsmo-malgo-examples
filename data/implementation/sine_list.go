@@ -34,8 +34,8 @@ var (
 )
 
 const (
-	COM_SINE_LIST_TYPE_SHORT_FORM Integer = -0x01
-	COM_SINE_LIST_SHORT_FORM      Long    = 0x2000301FFFFFF
+	COM_SINE_LIST_TYPE_SHORT_FORM Integer = -0x02
+	COM_SINE_LIST_SHORT_FORM      Long    = 0x2000301FFFFFE
 )
 
 func NewSineList(size int) *SineList {

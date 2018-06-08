@@ -1243,7 +1243,7 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 			utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 			var fieldValue = (*compositerFilterSet.Filters)[i].FieldValue
 			// Transform the expresion operator
-			expressionOperator := utils.WhichExpressionOperatorIsIt((*compositerFilterSet.Filters)[i].Type)
+			expressionOperator := TransformOperator((*compositerFilterSet.Filters)[i].Type)
 			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
 				queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
 					expressionOperator))

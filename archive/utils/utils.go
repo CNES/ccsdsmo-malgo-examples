@@ -30,8 +30,6 @@ import (
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 	. "github.com/ccsdsmo/malgo/mal/encoding/binary"
-
-	. "github.com/etiennelndr/archiveservice/data"
 )
 
 // AdaptDomainToString transforms a list of Identifiers to a domain of this
@@ -181,29 +179,5 @@ func CheckCondition(cond *bool, buffer *bytes.Buffer) {
 		buffer.WriteString(" AND")
 	} else {
 		*cond = true
-	}
-}
-
-// WhichExpressionOperatorIsIt transforms an ExpressionOperator to a string
-func WhichExpressionOperatorIsIt(expressionOperator ExpressionOperator) string {
-	switch expressionOperator {
-	case COM_EXPRESSIONOPERATOR_EQUAL:
-		return "="
-	case COM_EXPRESSIONOPERATOR_DIFFER:
-		return "!="
-	case COM_EXPRESSIONOPERATOR_GREATER:
-		return ">"
-	case COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL:
-		return ">="
-	case COM_EXPRESSIONOPERATOR_LESS:
-		return "<"
-	case COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL:
-		return "<="
-	case COM_EXPRESSIONOPERATOR_CONTAINS:
-		return "LIKE '%"
-	case COM_EXPRESSIONOPERATOR_ICONTAINS:
-		return "NOT LIKE '%"
-	default:
-		return ""
 	}
 }

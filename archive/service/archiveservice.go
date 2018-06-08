@@ -33,15 +33,22 @@ import (
 
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
+
+	// Init mysql driver
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
+
+	// Blank imports to register all the mal and com elements
+	_ "github.com/ccsdsmo/malgo/com"
+	_ "github.com/ccsdsmo/malgo/mal"
+	_ "github.com/etiennelndr/archiveservice/data"
+	_ "github.com/etiennelndr/archiveservice/data/implementation"
+	_ "github.com/etiennelndr/archiveservice/data/tests"
 
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 	. "github.com/etiennelndr/archiveservice/archive/consumer"
 	. "github.com/etiennelndr/archiveservice/archive/provider"
 	. "github.com/etiennelndr/archiveservice/data"
-	_ "github.com/etiennelndr/archiveservice/data"
-	_ "github.com/etiennelndr/archiveservice/data/implementation"
-	_ "github.com/etiennelndr/archiveservice/data/tests"
+
 	. "github.com/etiennelndr/archiveservice/errors"
 	. "github.com/etiennelndr/archiveservice/service"
 )

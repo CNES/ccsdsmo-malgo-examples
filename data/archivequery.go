@@ -28,6 +28,8 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 )
 
+// ArchiveQuery structure is used to specify filters on the
+// common parts of an object in an archive
 type ArchiveQuery struct {
 	Domain        *IdentifierList
 	Network       *Identifier
@@ -49,6 +51,7 @@ const (
 	COM_ARCHIVE_QUERY_SHORT_FORM      Long    = 0x2000201000002
 )
 
+// NewArchiveQuery TODO:
 func NewArchiveQuery(domain *IdentifierList,
 	network *Identifier,
 	provider *URI,

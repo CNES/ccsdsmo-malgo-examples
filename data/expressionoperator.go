@@ -27,6 +27,7 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 )
 
+// ExpressionOperator holds a set of possible expression operators
 type ExpressionOperator UOctet
 
 const (
@@ -46,7 +47,7 @@ const (
 )
 
 // TransformOperator transforms an ExpressionOperator to a String
-func TransformOperator(e ExpressionOperator) String {
+func (e ExpressionOperator) TransformOperator() String {
 	switch e {
 	case COM_EXPRESSIONOPERATOR_EQUAL:
 		return "="

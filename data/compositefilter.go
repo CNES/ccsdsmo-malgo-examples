@@ -29,6 +29,8 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 )
 
+// CompositeFilter allows an archive query to specify a filter based on the content of the
+// body of an object if that body is specified using the MAL data type specification
 type CompositeFilter struct {
 	FieldName  String
 	Type       ExpressionOperator

@@ -34,7 +34,7 @@ import (
 	. "github.com/ccsdsmo/malgo/com"
 	. "github.com/ccsdsmo/malgo/mal"
 
-	// Init mysql driver
+	// Init TCP transport
 	_ "github.com/ccsdsmo/malgo/mal/transport/tcp"
 
 	// Blank imports to register all the mal and com elements

@@ -29,6 +29,8 @@ import (
 	. "github.com/etiennelndr/archiveservice/archive/constants"
 )
 
+// CompositeFilterSet contains a list of CompositeFilters
+// that are ANDed together to form a more complex filter
 type CompositeFilterSet struct {
 	Filters *CompositeFilterList
 }

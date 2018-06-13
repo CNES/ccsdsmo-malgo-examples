@@ -28,6 +28,7 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 )
 
+// ArchiveDetails structure is used to hold information about a single entry in an Archive
 type ArchiveDetails struct {
 	InstId    Long
 	Details   ObjectDetails

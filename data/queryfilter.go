@@ -27,6 +27,7 @@ import (
 	. "github.com/ccsdsmo/malgo/mal"
 )
 
+// QueryFilter is the base structure for archive filters
 type QueryFilter interface {
 	Composite
 	QueryFilter() QueryFilter

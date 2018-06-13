@@ -21,6 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+// Package storage : TODO:
 package storage
 
 import (
@@ -40,6 +42,7 @@ import (
 	"github.com/etiennelndr/archiveservice/archive/utils"
 	. "github.com/etiennelndr/archiveservice/data"
 
+	// Init mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -1243,7 +1246,7 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 			utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
 			var fieldValue = (*compositerFilterSet.Filters)[i].FieldValue
 			// Transform the expresion operator
-			expressionOperator := TransformOperator((*compositerFilterSet.Filters)[i].Type)
+			expressionOperator := (*compositerFilterSet.Filters)[i].Type.TransformOperator()
 			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
 				queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
 					expressionOperator))

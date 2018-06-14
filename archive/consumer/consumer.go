@@ -506,6 +506,8 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 	// Create the decoder to decode the multiple variables
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
+	println("LENGTH OF DECODER (IN QUERY CONSUMER):", len(resp.Body))
+
 	// Decode ObjectType
 	objectType, err := decoder.DecodeNullableElement(NullObjectType)
 	if err != nil {
@@ -713,6 +715,8 @@ func (consumer *RequestConsumer) storeRequest(boolean *Boolean, objectType Objec
 	if err != nil {
 		return nil, nil, err
 	}
+
+	println("LENGTH OF ENCODER (IN STORE CONSUMER):", len(encoder.Body()))
 
 	// Call Request operation and retrieve the Response
 	resp, err := consumer.op.Request(encoder.Body())

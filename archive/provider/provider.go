@@ -136,7 +136,7 @@ func (provider *Provider) retrieveHandler() error {
 			}
 
 			// ----- Verify the parameters -----
-			err = provider.retrieveVerifyParameters(transaction, objectType, identifierList, longList)
+			err = provider.retrieveVerifyParameters(transaction, objectType, identifierList)
 			if err != nil {
 				return err
 			}
@@ -189,7 +189,7 @@ func (provider *Provider) retrieveHandler() error {
 }
 
 // VERIFY PARAMETERS : TODO:
-func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction, objectType *ObjectType, identifierList *IdentifierList, longList *LongList) error {
+func (provider *Provider) retrieveVerifyParameters(transaction InvokeTransaction, objectType *ObjectType, identifierList *IdentifierList) error {
 	// Verify ObjectType values (all of its attributes must not be equal to '0')
 	if objectType.Area == 0 || objectType.Number == 0 || objectType.Service == 0 || objectType.Version == 0 {
 		provider.retrieveAckError(transaction, COM_ERROR_INVALID, ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR, NewLongList(1))
@@ -585,6 +585,8 @@ func (provider *Provider) queryResponse(transaction ProgressTransaction, objectT
 		return err
 	}
 
+	println("LENGTH OF ENCODER (IN QUERY PROVIDER):", len(encoder.Body()))
+
 	// Call Update operation
 	err = transaction.Reply(encoder.Body(), false)
 	if err != nil {
@@ -903,6 +905,8 @@ func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, 
 func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
+
+	println("LENGTH OF DECODER (IN STORE PROVIDER):", len(msg.Body))
 
 	// Decode Boolean
 	boolean, err := decoder.DecodeNullableElement(NullBoolean)

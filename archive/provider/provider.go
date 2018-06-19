@@ -585,8 +585,6 @@ func (provider *Provider) queryResponse(transaction ProgressTransaction, objectT
 		return err
 	}
 
-	println("LENGTH OF ENCODER (IN QUERY PROVIDER):", len(encoder.Body()))
-
 	// Call Update operation
 	err = transaction.Reply(encoder.Body(), false)
 	if err != nil {
@@ -905,8 +903,6 @@ func (provider *Provider) storeVerifyParameters(transaction RequestTransaction, 
 func (provider *Provider) storeRequest(msg *Message) (*Boolean, *ObjectType, *IdentifierList, *ArchiveDetailsList, ElementList, error) {
 	// Create the decoder
 	decoder := provider.factory.NewDecoder(msg.Body)
-
-	println("LENGTH OF DECODER (IN STORE PROVIDER):", len(msg.Body))
 
 	// Decode Boolean
 	boolean, err := decoder.DecodeNullableElement(NullBoolean)

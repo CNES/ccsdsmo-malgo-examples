@@ -435,13 +435,13 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			if isAlreadyUsed {
 				// ArchiveDetailsList
 				// Decode the object id
-				objId, err := utils.DecodeObjectID(encodedObjectId)
+				objID, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					&related,
-					objId,
+					Related: &related,
+					Source:  objID,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
 				// Append this ArchiveDetails to the desired ArchiveDetailsList
@@ -465,13 +465,13 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				// ArchiveDetailsList
 				archDetailsList := NewArchiveDetailsList(0)
 				// Decode the object id
-				objId, err := utils.DecodeObjectID(encodedObjectId)
+				objID, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					&related,
-					objId,
+					Related: &related,
+					Source:  objID,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
 				archDetailsList.AppendElement(archDetails)
@@ -484,7 +484,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				// Transform Type Short Form to List Short Form
-				listShortForm := utils.ConvertToListShortForm(ObjectType{area, service, version, number})
+				listShortForm := utils.ConvertToListShortForm(ObjectType{Area: area, Service: service, Version: version, Number: number})
 				// Get Element in the MAL Registry
 				element, err := LookupMALElement(listShortForm)
 				var elementList = element.(ElementList)

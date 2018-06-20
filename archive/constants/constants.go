@@ -66,3 +66,7 @@ const (
 	ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR                    String = "QueryFilter contains an error"
 	ARCHIVE_SERVICE_UNKNOWN_ELEMENT                             String = "Unknown element, cannot find it in the archive"
 )
+
+const (
+	LENGTH = 16394
+)

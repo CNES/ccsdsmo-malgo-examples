@@ -230,7 +230,7 @@ func StartRetrieveConsumer(url string, providerURI *URI, objectType ObjectType, 
 // Invoke & Ack : TODO:
 func (consumer *InvokeConsumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ServiceError, error) {
 	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
 	// Encode ObjectType
 	err := objectType.Encode(encoder)
 	if err != nil {
@@ -383,7 +383,7 @@ func StartQueryConsumer(url string, providerURI *URI, boolean *Boolean, objectTy
 // Progress & Ack : TODO:
 func (consumer *ProgressConsumer) queryProgress(boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
 
 	// Encode Boolean
 	err := encoder.EncodeNullableElement(boolean)
@@ -506,8 +506,6 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 	// Create the decoder to decode the multiple variables
 	decoder := consumer.factory.NewDecoder(resp.Body)
 
-	println("LENGTH OF DECODER (IN QUERY CONSUMER):", len(resp.Body))
-
 	// Decode ObjectType
 	objectType, err := decoder.DecodeNullableElement(NullObjectType)
 	if err != nil {
@@ -581,7 +579,7 @@ func StartCountConsumer(url string, providerURI *URI, objectType *ObjectType, ar
 // Invoke & Ack : TODO:
 func (consumer *InvokeConsumer) countInvoke(objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
 	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
 
 	// Encode ObjectType
 	err := encoder.EncodeNullableElement(objectType)
@@ -684,7 +682,7 @@ func StartStoreConsumer(url string, providerURI *URI, boolean *Boolean, objectTy
 // Request & Response : TODO:
 func (consumer *RequestConsumer) storeRequest(boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
 
 	// Encode Boolean
 	err := encoder.EncodeNullableElement(boolean)
@@ -715,8 +713,6 @@ func (consumer *RequestConsumer) storeRequest(boolean *Boolean, objectType Objec
 	if err != nil {
 		return nil, nil, err
 	}
-
-	println("LENGTH OF ENCODER (IN STORE CONSUMER):", len(encoder.Body()))
 
 	// Call Request operation and retrieve the Response
 	resp, err := consumer.op.Request(encoder.Body())
@@ -777,7 +773,7 @@ func StartUpdateConsumer(url string, providerURI *URI, objectType ObjectType, id
 // Submit & Ack : TODO:
 func (consumer *SubmitConsumer) updateSubmit(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
 
 	// Encode ObjectType
 	err := objectType.Encode(encoder)
@@ -853,7 +849,7 @@ func StartDeleteConsumer(url string, providerURI *URI, objectType ObjectType, id
 // Request & Reponse : TODO:
 func (consumer *RequestConsumer) deleteRequest(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, 8192))
+	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
 
 	// Encode ObjectType
 	err := objectType.Encode(encoder)

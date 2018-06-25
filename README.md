@@ -21,6 +21,8 @@ go get github.com/etiennelndr/archiveservice
 Using the Archive Service
 =========================
 
+If you want to see the Archive Service in action, click [here](https://github.com/etiennelndr/archiveservice_implementation/) and run this project.
+
 Use of the provider
 -------------------
 

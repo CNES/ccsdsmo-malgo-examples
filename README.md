@@ -87,7 +87,7 @@ if err != nil {
 The **query operation** retrieves a set of object instance identifiers, and optionally the object
 bodies, from a list of supplied queries. The **PROGRESS interaction** pattern is used as the
 returned set of data may be quite large and this allows it to be split over several MAL
-messages. A simple way to use this operation :
+messages. A simple way to use this operation:
 
 ```go
 // Variable that defines the ArchiveService
@@ -181,7 +181,7 @@ stored. The returned object instance identifier should be used by the service pr
 identifying the object instances to its consumer to ensure that **only a single object instance
 identifier** is used for each object instance.
 
-In our case, this operation can be used in that way :
+In our case, this operation can be used in that way:
 
 ```go
 // Variable that defines the ArchiveService
@@ -303,7 +303,7 @@ if err != nil {
 ### Delete
 
 The **delete operation** deletes an object (or set of objects) and causes an ObjectDeleted event
-to be published by the archive. A simple way to use this operation :
+to be published by the archive. A simple way to use this operation:
 
 ```go
 // Variable that defines the ArchiveService

@@ -41,11 +41,14 @@ func EncodeError(encoder Encoder, errorNumber UInteger, errorComment String, err
 		return nil, err
 	}
 
+	// SL This information must not be encoded in the message
+	/*
 	// Encode String
 	err = errorComment.Encode(encoder)
 	if err != nil {
 		return nil, err
 	}
+	*/
 
 	// Encode Element
 	err = encoder.EncodeAbstractElement(errorExtra)
@@ -63,11 +66,15 @@ func DecodeError(decoder Decoder) (*ServiceError, error) {
 		return nil, err
 	}
 
+	// SL This information must not be encoded in the message
+	/*
 	// Decode String
 	errorComment, err := decoder.DecodeElement(NullString)
 	if err != nil {
 		return nil, err
 	}
+	*/
+	var errorComment Element = NewString("dummy")
 
 	// Decode Element
 	errorExtra, err := decoder.DecodeAbstractElement()

@@ -64,7 +64,7 @@ func DecodeObjectID(encodedObjectId []byte) (*ObjectId, error) {
 	decoder := factory.NewDecoder(encodedObjectId)
 
 	// Decode the ObjectId
-	elem, err := decoder.DecodeElement(NullObjectId)
+	elem, err := decoder.DecodeNullableElement(NullObjectId)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func DecodeElement(encodedObjectElement []byte) (Element, error) {
 	decoder := factory.NewDecoder(encodedObjectElement)
 
 	// Decode the Element
-	element, err := decoder.DecodeAbstractElement()
+	element, err := decoder.DecodeNullableAbstractElement()
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func DecodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, erro
 	return objectId, element, nil
 }
 
-func EncodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error) {
+func EncodeElements(_element Element, _objectId *ObjectId) ([]byte, []byte, error) {
 	// Create the factory
 	factory := new(FixedBinaryEncoding)
 
@@ -113,7 +113,7 @@ func EncodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error
 	encoder := factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode Element
-	err := encoder.EncodeAbstractElement(_element)
+	err := encoder.EncodeNullableAbstractElement(_element)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -123,7 +123,7 @@ func EncodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error
 	encoder = factory.NewEncoder(make([]byte, 0, 8192))
 
 	// Encode ObjectId
-	err = _objectId.Encode(encoder)
+	err = encoder.EncodeNullableElement(_objectId)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -134,44 +134,13 @@ func EncodeElements(_element Element, _objectId ObjectId) ([]byte, []byte, error
 
 // This part is useful for type short form conversion (from typeShortForm to listShortForm)
 func TypeShortFormToShortForm(objectType ObjectType) Long {
-	var typeShortForm = Long(objectType.Number) | 0xFFFFFFF000000
-	var areaVersion = (Long(objectType.Version) << 24) | 0xFFFFF00FFFFFF
-	var serviceNumber = (Long(objectType.Service) << 32) | 0xF0000FFFFFFFF
-	var areaNumber = (Long(objectType.Area) << 48) | 0x0FFFFFFFFFFFF
-
-	return areaNumber & serviceNumber & areaVersion & typeShortForm
+	return objectType.GetMALBodyType()
 }
 
 // ConvertToListShortForm converts an ObjectType to a Long (which
 // will be used for a List Short Form)
 func ConvertToListShortForm(objectType ObjectType) Long {
-	var listByte []byte
-	listByte = append(listByte, byte(objectType.Area), byte(objectType.Service>>8), byte(objectType.Service), byte(objectType.Version))
-	typeShort := TypeShortFormToShortForm(objectType)
-	quatuor5 := (typeShort & 0x0000F0) >> 4
-	if quatuor5 == 0x0 {
-		var b byte
-		for i := 2; i >= 0; i-- {
-			b = byte(typeShort>>uint(i*8)) ^ 255
-			if i == 0 {
-				b++
-			}
-			listByte = append(listByte, b)
-		}
-
-		var byte0 = Long(listByte[6]) | 0xFFFFFFFFFFF00
-		var byte1 = (Long(listByte[5]) << 8) | 0xFFFFFFFFF00FF
-		var byte2 = (Long(listByte[4]) << 16) | 0xFFFFFFF00FFFF
-		var byte3 = (Long(listByte[3]) << 24) | 0xFFFFF00FFFFFF
-		var byte4 = (Long(listByte[2]) << 32) | 0xFFF00FFFFFFFF
-		var byte5 = (Long(listByte[1]) << 40) | 0xF00FFFFFFFFFF
-		var byte6 = (Long(listByte[0]) << 48) | 0x0FFFFFFFFFFFF
-
-		return byte6 & byte5 & byte4 & byte3 & byte2 & byte1 & byte0
-	}
-
-	// Force bytes 2, 3 to 1
-	return typeShort | 0x0000000FFFF00
+	return objectType.GetMALBodyListType()
 }
 
 func CheckCondition(cond *bool, buffer *bytes.Buffer) {

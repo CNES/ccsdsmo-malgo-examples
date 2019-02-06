@@ -25,6 +25,12 @@ package data
 
 import (
 	. "github.com/CNES/ccsdsmo-malgo/mal"
+	"github.com/CNES/ccsdsmo-malgo/com"
+	"github.com/CNES/ccsdsmo-malgo/mal/debug"
+)
+
+var (
+	logger debug.Logger = debug.GetLogger("archive.data")
 )
 
 type ValueOfSine struct {
@@ -58,6 +64,18 @@ func (v *ValueOfSine) Composite() Composite {
 // Registers COM ValueOfSine type for polymorpsism handling
 func init() {
 	RegisterMALElement(COM_VALUE_OF_SINE_SHORT_FORM, NullValueOfSine)
+	// In the tests the short form is also used as the COM type number
+	// the fields values are those used in the test
+	comObjType := com.ObjectType{
+		Area:    UShort(2),
+		Service: UShort(3),
+		Version: UOctet(1),
+		Number:  UShort(COM_VALUE_OF_SINE_TYPE_SHORT_FORM),
+	}
+	err := comObjType.RegisterMALBodyType(COM_VALUE_OF_SINE_SHORT_FORM)
+	if err!=nil {
+		logger.Errorf("ValueOfSine.init, cannot register COM object: %s", err.Error())
+	}
 }
 
 // ----- Defines COM ValueOfSine as a MAL Element -----

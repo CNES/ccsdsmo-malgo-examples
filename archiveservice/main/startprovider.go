@@ -26,9 +26,6 @@ package main
 import (
 	"fmt"
 
-	. "github.com/CNES/ccsdsmo-malgo/com"
-	. "github.com/CNES/ccsdsmo-malgo/mal"
-
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/service"
 )
 

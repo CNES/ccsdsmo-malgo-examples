@@ -653,9 +653,10 @@ func (provider *Provider) countHandler() error {
 				if err.Error() == string(ARCHIVE_SERVICE_QUERY_SORT_FIELD_NAME_INVALID_ERROR) ||
 					strings.Contains(err.Error(), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
 					provider.countResponseError(transaction, COM_ERROR_INVALID, String(err.Error()), NewLongList(0))
+				} else {
+					// Otherwise, send an INTERNAL error
+					provider.countResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				}
-				// Otherwise, send an INTERNAL error
-				provider.countResponseError(transaction, MAL_ERROR_INTERNAL, MAL_ERROR_INTERNAL_MESSAGE+String(" "+err.Error()), NewLongList(0))
 				return err
 			}
 			// Call Response operation

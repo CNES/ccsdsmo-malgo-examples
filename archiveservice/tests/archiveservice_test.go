@@ -29,7 +29,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -40,8 +39,8 @@ import (
 	malapi "github.com/CNES/ccsdsmo-malgo/mal/api"
 
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/service"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/consumer"
+	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/service"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/tests"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/errors"
@@ -181,7 +180,7 @@ func initDabase() error {
 			if err != nil {
 				return err
 			} else if errorsList != nil {
-				return errors.New(string(*errorsList.ErrorNumber) + ": " + string(*errorsList.ErrorComment))
+				return errors.New(string(*errorsList.ErrorNumber))
 			}
 		}
 
@@ -197,7 +196,7 @@ func initDabase() error {
 			if err != nil {
 				return err
 			} else if errorsList != nil {
-				return errors.New(string(*errorsList.ErrorNumber) + ": " + string(*errorsList.ErrorComment))
+				return errors.New(string(*errorsList.ErrorNumber))
 			} else {
 				return errors.New("UNKNOWN ERROR")
 			}
@@ -225,14 +224,14 @@ func checkAndInitDatabase() error {
 	return nil
 }
 
-func TestMain(m *testing.M) { 
-    err := testSetup()
-    if err != nil {
-    	return
-    }
-    retCode := m.Run()
-    _ = testTeardown()
-    os.Exit(retCode)
+func TestMain(m *testing.M) {
+	err := testSetup()
+	if err != nil {
+		return
+	}
+	retCode := m.Run()
+	_ = testTeardown()
+	os.Exit(retCode)
 }
 
 var malContext *Context = nil
@@ -630,8 +629,7 @@ func TestQueryKO_3_4_4_2_16(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Query(providerURL, boolean, objectType, *archiveQueryList, queryFilterList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) || !strings.Contains(string(*errorsList.ErrorComment), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
-		fmt.Println(*errorsList.ErrorComment)
+	if errorsList == nil || *errorsList.ErrorNumber != *NewUInteger(uint32(COM_ERROR_INVALID)) {
 		t.FailNow()
 	}
 }
@@ -984,7 +982,7 @@ func TestCountKO_3_4_5_2_16(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Count(providerURL, objectType, archiveQueryList, queryFilterList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != UInteger(uint32(COM_ERROR_INVALID)) || !strings.Contains(string(*errorsList.ErrorComment), string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR)) {
+	if errorsList == nil || *errorsList.ErrorNumber != UInteger(uint32(COM_ERROR_INVALID)) {
 		t.FailNow()
 	}
 }
@@ -1291,7 +1289,7 @@ func TestStoreKO_3_4_6_2_8(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_LIST_SIZE_ERROR || *errorsList.ErrorExtra.(*Long) != 1 {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorExtra.(*Long) != 1 {
 		t.FailNow()
 	}
 }
@@ -1348,7 +1346,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1362,7 +1360,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1376,7 +1374,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1390,7 +1388,7 @@ func TestStoreKO_3_4_6_2_9(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -1447,7 +1445,7 @@ func TestStoreKO_3_4_6_2_10(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -1505,7 +1503,7 @@ func TestStoreKO_3_4_6_2_11(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		fmt.Println(errorsList)
 		t.FailNow()
 	}
@@ -1518,7 +1516,7 @@ func TestStoreKO_3_4_6_2_11(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		fmt.Println(errorsList)
 		t.FailNow()
 	}
@@ -1531,7 +1529,7 @@ func TestStoreKO_3_4_6_2_11(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Store(providerURL, boolean, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_STORE_ARCHIVEDETAILSLIST_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		fmt.Println(errorsList)
 		t.FailNow()
 	}
@@ -1663,7 +1661,7 @@ func TestUpdateKO_3_4_7_2_5(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != MAL_ERROR_UNKNOWN || *errorsList.ErrorComment != ARCHIVE_SERVICE_UNKNOWN_ELEMENT {
+	if errorsList == nil || *errorsList.ErrorNumber != MAL_ERROR_UNKNOWN {
 		t.FailNow()
 	}
 }
@@ -1722,7 +1720,7 @@ func TestUpdateKO_3_4_7_2_8_ObjectType(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1735,7 +1733,7 @@ func TestUpdateKO_3_4_7_2_8_ObjectType(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1748,7 +1746,7 @@ func TestUpdateKO_3_4_7_2_8_ObjectType(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1761,7 +1759,7 @@ func TestUpdateKO_3_4_7_2_8_ObjectType(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -1820,7 +1818,7 @@ func TestUpdateKO_3_4_7_2_8_ObjectInstanceIdentifier(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_AREA_OBJECT_INSTANCE_IDENTIFIER_VALUE_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -1879,8 +1877,7 @@ func TestUpdateKO_3_4_7_2_8_Domain(t *testing.T) {
 	// Start the consumer
 	errorsList, _ = archiveService.Update(providerURL, objectType, identifierList, archiveDetailsList, elementList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR {
-		fmt.Println(*errorsList.ErrorComment)
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -1951,7 +1948,7 @@ func TestDeleteKO_3_4_8_2_3_ObjectType(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1964,7 +1961,7 @@ func TestDeleteKO_3_4_8_2_3_ObjectType(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1977,7 +1974,7 @@ func TestDeleteKO_3_4_8_2_3_ObjectType(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 
@@ -1990,7 +1987,7 @@ func TestDeleteKO_3_4_8_2_3_ObjectType(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_OBJECTTYPE_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -2023,7 +2020,7 @@ func TestDeleteKO_3_4_8_2_3_Domain(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID || *errorsList.ErrorComment != ARCHIVE_SERVICE_IDENTIFIERLIST_VALUES_ERROR {
+	if errorsList == nil || *errorsList.ErrorNumber != COM_ERROR_INVALID {
 		t.FailNow()
 	}
 }
@@ -2056,7 +2053,7 @@ func TestDeleteKO_3_4_8_2_6(t *testing.T) {
 	// Start the consumer
 	_, errorsList, _ = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList == nil || *errorsList.ErrorNumber != MAL_ERROR_UNKNOWN || *errorsList.ErrorComment != ARCHIVE_SERVICE_UNKNOWN_ELEMENT {
+	if errorsList == nil || *errorsList.ErrorNumber != MAL_ERROR_UNKNOWN {
 		t.FailNow()
 	}
 }

@@ -119,7 +119,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var encodedObjectId []byte
 			var encodedElement []byte
 			var timestamp time.Time
-			var related *Long = NewLong(0)
+			var related Long
 			var network Identifier
 			var provider URI
 
@@ -132,7 +132,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 				objectType.Number,
 				domain).Scan(&encodedElement,
 				&timestamp,
-				related,
+				&related,
 				&network,
 				&provider,
 				&encodedObjectId)
@@ -141,9 +141,6 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 					return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
 				}
 				return nil, nil, err
-			}
-			if *related == 0 {
-				related = NullLong
 			}
 
 			// Decode the Element and the ObjectId for the ArchiveDetails
@@ -154,7 +151,11 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 
 			// Create the ArchiveDetails
 			// First, create the ObjectDetails
-			objectDetails := ObjectDetails{related, objectId}
+			var prelated = &related
+			if related == 0 {
+				prelated = NullLong
+			}
+			objectDetails := ObjectDetails{prelated, objectId}
 			// Create the ArchiveDetails
 			archiveDetails := &ArchiveDetails{
 				*objectInstanceIdentifierList[i],
@@ -174,7 +175,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related *Long = NewLong(0)
+		var related Long
 		var network Identifier
 		var provider URI
 
@@ -194,14 +195,11 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			if err = rows.Scan(&objectInstanceIdentifier,
 				&encodedElement,
 				&timestamp,
-				related,
+				&related,
 				&network,
 				&provider,
 				&encodedObjectId); err != nil {
 				return nil, nil, err
-			}
-			if *related == 0 {
-				related = NullLong
 			}
 
 			// Decode the Element and the ObjectId for the ArchiveDetails
@@ -212,7 +210,11 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 
 			// Create the ArchiveDetails
 			// First, create the ObjectDetails
-			objectDetails := ObjectDetails{related, objectId}
+			var prelated = &related
+			if related == 0 {
+				prelated = NullLong
+			}
+			objectDetails := ObjectDetails{prelated, objectId}
 			// Create the ArchiveDetails
 			archiveDetails := &ArchiveDetails{
 				objectInstanceIdentifier,
@@ -278,7 +280,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related *Long = NewLong(0)
+		var related Long
 		var network Identifier
 		var provider URI
 		var area UShort
@@ -303,11 +305,12 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var countDomain uint
 
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
 			}
-			if *related == 0 {
-				related = NullLong
+			var prelated = &related
+			if related == 0 {
+				prelated = NullLong
 			}
 
 			//
@@ -344,7 +347,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					related,
+					prelated,
 					objId,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -377,7 +380,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					related,
+					prelated,
 					objId,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -409,7 +412,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related *Long = NewLong(0)
+		var related Long
 		var network Identifier
 		var provider URI
 		var domain string
@@ -428,11 +431,12 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var countDomain uint
 
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &encodedElement, &domain, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
 			}
-			if *related == 0 {
-				related = NullLong
+			var prelated = &related
+			if related == 0 {
+				prelated = NullLong
 			}
 
 			//
@@ -452,7 +456,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					Related: related,
+					Related: prelated,
 					Source:  objID,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -482,7 +486,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					Related: related,
+					Related: prelated,
 					Source:  objID,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -512,7 +516,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var objectInstanceIdentifier Long
 		var encodedObjectId []byte
 		var timestamp time.Time
-		var related *Long = NewLong(0)
+		var related Long
 		var network Identifier
 		var provider URI
 		var area UShort
@@ -530,11 +534,12 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var countObjectType uint
 
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, related, &network, &provider, &encodedObjectId, &area, &service, &version, &number); err != nil {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId, &area, &service, &version, &number); err != nil {
 				return nil, nil, nil, nil, err
 			}
-			if *related == 0 {
-				related = NullLong
+			var prelated = &related
+			if related == 0 {
+				prelated = NullLong
 			}
 
 			//
@@ -555,7 +560,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					related,
+					prelated,
 					objId,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -577,7 +582,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				objectDet := ObjectDetails{
-					related,
+					prelated,
 					objId,
 				}
 				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -595,7 +600,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		var objectInstanceIdentifier Long
 		var encodedObjectId []byte
 		var timestamp time.Time
-		var related *Long = NewLong(0)
+		var related Long
 		var network Identifier
 		var provider URI
 
@@ -614,11 +619,12 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 
 		var isAlreadyUsed = false
 		for rows.Next() {
-			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, related, &network, &provider, &encodedObjectId); err != nil {
+			if err = rows.Scan(&objectInstanceIdentifier, &timestamp, &related, &network, &provider, &encodedObjectId); err != nil {
 				return nil, nil, nil, nil, err
 			}
-			if *related == 0 {
-				related = NullLong
+			var prelated = &related
+			if related == 0 {
+				prelated = NullLong
 			}
 
 			// ArchiveDetailsList
@@ -628,7 +634,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				return nil, nil, nil, nil, err
 			}
 			objectDet := ObjectDetails{
-				related,
+				prelated,
 				objId,
 			}
 			archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
@@ -1232,7 +1238,14 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 	// Related (always have to do a query with this condition)
 	// TODO handle null related field ?
 	utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
-	queryBuffer.WriteString(fmt.Sprintf(" `details.related` = %d", archiveQuery.Related))
+	var relatedOp string
+	if archiveQuery.Related == 0 {
+		// catch all
+		relatedOp = ">="
+	} else {
+		relatedOp = "="
+	}
+	queryBuffer.WriteString(fmt.Sprintf(" `details.related` %s %d", relatedOp, archiveQuery.Related))
 
 	// Source
 	if archiveQuery.Source != nil {

@@ -20,7 +20,15 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- */
+ /
+/**
+ * This file has been duplicated from the original source in github.com/etiennelndr/archiveservice/archive/service.
+ * It provides the consumer interface to the COM/Archive service.
+ * It could be renamed consumer.
+ *
+ * The implementation has been changed to use a single Context and a single ClientContext from the malgo implementation.
+ * The interface has been change accordingly to remove reference to a client URL.
+*/
 package service
 
 import (
@@ -38,11 +46,11 @@ import (
 	_ "github.com/CNES/ccsdsmo-malgo/mal/transport/tcp"
 
 	// Blank imports to register all the mal and com elements
-	_ "github.com/CNES/ccsdsmo-malgo/com"
-	_ "github.com/CNES/ccsdsmo-malgo/mal"
 	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
 	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/implementation"
 	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/tests"
+	_ "github.com/CNES/ccsdsmo-malgo/com"
+	_ "github.com/CNES/ccsdsmo-malgo/mal"
 
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/consumer"
@@ -85,7 +93,7 @@ func (*ArchiveService) CreateService() Service {
 //======================================================================//
 
 // Retrieve : TODO:
-func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
+func (archiveService *ArchiveService) Retrieve(providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Retrieve Consumer")
@@ -93,8 +101,7 @@ func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL s
 	// IN
 	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
-	consumer, archiveDetailsList, elementList, errorsList, err := StartRetrieveConsumer(consumerURL,
-		providerURI,
+	consumer, archiveDetailsList, elementList, errorsList, err := StartRetrieveConsumer(providerURI,
 		objectType,
 		identifierList,
 		longList)
@@ -111,7 +118,7 @@ func (archiveService *ArchiveService) Retrieve(consumerURL string, providerURL s
 }
 
 // Query : TODO:
-func (archiveService *ArchiveService) Query(consumerURL string, providerURL string, boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
+func (archiveService *ArchiveService) Query(providerURL string, boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Query Consumer")
@@ -119,8 +126,7 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 	// IN
 	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
-	consumer, responses, errorsList, err := StartQueryConsumer(consumerURL,
-		providerURI,
+	consumer, responses, errorsList, err := StartQueryConsumer(providerURI,
 		boolean,
 		objectType,
 		archiveQueryList,
@@ -138,7 +144,7 @@ func (archiveService *ArchiveService) Query(consumerURL string, providerURL stri
 }
 
 // Count : TODO:
-func (archiveService *ArchiveService) Count(consumerURL string, providerURL string, objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Count(providerURL string, objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Count Consumer")
@@ -146,8 +152,7 @@ func (archiveService *ArchiveService) Count(consumerURL string, providerURL stri
 	// IN
 	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
-	consumer, longList, errorsList, err := StartCountConsumer(consumerURL,
-		providerURI,
+	consumer, longList, errorsList, err := StartCountConsumer(providerURI,
 		objectType,
 		archiveQueryList,
 		queryFilterList)
@@ -164,7 +169,7 @@ func (archiveService *ArchiveService) Count(consumerURL string, providerURL stri
 }
 
 // Store : TODO:
-func (archiveService *ArchiveService) Store(consumerURL string, providerURL string, boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Store(providerURL string, boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Store Consumer")
@@ -172,8 +177,7 @@ func (archiveService *ArchiveService) Store(consumerURL string, providerURL stri
 	// IN
 	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
-	consumer, longList, errorsList, err := StartStoreConsumer(consumerURL,
-		providerURI,
+	consumer, longList, errorsList, err := StartStoreConsumer(providerURI,
 		boolean,
 		objectType,
 		identifierList,
@@ -192,7 +196,7 @@ func (archiveService *ArchiveService) Store(consumerURL string, providerURL stri
 }
 
 // Update : TODO:
-func (archiveService *ArchiveService) Update(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
+func (archiveService *ArchiveService) Update(providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Update Consumer")
@@ -200,8 +204,7 @@ func (archiveService *ArchiveService) Update(consumerURL string, providerURL str
 	// IN
 	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
-	consumer, errorsList, err := StartUpdateConsumer(consumerURL,
-		providerURI,
+	consumer, errorsList, err := StartUpdateConsumer(providerURI,
 		objectType,
 		identifierList,
 		archiveDetailsList,
@@ -219,7 +222,7 @@ func (archiveService *ArchiveService) Update(consumerURL string, providerURL str
 }
 
 // Delete : TODO:
-func (archiveService *ArchiveService) Delete(consumerURL string, providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Delete(providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Delete Consumer")
@@ -227,8 +230,7 @@ func (archiveService *ArchiveService) Delete(consumerURL string, providerURL str
 	// IN
 	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
 	// OUT
-	consumer, respLongList, errorsList, err := StartDeleteConsumer(consumerURL,
-		providerURI,
+	consumer, respLongList, errorsList, err := StartDeleteConsumer(providerURI,
 		objectType,
 		identifierList,
 		longList)

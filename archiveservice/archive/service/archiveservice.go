@@ -46,16 +46,16 @@ import (
 	_ "github.com/CNES/ccsdsmo-malgo/mal/transport/tcp"
 
 	// Blank imports to register all the mal and com elements
-	_ "github.com/CNES/ccsdsmo-malgo/com"
-	_ "github.com/CNES/ccsdsmo-malgo/mal"
 	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
 	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/implementation"
 	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/tests"
+	_ "github.com/CNES/ccsdsmo-malgo/com"
+	_ "github.com/CNES/ccsdsmo-malgo/mal"
 
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
+	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/consumer"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/provider"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/consumer"
 
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/errors"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/service"

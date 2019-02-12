@@ -34,50 +34,34 @@ type ServiceError struct {
 	ErrorExtra   Element
 }
 
-func EncodeError(encoder Encoder, errorNumber UInteger, errorComment String, errorExtra Element) (Encoder, error) {
+func EncodeError(body Body, errorNumber UInteger, errorComment String, errorExtra Element) error {
 	// Encode UInteger
-	err := errorNumber.Encode(encoder)
+	err := body.EncodeParameter(&errorNumber)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	// SL This information must not be encoded in the message
-	/*
-	// Encode String
-	err = errorComment.Encode(encoder)
-	if err != nil {
-		return nil, err
-	}
-	*/
 
 	// Encode Element
-	err = encoder.EncodeAbstractElement(errorExtra)
+	err = body.EncodeLastParameter(errorExtra, true)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return encoder, nil
+	return nil
 }
 
-func DecodeError(decoder Decoder) (*ServiceError, error) {
+func DecodeError(msg *Message) (*ServiceError, error) {
 	// Decode UInteger
-	errorNumber, err := decoder.DecodeElement(NullUInteger)
+	errorNumber, err := msg.DecodeParameter(NullUInteger)
 	if err != nil {
 		return nil, err
 	}
 
 	// SL This information must not be encoded in the message
-	/*
-	// Decode String
-	errorComment, err := decoder.DecodeElement(NullString)
-	if err != nil {
-		return nil, err
-	}
-	*/
 	var errorComment Element = NewString("dummy")
 
 	// Decode Element
-	errorExtra, err := decoder.DecodeAbstractElement()
+	errorExtra, err := msg.DecodeLastParameter(NullElement, true)
 	if err != nil {
 		return nil, err
 	}

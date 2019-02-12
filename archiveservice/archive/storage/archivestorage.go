@@ -935,6 +935,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 	defer db.Close()
 
 	// Variable to return
+	//longList := NewLongList(0)
 	var longList LongList
 
 	// Create the domain (It might change in the future)

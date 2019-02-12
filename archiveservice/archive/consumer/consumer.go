@@ -103,6 +103,7 @@ func (s *SubmitConsumer) Close() {
 //								INIT								    //
 //======================================================================//
 var clientContext *ClientContext
+
 func InitMalContext(cctx *ClientContext) {
 	clientContext = cctx
 }
@@ -215,35 +216,34 @@ func StartRetrieveConsumer(providerURI *URI, objectType ObjectType, identifierLi
 
 // Invoke & Ack : TODO:
 func (consumer *InvokeConsumer) retrieveInvoke(objectType ObjectType, identifierList IdentifierList, longList LongList) (*ServiceError, error) {
-	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
+	// create a body for the operation call
+	body := consumer.op.NewBody()
+
 	// Encode ObjectType
-	err := objectType.Encode(encoder)
+	err := body.EncodeParameter(&objectType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode IdentifierList
-	err = identifierList.Encode(encoder)
+	err = body.EncodeParameter(&identifierList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode LongList
-	err = longList.Encode(encoder)
+	err = body.EncodeLastParameter(&longList, false)
 	if err != nil {
 		return nil, err
 	}
 
 	// Call Invoke operation
-	resp, err := consumer.op.Invoke(encoder.Body())
+	resp, err := consumer.op.Invoke(body)
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, err
 			}
@@ -264,9 +264,7 @@ func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, Element
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
 			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
-			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, nil, nil, err
 			}
@@ -276,17 +274,14 @@ func (consumer *InvokeConsumer) retrieveResponse() (*ArchiveDetailsList, Element
 		return nil, nil, nil, err
 	}
 
-	// Create the decoder
-	decoder := consumer.factory.NewDecoder(resp.Body)
-
 	// Decode ArchiveDetailsList
-	archiveDetailsList, err := decoder.DecodeElement(NullArchiveDetailsList)
+	archiveDetailsList, err := resp.DecodeParameter(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
 	// Decode ElementList
-	elementList, err := decoder.DecodeAbstractElement()
+	elementList, err := resp.DecodeLastParameter(nil, true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -368,42 +363,40 @@ func StartQueryConsumer(providerURI *URI, boolean *Boolean, objectType ObjectTyp
 
 // Progress & Ack : TODO:
 func (consumer *ProgressConsumer) queryProgress(boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
-	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
+	// create a body for the operation call
+	body := consumer.op.NewBody()
 
 	// Encode Boolean
-	err := encoder.EncodeNullableElement(boolean)
+	err := body.EncodeParameter(boolean)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode ObjectType
-	err = objectType.Encode(encoder)
+	err = body.EncodeParameter(&objectType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode ArchiveQueryList
-	err = archiveQueryList.Encode(encoder)
+	err = body.EncodeParameter(&archiveQueryList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode QueryFilterList
-	err = encoder.EncodeNullableAbstractElement(queryFilterList)
+	err = body.EncodeLastParameter(queryFilterList, true)
 	if err != nil {
 		return nil, err
 	}
 
 	// Call Progress operation
-	resp, err := consumer.op.Progress(encoder.Body())
+	resp, err := consumer.op.Progress(body)
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, err
 			}
@@ -423,10 +416,8 @@ func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if updt.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(updt.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(updt)
 			if err != nil {
 				return nil, nil, nil, nil, nil, err
 			}
@@ -437,29 +428,26 @@ func (consumer *ProgressConsumer) queryUpdate() (*ObjectType, *IdentifierList, *
 	}
 
 	if updt != nil {
-		// Create the decoder to decode the multiple variables
-		decoder := consumer.factory.NewDecoder(updt.Body)
-
 		// Decode ObjectType
-		objectType, err := decoder.DecodeNullableElement(NullObjectType)
+		objectType, err := updt.DecodeParameter(NullObjectType)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode IdentifierList
-		identifierList, err := decoder.DecodeNullableElement(NullIdentifierList)
+		identifierList, err := updt.DecodeParameter(NullIdentifierList)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode ArchiveDetailsList
-		archiveDetailsList, err := decoder.DecodeNullableElement(NullArchiveDetailsList)
+		archiveDetailsList, err := updt.DecodeParameter(NullArchiveDetailsList)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
 
 		// Decode ElementList
-		elementList, err := decoder.DecodeNullableAbstractElement()
+		elementList, err := updt.DecodeLastParameter(nil, true)
 		if err != nil {
 			return nil, nil, nil, nil, nil, err
 		}
@@ -476,10 +464,8 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, nil, nil, nil, nil, err
 			}
@@ -489,29 +475,26 @@ func (consumer *ProgressConsumer) queryResponse() (*ObjectType, *IdentifierList,
 		return nil, nil, nil, nil, nil, err
 	}
 
-	// Create the decoder to decode the multiple variables
-	decoder := consumer.factory.NewDecoder(resp.Body)
-
 	// Decode ObjectType
-	objectType, err := decoder.DecodeNullableElement(NullObjectType)
+	objectType, err := resp.DecodeParameter(NullObjectType)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode IdentifierList
-	identifierList, err := decoder.DecodeNullableElement(NullIdentifierList)
+	identifierList, err := resp.DecodeParameter(NullIdentifierList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode ArchiveDetailsList
-	archiveDetailsList, err := decoder.DecodeNullableElement(NullArchiveDetailsList)
+	archiveDetailsList, err := resp.DecodeParameter(NullArchiveDetailsList)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
 	// Decode ElementList
-	elementList, err := decoder.DecodeNullableAbstractElement()
+	elementList, err := resp.DecodeLastParameter(nil, true)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -564,37 +547,35 @@ func StartCountConsumer(providerURI *URI, objectType *ObjectType, archiveQueryLi
 
 // Invoke & Ack : TODO:
 func (consumer *InvokeConsumer) countInvoke(objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*ServiceError, error) {
-	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
+	// create a body for the operation call
+	body := consumer.op.NewBody()
 
 	// Encode ObjectType
-	err := encoder.EncodeNullableElement(objectType)
+	err := body.EncodeParameter(objectType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode ArchiveQueryList
-	err = encoder.EncodeNullableElement(archiveQueryList)
+	err = body.EncodeParameter(archiveQueryList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode QueryFilterList
-	err = encoder.EncodeNullableAbstractElement(queryFilterList)
+	err = body.EncodeLastParameter(queryFilterList, true)
 	if err != nil {
 		return nil, err
 	}
 
 	// Call Invoke operation
 	// TODO: we should retrieve the msg to verify if the ack is an error or not
-	resp, err := consumer.op.Invoke(encoder.Body())
+	resp, err := consumer.op.Invoke(body)
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, err
 			}
@@ -614,10 +595,8 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, *ServiceError, error
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -627,11 +606,8 @@ func (consumer *InvokeConsumer) countResponse() (*LongList, *ServiceError, error
 		return nil, nil, err
 	}
 
-	// Create the decoder
-	decoder := consumer.factory.NewDecoder(resp.Body)
-
 	// Decode LongList
-	longList, err := decoder.DecodeNullableElement(NullLongList)
+	longList, err := resp.DecodeLastParameter(NullLongList, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -667,48 +643,46 @@ func StartStoreConsumer(providerURI *URI, boolean *Boolean, objectType ObjectTyp
 
 // Request & Response : TODO:
 func (consumer *RequestConsumer) storeRequest(boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
-	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
+	// create a body for the operation call
+	body := consumer.op.NewBody()
 
 	// Encode Boolean
-	err := encoder.EncodeNullableElement(boolean)
+	err := body.EncodeParameter(boolean)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Encode ObjectType
-	err = objectType.Encode(encoder)
+	err = body.EncodeParameter(&objectType)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Encode IdentifierList
-	err = identifierList.Encode(encoder)
+	err = body.EncodeParameter(&identifierList)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Encode ArchiveDetailsList
-	err = archiveDetailsList.Encode(encoder)
+	err = body.EncodeParameter(&archiveDetailsList)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Encode ElementList
-	err = encoder.EncodeAbstractElement(elementList)
+	err = body.EncodeLastParameter(elementList, true)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Call Request operation and retrieve the Response
-	resp, err := consumer.op.Request(encoder.Body())
+	resp, err := consumer.op.Request(body)
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -718,11 +692,8 @@ func (consumer *RequestConsumer) storeRequest(boolean *Boolean, objectType Objec
 		return nil, nil, err
 	}
 
-	// Create the decoder
-	decoder := consumer.factory.NewDecoder(resp.Body)
-
 	// Decode LongList
-	longList, err := decoder.DecodeNullableElement(NullLongList)
+	longList, err := resp.DecodeLastParameter(NullLongList, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -758,42 +729,40 @@ func StartUpdateConsumer(providerURI *URI, objectType ObjectType, identifierList
 
 // Submit & Ack : TODO:
 func (consumer *SubmitConsumer) updateSubmit(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
-	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
+	// create a body for the operation call
+	body := consumer.op.NewBody()
 
 	// Encode ObjectType
-	err := objectType.Encode(encoder)
+	err := body.EncodeParameter(&objectType)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode IdentifierList
-	err = identifierList.Encode(encoder)
+	err = body.EncodeParameter(&identifierList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode ArchiveDetailsList
-	err = archiveDetailsList.Encode(encoder)
+	err = body.EncodeParameter(&archiveDetailsList)
 	if err != nil {
 		return nil, err
 	}
 
 	// Encode ElementList
-	err = encoder.EncodeAbstractElement(elementList)
+	err = body.EncodeLastParameter(elementList, true)
 	if err != nil {
 		return nil, err
 	}
 
 	// Call Submit operation
-	resp, err := consumer.op.Submit(encoder.Body())
+	resp, err := consumer.op.Submit(body)
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, err
 			}
@@ -834,36 +803,34 @@ func StartDeleteConsumer(providerURI *URI, objectType ObjectType, identifierList
 
 // Request & Reponse : TODO:
 func (consumer *RequestConsumer) deleteRequest(objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
-	// Create the encoder
-	encoder := consumer.factory.NewEncoder(make([]byte, 0, LENGTH))
+	// create a body for the operation call
+	body := consumer.op.NewBody()
 
 	// Encode ObjectType
-	err := objectType.Encode(encoder)
+	err := body.EncodeParameter(&objectType)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Encode IdentifierList
-	err = identifierList.Encode(encoder)
+	err = body.EncodeParameter(&identifierList)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Encode LongList
-	err = longList.Encode(encoder)
+	err = body.EncodeLastParameter(&longList, false)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// Call Request operation and retrieve the Response
-	resp, err := consumer.op.Request(encoder.Body())
+	resp, err := consumer.op.Request(body)
 	if err != nil {
 		// Verify if an error occurs during the operation
 		if resp.IsErrorMessage {
-			// Create the decoder
-			decoder := consumer.factory.NewDecoder(resp.Body)
 			// Decode the error
-			errorsList, err := DecodeError(decoder)
+			errorsList, err := DecodeError(resp)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -872,11 +839,9 @@ func (consumer *RequestConsumer) deleteRequest(objectType ObjectType, identifier
 		}
 		return nil, nil, err
 	}
-	// Create the decoder
-	decoder := consumer.factory.NewDecoder(resp.Body)
 
 	// Decode LongList
-	respLongList, err := decoder.DecodeElement(NullLongList)
+	respLongList, err := resp.DecodeLastParameter(NullLongList, false)
 	if err != nil {
 		return nil, nil, err
 	}

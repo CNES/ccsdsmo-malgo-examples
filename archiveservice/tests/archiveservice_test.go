@@ -1915,7 +1915,7 @@ func TestDeleteOK(t *testing.T) {
 	// Start the consumer
 	respLongList, errorsList, err = archiveService.Delete(providerURL, objectType, identifierList, *longList)
 
-	if errorsList != nil || err != nil || respLongList == nil {
+	if errorsList != nil || err != nil || respLongList == nil || respLongList.Size() == 0 {
 		t.FailNow()
 	}
 }

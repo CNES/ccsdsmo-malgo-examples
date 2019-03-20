@@ -98,6 +98,11 @@ func (*ArchiveDetails) GetTypeShortForm() Integer {
 // ----- Encoding and Decoding -----
 // Encodes this element using the supplied encoder
 func (a *ArchiveDetails) Encode(encoder Encoder) error {
+	specific := encoder.LookupSpecific(COM_ARCHIVE_DETAILS_SHORT_FORM)
+	if specific != nil {
+		return specific(a, encoder)
+	}
+	
 	// Encode instId (Long)
 	err := encoder.EncodeElement(&a.InstId)
 	if err != nil {
@@ -128,6 +133,10 @@ func (a *ArchiveDetails) Encode(encoder Encoder) error {
 
 // Decodes and instance of ArchiveDetails using the supplied decoder
 func (*ArchiveDetails) Decode(decoder Decoder) (Element, error) {
+	specific := decoder.LookupSpecific(COM_ARCHIVE_DETAILS_SHORT_FORM)
+	if specific != nil {
+		return specific(decoder)
+	}
 	return DecodeArchiveDetails(decoder)
 }
 

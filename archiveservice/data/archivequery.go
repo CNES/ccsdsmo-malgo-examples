@@ -26,6 +26,7 @@ package data
 import (
 	. "github.com/CNES/ccsdsmo-malgo/com"
 	. "github.com/CNES/ccsdsmo-malgo/mal"
+	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
 )
 
 // ArchiveQuery structure is used to specify filters on the
@@ -96,17 +97,17 @@ func (*ArchiveQuery) GetShortForm() Long {
 
 // Returns the number of the area this element belongs to
 func (a *ArchiveQuery) GetAreaNumber() UShort {
-	return a.Source.GetAreaNumber()
+	return COM_AREA_NUMBER
 }
 
 // Returns the version of the area this element belongs to
 func (a *ArchiveQuery) GetAreaVersion() UOctet {
-	return a.Source.GetAreaVersion()
+	return COM_AREA_VERSION
 }
 
 // Returns the number of the service this element belongs to
 func (a *ArchiveQuery) GetServiceNumber() UShort {
-	return a.Source.GetServiceNumber()
+	return ARCHIVE_SERVICE_SERVICE_NUMBER
 }
 
 // Returns the relative short form of the element type

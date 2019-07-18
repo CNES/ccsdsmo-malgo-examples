@@ -30,36 +30,36 @@ import (
 )
 
 // ################################################################################
-// Defines COM ArchiveDetailsList type
+// Defines COM CompositeFilterList type
 // ################################################################################
 
-type ArchiveDetailsList []*ArchiveDetails
+type CompositeFilterList []*CompositeFilter
 
 var (
-	NullArchiveDetailsList *ArchiveDetailsList = nil
+	NullCompositeFilterList *CompositeFilterList = nil
 )
 
 const (
-	COM_ARCHIVE_DETAILS_LIST_TYPE_SHORT_FORM Integer = -0x01
-	COM_ARCHIVE_DETAILS_LIST_SHORT_FORM      Long    = 0x2000201FFFFFF
+	COM_COMPOSITE_FILTER_LIST_TYPE_SHORT_FORM Integer = -0x03
+	COM_COMPOSITE_FILTER_LIST_SHORT_FORM      Long    = 0x2000201FFFFFD
 )
 
-func NewArchiveDetailsList(size int) *ArchiveDetailsList {
-	var list ArchiveDetailsList = ArchiveDetailsList(make([]*ArchiveDetails, size))
+func NewCompositeFilterList(size int) *CompositeFilterList {
+	var list CompositeFilterList = CompositeFilterList(make([]*CompositeFilter, size))
 	return &list
 }
 
 // ================================================================================
-// Defines COM ArchiveDetailsList type as an ElementList
+// Defines COM CompositeFilterList type as an ElementList
 // ================================================================================
-func (list *ArchiveDetailsList) Size() int {
+func (list *CompositeFilterList) Size() int {
 	if list != nil {
 		return len(*list)
 	}
 	return -1
 }
 
-func (list *ArchiveDetailsList) GetElementAt(i int) Element {
+func (list *CompositeFilterList) GetElementAt(i int) Element {
 	if list != nil {
 		if i < list.Size() {
 			return (*list)[i]
@@ -69,58 +69,58 @@ func (list *ArchiveDetailsList) GetElementAt(i int) Element {
 	return nil
 }
 
-func (list *ArchiveDetailsList) AppendElement(element Element) {
+func (list *CompositeFilterList) AppendElement(element Element) {
 	if list != nil {
-		*list = append(*list, element.(*ArchiveDetails))
+		*list = append(*list, element.(*CompositeFilter))
 	}
 }
 
-func (*ArchiveDetailsList) Composite() Composite {
-	return new(ArchiveDetailsList)
+func (*CompositeFilterList) Composite() Composite {
+	return new(CompositeFilterList)
 }
 
 // ================================================================================
-// Defines COM ArchiveDetailsList type as a MAL Element
+// Defines COM CompositeFilterList type as a MAL Element
 // ================================================================================
-// Registers COM ArchiveDetailsList type for polymorpsism handling
+// Registers COM CompositeFilterList type for polymorpsism handling
 func init() {
-	RegisterMALElement(COM_ARCHIVE_DETAILS_LIST_SHORT_FORM, NullArchiveDetailsList)
+	RegisterMALElement(COM_COMPOSITE_FILTER_LIST_SHORT_FORM, NullCompositeFilterList)
 }
 
 // Returns the absolute short form of the element type.
-func (*ArchiveDetailsList) GetShortForm() Long {
-	return COM_ARCHIVE_DETAILS_LIST_SHORT_FORM
+func (*CompositeFilterList) GetShortForm() Long {
+	return COM_COMPOSITE_FILTER_LIST_SHORT_FORM
 }
 
 // Returns the number of the area this element type belongs to.
-func (*ArchiveDetailsList) GetAreaNumber() UShort {
+func (*CompositeFilterList) GetAreaNumber() UShort {
 	return COM_AREA_NUMBER
 }
 
 // Returns the version of the area this element type belongs to.
-func (*ArchiveDetailsList) GetAreaVersion() UOctet {
+func (*CompositeFilterList) GetAreaVersion() UOctet {
 	return COM_AREA_VERSION
 }
 
 // Returns the number of the service this element type belongs to.
-func (*ArchiveDetailsList) GetServiceNumber() UShort {
+func (*CompositeFilterList) GetServiceNumber() UShort {
 	return ARCHIVE_SERVICE_SERVICE_NUMBER
 }
 
 // Returns the relative short form of the element type.
-func (*ArchiveDetailsList) GetTypeShortForm() Integer {
+func (*CompositeFilterList) GetTypeShortForm() Integer {
 	//	return MAL_ENTITY_REQUEST_TYPE_SHORT_FORM & 0x01FFFF00
-	return COM_ARCHIVE_QUERY_LIST_TYPE_SHORT_FORM
+	return COM_COMPOSITE_FILTER_LIST_TYPE_SHORT_FORM
 }
 
 // Encodes this element using the supplied encoder.
 // @param encoder The encoder to use, must not be null.
-func (list *ArchiveDetailsList) Encode(encoder Encoder) error {
-	err := encoder.EncodeUInteger(NewUInteger(uint32(len([]*ArchiveDetails(*list)))))
+func (list *CompositeFilterList) Encode(encoder Encoder) error {
+	err := encoder.EncodeUInteger(NewUInteger(uint32(len([]*CompositeFilter(*list)))))
 	if err != nil {
 		return err
 	}
-	for _, e := range []*ArchiveDetails(*list) {
+	for _, e := range []*CompositeFilter(*list) {
 		encoder.EncodeNullableElement(e)
 	}
 	return nil
@@ -129,38 +129,38 @@ func (list *ArchiveDetailsList) Encode(encoder Encoder) error {
 // Decodes an instance of this element type using the supplied decoder.
 // @param decoder The decoder to use, must not be null.
 // @return the decoded instance, may be not the same instance as this Element.
-func (list *ArchiveDetailsList) Decode(decoder Decoder) (Element, error) {
-	return DecodeArchiveDetailsList(decoder)
+func (list *CompositeFilterList) Decode(decoder Decoder) (Element, error) {
+	return DecodeCompositeFilterList(decoder)
 }
 
-// Decodes an instance of ArchiveDetailsList using the supplied decoder.
+// Decodes an instance of CompositeFilterList using the supplied decoder.
 // @param decoder The decoder to use, must not be null.
-// @return the decoded ArchiveDetailsList instance.
-func DecodeArchiveDetailsList(decoder Decoder) (*ArchiveDetailsList, error) {
+// @return the decoded CompositeFilterList instance.
+func DecodeCompositeFilterList(decoder Decoder) (*CompositeFilterList, error) {
 	size, err := decoder.DecodeUInteger()
 	if err != nil {
 		return nil, err
 	}
-	list := ArchiveDetailsList(make([]*ArchiveDetails, int(*size)))
+	list := CompositeFilterList(make([]*CompositeFilter, int(*size)))
 	for i := 0; i < len(list); i++ {
-		element, err := decoder.DecodeNullableElement(NullArchiveDetails)
+		element, err := decoder.DecodeNullableElement(NullCompositeFilter)
 		if err != nil {
 			return nil, err
 		}
-		list[i] = element.(*ArchiveDetails)
+		list[i] = element.(*CompositeFilter)
 	}
 	return &list, nil
 }
 
 // The method allows the creation of an element in a generic way, i.e., using the MAL Element polymorphism.
-func (list *ArchiveDetailsList) CreateElement() Element {
-	return NewArchiveDetailsList(0)
+func (list *CompositeFilterList) CreateElement() Element {
+	return NewCompositeFilterList(0)
 }
 
-func (list *ArchiveDetailsList) IsNull() bool {
+func (list *CompositeFilterList) IsNull() bool {
 	return list == nil
 }
 
-func (*ArchiveDetailsList) Null() Element {
-	return NullArchiveDetailsList
+func (*CompositeFilterList) Null() Element {
+	return NullCompositeFilterList
 }

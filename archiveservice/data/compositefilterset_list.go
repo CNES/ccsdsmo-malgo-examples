@@ -115,7 +115,7 @@ func (*CompositeFilterSetList) GetAreaVersion() UOctet {
 
 // Returns the number of the service this element type belongs to.
 func (*CompositeFilterSetList) GetServiceNumber() UShort {
-	return DEFAULT_SERVICE_NUMBER
+	return ARCHIVE_SERVICE_SERVICE_NUMBER
 }
 
 // Returns the relative short form of the element type.

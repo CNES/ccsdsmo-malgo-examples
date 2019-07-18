@@ -26,6 +26,7 @@ package data
 import (
 	. "github.com/CNES/ccsdsmo-malgo/com"
 	. "github.com/CNES/ccsdsmo-malgo/mal"
+	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
 )
 
 // ArchiveDetails structure is used to hold information about a single entry in an Archive
@@ -78,16 +79,16 @@ func (*ArchiveDetails) GetShortForm() Long {
 
 // Returns the number of the area this element belongs to
 func (a *ArchiveDetails) GetAreaNumber() UShort {
-	return a.Details.GetAreaNumber()
+	return COM_AREA_NUMBER
 }
 
 // Returns the version of the area this element belongs to
 func (a *ArchiveDetails) GetAreaVersion() UOctet {
-	return a.Details.GetAreaVersion()
+	return COM_AREA_VERSION
 }
 
 func (a *ArchiveDetails) GetServiceNumber() UShort {
-	return a.Details.GetServiceNumber()
+	return ARCHIVE_SERVICE_SERVICE_NUMBER
 }
 
 // Returns the relative short form of the element type

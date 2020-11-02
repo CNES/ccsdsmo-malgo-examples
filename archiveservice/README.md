@@ -5,7 +5,7 @@ MAL GO ARCHIVE SERVICE
 Introduction
 ============
 
-This service is an implementation of the **Archive Service** described in the CCSDS Recommendation **Mission Operations Common Object Model CCSDS 521.1-B-1**. It uses the High level **MAL GO API** available [here](https://github.com/CNES/ccsdsmo-malgo/).
+This service is an implementation of the **Archive Service** described in the CCSDS Recommendation **Mission Operations Common Object Model CCSDS 521.1-B-1**. It uses the High level **MAL GO API** available [here](https://github.com/CNES/ccsdsmo-malgo/) and the **MAL GO generator** available [here](https://github.com/CNES/ccsdsmo-malgo-stubgenerator/).
 
 
 Download this repository
@@ -336,3 +336,17 @@ if err != nil {
     // Do something else
 }
 ```
+
+Implementation details
+======================
+
+This Archive service has originally been implemented using the MAL/Go API. It has then be refactored to use the new go generator available [here](https://github.com/CNES/ccsdsmo-malgo-stubgenerator/). This new implementation can then be used as an example for using the go generator.
+
+The archive/storage directory holds the core implementation of the service. It has been left quite unchanged.
+The archive/provider directory has been considerably simplified by using the provider generated stubs. It implements the MAL standard API of the service and makes use of the storage part.
+The archive/consumer directory has been removed and completely replaced by the consumer generated stubs.
+The archive/service directory defines a higher level API, which is a choice of the developer of the service. This higher level API is no rule for any other service.
+
+The testarchivearea directory replaces the former data directory. It holds the definition of COM data types used in the tests. As those data types should be defined as MAL types, they have been declared in a standard XML file TestArchive.xml. The testarchivearea holds the result of the generator processing this area definition. An additional file named valueofsine_impl.go has been created to hold code that could not be generated.
+
+Examples for using the go generated code can then be found in the provider directory for the provider side, and in the service directory for the consumer side.

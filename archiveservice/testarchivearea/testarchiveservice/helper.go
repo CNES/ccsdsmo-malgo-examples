@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2018 CNES
+ * Copyright (c) 2020 CNES
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,16 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package data
+package testarchiveservice
 
 import (
-	. "github.com/CNES/ccsdsmo-malgo/mal"
+  "github.com/CNES/ccsdsmo-malgo/mal"
 )
 
-type QueryFilterList interface {
-	Composite
-	QueryFilterList() QueryFilterList
-	Size() int
-	GetElementAt(i int) QueryFilter
-	AppendElement(element Element)
-}
+const (
+  // standard service identifiers
+  SERVICE_NUMBER mal.UShort = 3
+  SERVICE_NAME = mal.Identifier("TestArchiveService")
+
+  // standard operation identifiers
+)
+

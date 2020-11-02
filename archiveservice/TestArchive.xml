@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mal:specification xmlns:com="http://www.ccsds.org/schema/COMSchema"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns:mal="http://www.ccsds.org/schema/ServiceSchema"
+                   comment="Area used to test https://github.com/CNES/ccsdsmo-malgo-examples/archiveservice">
+  <mal:area name="TestArchiveArea" number="1002" version="1"
+            comment="Test the go implementation of the Archive service.">
+    <mal:service xsi:type="com:ExtendedServiceType" name="TestArchiveService" number="3">
+      <mal:dataTypes>
+        <mal:composite name="ValueOfSine" shortFormPart="1"
+                       comment="Test value.">
+          <mal:extends>
+            <mal:type name="Composite" area="MAL"/>
+          </mal:extends>
+          <mal:field name="value" canBeNull="false">
+            <mal:type name="Float" area="MAL"/>
+          </mal:field>
+        </mal:composite>
+        <mal:composite name="Sine" shortFormPart="2"
+                       comment="Test value.">
+          <mal:extends>
+            <mal:type name="Composite" area="MAL"/>
+          </mal:extends>
+          <mal:field name="T" canBeNull="false">
+            <mal:type name="Long" area="MAL"/>
+          </mal:field>
+          <mal:field name="Y" canBeNull="false">
+            <mal:type name="Float" area="MAL"/>
+          </mal:field>
+        </mal:composite>
+      </mal:dataTypes>
+    </mal:service>
+  </mal:area>
+</mal:specification>

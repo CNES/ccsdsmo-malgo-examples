@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2018 CNES
+ * Copyright (c) 2018-2020 CNES
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-// Package storage : TODO:
 package storage
 
 import (
@@ -34,13 +33,13 @@ import (
 	"reflect"
 	"time"
 
-	. "github.com/CNES/ccsdsmo-malgo/com"
-	. "github.com/CNES/ccsdsmo-malgo/mal"
-	. "github.com/CNES/ccsdsmo-malgo/mal/encoding/binary"
+	"github.com/CNES/ccsdsmo-malgo/com"
+	"github.com/CNES/ccsdsmo-malgo/com/archive"
+	"github.com/CNES/ccsdsmo-malgo/mal"
+	"github.com/CNES/ccsdsmo-malgo/mal/encoding/binary"
 
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
 	"github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/utils"
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
 
 	// Init mysql driver
 	_ "github.com/go-sql-driver/mysql"
@@ -76,7 +75,7 @@ var databaseFields = []string{
 //======================================================================//
 
 // RetrieveInArchive : TODO:
-func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, objectInstanceIdentifierList LongList) (ArchiveDetailsList, ElementList, error) {
+func RetrieveInArchive(objectType com.ObjectType, identifierList mal.IdentifierList, objectInstanceIdentifierList mal.LongList) (archive.ArchiveDetailsList, mal.ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -99,7 +98,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	// Transform Type Short Form to List Short Form
 	listShortForm := utils.ConvertToListShortForm(objectType)
 	// Get Element in the MAL Registry
-	element, err := LookupMALElement(listShortForm)
+	element, err := mal.LookupMALElement(listShortForm)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,9 +108,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	// a.objectInstanceIdentifier = s.objectInstanceIdentifier;
 
 	// Create variables to return the elements and information
-	var archiveDetailsList = *NewArchiveDetailsList(0)
-	var elementList = element.(ElementList)
-	elementList = elementList.CreateElement().(ElementList)
+	var archiveDetailsList = *archive.NewArchiveDetailsList(0)
+	var elementList = element.(mal.ElementList)
+	elementList = elementList.CreateElement().(mal.ElementList)
 	// Then, retrieve these elements and their information
 	if !isAll {
 		for i := 0; i < objectInstanceIdentifierList.Size(); i++ {
@@ -119,9 +118,9 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			var encodedObjectId []byte
 			var encodedElement []byte
 			var timestamp time.Time
-			var related Long
-			var network Identifier
-			var provider URI
+			var related mal.Long
+			var network mal.Identifier
+			var provider mal.URI
 
 			// We can retrieve this object
 			err = tx.QueryRow("SELECT element, timestamp, `details.related`, network, provider, `details.source` FROM "+TABLE+" WHERE objectInstanceIdentifier = ? AND area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
@@ -138,7 +137,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 				&encodedObjectId)
 			if err != nil {
 				if err.Error() == "sql: no rows in result set" {
-					return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+					return nil, nil, errors.New(string(mal.ERROR_UNKNOWN_MESSAGE))
 				}
 				return nil, nil, err
 			}
@@ -153,15 +152,15 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			// First, create the ObjectDetails
 			var prelated = &related
 			if related == 0 {
-				prelated = NullLong
+				prelated = mal.NullLong
 			}
-			objectDetails := ObjectDetails{prelated, objectId}
+			objectDetails := com.ObjectDetails{prelated, objectId}
 			// Create the ArchiveDetails
-			archiveDetails := &ArchiveDetails{
+			archiveDetails := &archive.ArchiveDetails{
 				*objectInstanceIdentifierList[i],
 				objectDetails,
 				&network,
-				NewFineTime(timestamp),
+				mal.NewFineTime(timestamp),
 				&provider,
 			}
 
@@ -171,13 +170,13 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 	} else {
 		// Retrieve all these elements (no particular object instance identifiers)
 		// Variables to store the different elements present in the database
-		var objectInstanceIdentifier Long
+		var objectInstanceIdentifier mal.Long
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related Long
-		var network Identifier
-		var provider URI
+		var related mal.Long
+		var network mal.Identifier
+		var provider mal.URI
 
 		// Retrieve this object and its archive details in the archive
 		rows, err := tx.Query("SELECT objectInstanceIdentifier, element, timestamp, `details.related`, network, provider, `details.source` FROM "+TABLE+" WHERE area = ? AND service = ? AND version = ? AND number = ? AND domain = ?",
@@ -212,15 +211,15 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 			// First, create the ObjectDetails
 			var prelated = &related
 			if related == 0 {
-				prelated = NullLong
+				prelated = mal.NullLong
 			}
-			objectDetails := ObjectDetails{prelated, objectId}
+			objectDetails := com.ObjectDetails{prelated, objectId}
 			// Create the ArchiveDetails
-			archiveDetails := &ArchiveDetails{
+			archiveDetails := &archive.ArchiveDetails{
 				objectInstanceIdentifier,
 				objectDetails,
 				&network,
-				NewFineTime(timestamp),
+				mal.NewFineTime(timestamp),
 				&provider,
 			}
 
@@ -230,7 +229,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 		}
 
 		if countElements == 0 {
-			return nil, nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+			return nil, nil, errors.New(string(mal.ERROR_UNKNOWN_MESSAGE))
 		}
 	}
 
@@ -245,7 +244,7 @@ func RetrieveInArchive(objectType ObjectType, identifierList IdentifierList, obj
 //======================================================================//
 
 // QueryArchive : TODO:
-func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) ([]*ObjectType, []*ArchiveDetailsList, []*IdentifierList, []ElementList, error) {
+func QueryArchive(boolean *mal.Boolean, objectType com.ObjectType, archiveQuery archive.ArchiveQuery, queryFilter archive.QueryFilter) ([]*com.ObjectType, []*archive.ArchiveDetailsList, []*mal.IdentifierList, []mal.ElementList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -268,25 +267,25 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	}
 
 	// Variables to return
-	var objectTypeToReturn []*ObjectType
-	var identifierListToReturn []*IdentifierList
-	var archiveDetailsListToReturn []*ArchiveDetailsList
-	var elementListToReturn []ElementList
+	var objectTypeToReturn []*com.ObjectType
+	var identifierListToReturn []*mal.IdentifierList
+	var archiveDetailsListToReturn []*archive.ArchiveDetailsList
+	var elementListToReturn []mal.ElementList
 
 	if boolean != nil && *boolean == true && isObjectTypeEqualToZero == true {
 		// Retrieve all of the elements
 		// Variables to store the different elements present in the database
-		var objectInstanceIdentifier Long
+		var objectInstanceIdentifier mal.Long
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related Long
-		var network Identifier
-		var provider URI
-		var area UShort
-		var service UShort
-		var version UOctet
-		var number UShort
+		var related mal.Long
+		var network mal.Identifier
+		var provider mal.URI
+		var area mal.UShort
+		var service mal.UShort
+		var version mal.UOctet
+		var number mal.UShort
 		var domain string
 
 		rows, err := tx.Query(query)
@@ -298,7 +297,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		// TODO: find a name for this attribute
 		var findASmartName []interface{}
 		// Map for the different object types
-		var objectTypeMap = make(map[ObjectType]uint)
+		var objectTypeMap = make(map[com.ObjectType]uint)
 		var countObjectType uint
 		// Map for the different domains
 		var domainMap = make(map[string]uint)
@@ -310,13 +309,13 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			}
 			var prelated = &related
 			if related == 0 {
-				prelated = NullLong
+				prelated = mal.NullLong
 			}
 
 			//
 			var isAlreadyUsed = true
 			// Verify the object type value
-			objectTypeFromDB := ObjectType{area, service, version, number}
+			objectTypeFromDB := com.ObjectType{area, service, version, number}
 			if _, ok := objectTypeMap[objectTypeFromDB]; !ok {
 				objectTypeMap[objectTypeFromDB] = countObjectType
 				countObjectType++
@@ -346,11 +345,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				objectDet := ObjectDetails{
+				objectDet := com.ObjectDetails{
 					prelated,
 					objId,
 				}
-				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 				// Append this ArchiveDetails to the desired ArchiveDetailsList
 				archiveDetailsListToReturn[index].AppendElement(archDetails)
 
@@ -373,17 +372,17 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
 
 				// ArchiveDetailsList
-				archDetailsList := NewArchiveDetailsList(0)
+				archDetailsList := archive.NewArchiveDetailsList(0)
 				// Decode the object id
 				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				objectDet := ObjectDetails{
+				objectDet := com.ObjectDetails{
 					prelated,
 					objId,
 				}
-				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 				archDetailsList.AppendElement(archDetails)
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 
@@ -397,9 +396,9 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				// Transform Type Short Form to List Short Form
 				listShortForm := utils.ConvertToListShortForm(objectTypeFromDB)
 				// Get Element in the MAL Registry
-				element, err := LookupMALElement(listShortForm)
-				var elementList = element.(ElementList)
-				elementList = elementList.CreateElement().(ElementList)
+				element, err := mal.LookupMALElement(listShortForm)
+				var elementList = element.(mal.ElementList)
+				elementList = elementList.CreateElement().(mal.ElementList)
 
 				elementList.AppendElement(elem)
 				elementListToReturn = append(elementListToReturn, elementList)
@@ -408,18 +407,18 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	} else if boolean != nil && *boolean == true && isObjectTypeEqualToZero == false {
 		// Retrieve all of the elements unless the object type
 		// Variables to store the different elements present in the database
-		var objectInstanceIdentifier Long
+		var objectInstanceIdentifier mal.Long
 		var encodedObjectId []byte
 		var encodedElement []byte
 		var timestamp time.Time
-		var related Long
-		var network Identifier
-		var provider URI
+		var related mal.Long
+		var network mal.Identifier
+		var provider mal.URI
 		var domain string
-		var area UShort
-		var service UShort
-		var version UOctet
-		var number UShort
+		var area mal.UShort
+		var service mal.UShort
+		var version mal.UOctet
+		var number mal.UShort
 
 		rows, err := tx.Query(query)
 		if err != nil {
@@ -436,7 +435,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			}
 			var prelated = &related
 			if related == 0 {
-				prelated = NullLong
+				prelated = mal.NullLong
 			}
 
 			//
@@ -455,11 +454,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				objectDet := ObjectDetails{
+				objectDet := com.ObjectDetails{
 					Related: prelated,
 					Source:  objID,
 				}
-				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 				// Append this ArchiveDetails to the desired ArchiveDetailsList
 				archiveDetailsListToReturn[domainMap[domain]].AppendElement(archDetails)
 
@@ -479,17 +478,17 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				objectTypeToReturn = append(objectTypeToReturn, nil)
 
 				// ArchiveDetailsList
-				archDetailsList := NewArchiveDetailsList(0)
+				archDetailsList := archive.NewArchiveDetailsList(0)
 				// Decode the object id
 				objID, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				objectDet := ObjectDetails{
+				objectDet := com.ObjectDetails{
 					Related: prelated,
 					Source:  objID,
 				}
-				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 				archDetailsList.AppendElement(archDetails)
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 
@@ -500,11 +499,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 					return nil, nil, nil, nil, err
 				}
 				// Transform Type Short Form to List Short Form
-				listShortForm := utils.ConvertToListShortForm(ObjectType{Area: area, Service: service, Version: version, Number: number})
+				listShortForm := utils.ConvertToListShortForm(com.ObjectType{Area: area, Service: service, Version: version, Number: number})
 				// Get Element in the MAL Registry
-				element, err := LookupMALElement(listShortForm)
-				var elementList = element.(ElementList)
-				elementList = elementList.CreateElement().(ElementList)
+				element, err := mal.LookupMALElement(listShortForm)
+				var elementList = element.(mal.ElementList)
+				elementList = elementList.CreateElement().(mal.ElementList)
 
 				elementList.AppendElement(elem)
 				elementListToReturn = append(elementListToReturn, elementList)
@@ -513,16 +512,16 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	} else if (boolean == nil || *boolean == false) && isObjectTypeEqualToZero == true {
 		// Retrieve only the object type and the archive details
 		// Variables to store the different elements present in the database
-		var objectInstanceIdentifier Long
+		var objectInstanceIdentifier mal.Long
 		var encodedObjectId []byte
 		var timestamp time.Time
-		var related Long
-		var network Identifier
-		var provider URI
-		var area UShort
-		var service UShort
-		var version UOctet
-		var number UShort
+		var related mal.Long
+		var network mal.Identifier
+		var provider mal.URI
+		var area mal.UShort
+		var service mal.UShort
+		var version mal.UOctet
+		var number mal.UShort
 
 		rows, err := tx.Query(query)
 		if err != nil {
@@ -530,7 +529,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		}
 
 		// Map for the different object types
-		var objectTypeMap = make(map[ObjectType]uint)
+		var objectTypeMap = make(map[com.ObjectType]uint)
 		var countObjectType uint
 
 		for rows.Next() {
@@ -539,13 +538,13 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			}
 			var prelated = &related
 			if related == 0 {
-				prelated = NullLong
+				prelated = mal.NullLong
 			}
 
 			//
 			var isAlreadyUsed = true
 			// Verify the object type value
-			objectTypeFromDB := ObjectType{area, service, version, number}
+			objectTypeFromDB := com.ObjectType{area, service, version, number}
 			if _, ok := objectTypeMap[objectTypeFromDB]; !ok {
 				objectTypeMap[objectTypeFromDB] = countObjectType
 				countObjectType++
@@ -559,11 +558,11 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				objectDet := ObjectDetails{
+				objectDet := com.ObjectDetails{
 					prelated,
 					objId,
 				}
-				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 				// Append this ArchiveDetails to the desired ArchiveDetailsList
 				archiveDetailsListToReturn[objectTypeMap[objectTypeFromDB]].AppendElement(archDetails)
 
@@ -575,34 +574,34 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 				objectTypeToReturn = append(objectTypeToReturn, &objectTypeFromDB)
 
 				// ArchiveDetailsList
-				archDetailsList := NewArchiveDetailsList(0)
+				archDetailsList := archive.NewArchiveDetailsList(0)
 				// Decode the object id
 				objId, err := utils.DecodeObjectID(encodedObjectId)
 				if err != nil {
 					return nil, nil, nil, nil, err
 				}
-				objectDet := ObjectDetails{
+				objectDet := com.ObjectDetails{
 					prelated,
 					objId,
 				}
-				archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+				archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 				archDetailsList.AppendElement(archDetails)
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 
 				// ElementList
-				var longList *LongList
+				var longList *mal.LongList
 				elementListToReturn = append(elementListToReturn, longList)
 			}
 		}
 	} else { // (*boolean == false or boolean == nil) and isObjectTypeEqualToZero == false
 		// Retrieve only the archive details
 		// Variables to store the different elements present in the database
-		var objectInstanceIdentifier Long
+		var objectInstanceIdentifier mal.Long
 		var encodedObjectId []byte
 		var timestamp time.Time
-		var related Long
-		var network Identifier
-		var provider URI
+		var related mal.Long
+		var network mal.Identifier
+		var provider mal.URI
 
 		rows, err := tx.Query(query)
 		if err != nil {
@@ -614,7 +613,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 		// Set the objectTypeToReturn to null
 		objectTypeToReturn = append(objectTypeToReturn, nil)
 		// Set the ElementList to null
-		var longList *LongList
+		var longList *mal.LongList
 		elementListToReturn = append(elementListToReturn, longList)
 
 		var isAlreadyUsed = false
@@ -624,7 +623,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			}
 			var prelated = &related
 			if related == 0 {
-				prelated = NullLong
+				prelated = mal.NullLong
 			}
 
 			// ArchiveDetailsList
@@ -633,15 +632,15 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
-			objectDet := ObjectDetails{
+			objectDet := com.ObjectDetails{
 				prelated,
 				objId,
 			}
-			archDetails := &ArchiveDetails{objectInstanceIdentifier, objectDet, &network, NewFineTime(timestamp), &provider}
+			archDetails := &archive.ArchiveDetails{objectInstanceIdentifier, objectDet, &network, mal.NewFineTime(timestamp), &provider}
 			// Append this ArchiveDetails to the desired ArchiveDetailsList
 			if !isAlreadyUsed {
 				// ArchiveDetailsList
-				archDetailsList := NewArchiveDetailsList(0)
+				archDetailsList := archive.NewArchiveDetailsList(0)
 				archDetailsList.AppendElement(archDetails)
 				archiveDetailsListToReturn = append(archiveDetailsListToReturn, archDetailsList)
 				isAlreadyUsed = true
@@ -655,7 +654,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 	// list (if it is equal to 0 we have to append a nil element to
 	// each list)
 	if len(archiveDetailsListToReturn) == 0 {
-		var longList *LongList
+		var longList *mal.LongList
 		objectTypeToReturn = append(objectTypeToReturn, nil)
 		archiveDetailsListToReturn = append(archiveDetailsListToReturn, nil)
 		identifierListToReturn = append(identifierListToReturn, nil)
@@ -670,7 +669,7 @@ func QueryArchive(boolean *Boolean, objectType ObjectType, archiveQuery ArchiveQ
 }
 
 // verifyParameters : TODO:
-func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
+func verifyParameters(archiveQuery archive.ArchiveQuery, queryFilter archive.QueryFilter) error {
 	// Check sortFieldName value
 	var isSortFieldNameADefinedField = false
 	for i := 0; i < len(databaseFields); i++ {
@@ -687,18 +686,18 @@ func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error 
 
 	// Check if QueryFilter doesn't contain an error
 	if queryFilter != nil {
-		compositerFilterSet := queryFilter.(*CompositeFilterSet)
+		compositerFilterSet := queryFilter.(*archive.CompositeFilterSet)
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
-			var filter = compositerFilterSet.Filters.GetElementAt(i).(*CompositeFilter)
-			if (filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_GREATER || filter.Type == COM_EXPRESSIONOPERATOR_GREATER_OR_EQUAL || filter.Type == COM_EXPRESSIONOPERATOR_LESS || filter.Type == COM_EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == nil {
+			var filter = compositerFilterSet.Filters.GetElementAt(i).(*archive.CompositeFilter)
+			if (filter.Type == archive.EXPRESSIONOPERATOR_CONTAINS || filter.Type == archive.EXPRESSIONOPERATOR_ICONTAINS || filter.Type == archive.EXPRESSIONOPERATOR_GREATER || filter.Type == archive.EXPRESSIONOPERATOR_GREATER_OR_EQUAL || filter.Type == archive.EXPRESSIONOPERATOR_LESS || filter.Type == archive.EXPRESSIONOPERATOR_LESS_OR_EQUAL) && filter.FieldValue == nil {
 				return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not contain NULL value")
-			} else if _, ok := filter.FieldValue.(*Blob); ok {
-				if filter.Type != COM_EXPRESSIONOPERATOR_EQUAL && filter.Type != COM_EXPRESSIONOPERATOR_DIFFER {
+			} else if _, ok := filter.FieldValue.(*mal.Blob); ok {
+				if filter.Type != archive.EXPRESSIONOPERATOR_EQUAL && filter.Type != archive.EXPRESSIONOPERATOR_DIFFER {
 					return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a blob")
 				}
-			} else if filter.Type == COM_EXPRESSIONOPERATOR_CONTAINS || filter.Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
-				if _, ok := filter.FieldValue.(*String); !ok {
+			} else if filter.Type == archive.EXPRESSIONOPERATOR_CONTAINS || filter.Type == archive.EXPRESSIONOPERATOR_ICONTAINS {
+				if _, ok := filter.FieldValue.(*mal.String); !ok {
 					return errors.New(string(ARCHIVE_SERVICE_QUERY_QUERY_FILTER_ERROR) + ": must not use this expression operator for a non-String")
 				}
 			}
@@ -713,7 +712,7 @@ func verifyParameters(archiveQuery ArchiveQuery, queryFilter QueryFilter) error 
 //======================================================================//
 
 // CountInArchive : TODO:
-func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, error) {
+func CountInArchive(objectType com.ObjectType, archiveQueryList archive.ArchiveQueryList, queryFilterList archive.QueryFilterList) (*mal.LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -722,12 +721,12 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 	defer db.Close()
 
 	//
-	var longList = NewLongList(0)
+	var longList = mal.NewLongList(0)
 
 	for i := 0; i < archiveQueryList.Size(); i++ {
 		// Verify the parameters
 		if queryFilterList != nil {
-			err = verifyParameters(*archiveQueryList[i], queryFilterList.GetElementAt(i))
+			err = verifyParameters(*archiveQueryList[i], queryFilterList.GetElementAt(i).(archive.QueryFilter))
 		} else {
 			err = verifyParameters(*archiveQueryList[i], nil)
 		}
@@ -737,7 +736,7 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 		// Create the query
 		var query string
 		if queryFilterList != nil {
-			query, err = createCountQuery(objectType, *archiveQueryList[i], queryFilterList.GetElementAt(i))
+			query, err = createCountQuery(objectType, *archiveQueryList[i], queryFilterList.GetElementAt(i).(archive.QueryFilter))
 		} else {
 			query, err = createCountQuery(objectType, *archiveQueryList[i], nil)
 		}
@@ -754,7 +753,7 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 		}
 
 		// Add this response in the long list
-		longList.AppendElement(NewLong(response))
+		longList.AppendElement(mal.NewLong(response))
 	}
 
 	// Commit changes
@@ -768,7 +767,7 @@ func CountInArchive(objectType ObjectType, archiveQueryList ArchiveQueryList, qu
 //======================================================================//
 
 // StoreInArchive : Use this function to store objects in an COM archive
-func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, error) {
+func StoreInArchive(boolean *mal.Boolean, objectType com.ObjectType, identifierList mal.IdentifierList, archiveDetailsList archive.ArchiveDetailsList, elementList mal.ElementList) (*mal.LongList, error) {
 	rand.Seed(time.Now().UnixNano())
 
 	// Create the transaction to execute future queries
@@ -779,20 +778,20 @@ func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList Iden
 	defer db.Close()
 
 	// Variable to return all the object instance identifiers
-	var longList *LongList
+	var longList *mal.LongList
 
 	// Create the domain (It might change in the future)
 	domain := utils.AdaptDomainToString(identifierList)
 
 	// Init the list to return (if boolean is not equal to false)
 	if boolean != nil && *boolean {
-		longList = NewLongList(0)
+		longList = mal.NewLongList(0)
 	}
 	for i := 0; i < archiveDetailsList.Size(); i++ {
 		if archiveDetailsList[i].InstId == 0 {
 			// We have to create a new and unused object instance identifier
 			for {
-				var objectInstanceIdentifier = rand.Int63n(int64(LONG_MAX))
+				var objectInstanceIdentifier = rand.Int63n(int64(mal.LONG_MAX))
 				isObjInstIDInDB, err := isObjectInstanceIdentifierInDatabase(tx, objectInstanceIdentifier)
 				if err != nil {
 					// An error occurred, do a rollback
@@ -810,7 +809,7 @@ func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList Iden
 
 					if boolean != nil && *boolean {
 						// Insert this new object instance identifier in the returned list
-						longList.AppendElement(NewLong(objectInstanceIdentifier))
+						longList.AppendElement(mal.NewLong(objectInstanceIdentifier))
 					}
 
 					break
@@ -827,7 +826,7 @@ func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList Iden
 			if isObjInstIDInDB {
 				// This object is already in the database, do a rollback and raise a DUPLICATE error
 				tx.Rollback()
-				return nil, errors.New(string(COM_ERROR_DUPLICATE))
+				return nil, errors.New(string(com.ERROR_DUPLICATE))
 			}
 
 			// This object is not present in the archive
@@ -840,7 +839,7 @@ func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList Iden
 
 			if boolean != nil && *boolean {
 				// Insert this new object instance identifier in the returned list
-				longList.AppendElement(NewLong(int64(archiveDetailsList[i].InstId)))
+				longList.AppendElement(mal.NewLong(int64(archiveDetailsList[i].InstId)))
 			}
 		}
 	}
@@ -856,7 +855,7 @@ func StoreInArchive(boolean *Boolean, objectType ObjectType, identifierList Iden
 //======================================================================//
 
 // UpdateArchive : TODO:
-func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) error {
+func UpdateArchive(objectType com.ObjectType, identifierList mal.IdentifierList, archiveDetailsList archive.ArchiveDetailsList, elementList mal.ElementList) error {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -881,7 +880,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 		if err != nil {
 			tx.Rollback()
 			if err.Error() == "sql: no rows in result set" {
-				return errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+				return errors.New(string(mal.ERROR_UNKNOWN_MESSAGE))
 			}
 			return err
 		}
@@ -891,7 +890,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 			tx.Rollback()
 			return err
 		}
-		var related Long = 0
+		var related mal.Long = 0
 		if !archiveDetailsList[i].Details.Related.IsNull() {
 			related = *archiveDetailsList[i].Details.Related
 		}
@@ -926,7 +925,7 @@ func UpdateArchive(objectType ObjectType, identifierList IdentifierList, archive
 //======================================================================//
 
 // DeleteInArchive : TODO:
-func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longListRequest LongList) (LongList, error) {
+func DeleteInArchive(objectType com.ObjectType, identifierList mal.IdentifierList, longListRequest mal.LongList) (mal.LongList, error) {
 	// Create the transaction to execute future queries
 	db, tx, err := createTransaction()
 	if err != nil {
@@ -936,7 +935,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 
 	// Variable to return
 	//longList := NewLongList(0)
-	var longList LongList
+	var longList mal.LongList
 
 	// Create the domain (It might change in the future)
 	domain := utils.AdaptDomainToString(identifierList)
@@ -964,7 +963,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 
 		var countElements int
 		for rows.Next() {
-			var instID Long
+			var instID mal.Long
 			if err = rows.Scan(&instID); err != nil {
 				return nil, err
 			}
@@ -974,7 +973,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 		}
 
 		if countElements == 0 {
-			return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+			return nil, errors.New(string(mal.ERROR_UNKNOWN_MESSAGE))
 		}
 
 		// Delete all these objects
@@ -1009,7 +1008,7 @@ func DeleteInArchive(objectType ObjectType, identifierList IdentifierList, longL
 			if err != nil {
 				tx.Rollback()
 				if err.Error() == "sql: no rows in result set" {
-					return nil, errors.New(string(MAL_ERROR_UNKNOWN_MESSAGE))
+					return nil, errors.New(string(mal.ERROR_UNKNOWN_MESSAGE))
 				}
 				return nil, err
 			}
@@ -1087,13 +1086,13 @@ func isObjectInstanceIdentifierInDatabase(tx *sql.Tx, objectInstanceIdentifier i
 }
 
 // insertInDatabase: This function allows to insert an element in the archive
-func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element Element, objectType ObjectType, domain String, archiveDetails ArchiveDetails) error {
+func insertInDatabase(tx *sql.Tx, objectInstanceIdentifier int64, element mal.Element, objectType com.ObjectType, domain mal.String, archiveDetails archive.ArchiveDetails) error {
 	// Encode the Element and the ObjectId from the ArchiveDetails
 	encodedElement, encodedObjectID, err := utils.EncodeElements(element, archiveDetails.Details.Source)
 	if err != nil {
 		return err
 	}
-	var related Long = 0
+	var related mal.Long = 0
 	if !archiveDetails.Details.Related.IsNull() {
 		related = *archiveDetails.Details.Related
 	}
@@ -1150,7 +1149,7 @@ func resetAutoIncrement(tx *sql.Tx) error {
 }
 
 // createCountQuery allows the provider to create automatically a query for the Count operation
-func createCountQuery(objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
+func createCountQuery(objectType com.ObjectType, archiveQuery archive.ArchiveQuery, queryFilter archive.QueryFilter) (string, error) {
 	var queryBuffer bytes.Buffer
 	// Only CompositeFilterSet type should be used
 	queryBuffer.WriteString("SELECT COUNT(id)")
@@ -1164,7 +1163,7 @@ func createCountQuery(objectType ObjectType, archiveQuery ArchiveQuery, queryFil
 }
 
 // createQuery allows the provider to create automatically a query for the Query operation
-func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZero bool, archiveQuery ArchiveQuery, queryFilter QueryFilter) (string, error) {
+func createQuery(boolean *mal.Boolean, objectType com.ObjectType, isObjectTypeEqualToZero bool, archiveQuery archive.ArchiveQuery, queryFilter archive.QueryFilter) (string, error) {
 	var queryBuffer bytes.Buffer
 	// Only CompositeFilterSet type should be used
 	queryBuffer.WriteString("SELECT objectInstanceIdentifier, timestamp, `details.related`, network, provider, `details.source`")
@@ -1187,7 +1186,7 @@ func createQuery(boolean *Boolean, objectType ObjectType, isObjectTypeEqualToZer
 }
 
 // createCommonQuery is a common way of generating a part of a query
-func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archiveQuery ArchiveQuery, queryFilter QueryFilter) error {
+func createCommonQuery(queryBuffer *bytes.Buffer, objectType com.ObjectType, archiveQuery archive.ArchiveQuery, queryFilter archive.QueryFilter) error {
 	// Prepare the query for the conditions
 	queryBuffer.WriteString(" FROM " + TABLE + " WHERE")
 
@@ -1254,7 +1253,7 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 
 		// Encode the ObjectId
 		// Create the factory
-		factory := new(FixedBinaryEncoding)
+		factory := new(binary.FixedBinaryEncoding)
 
 		// Create the encoder
 		encoder := factory.NewEncoder(make([]byte, 0, 8192))
@@ -1281,25 +1280,25 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 
 	// Add query filter conditions
 	if queryFilter != nil {
-		compositerFilterSet := queryFilter.(*CompositeFilterSet)
+		compositerFilterSet := queryFilter.(*archive.CompositeFilterSet)
 
 		for i := 0; i < compositerFilterSet.Filters.Size(); i++ {
 			utils.CheckCondition(&isThereAlreadyACondition, queryBuffer)
-			var fieldValue = (*compositerFilterSet.Filters)[i].FieldValue
+			var fieldValue = compositerFilterSet.Filters[i].FieldValue
 			// Transform the expresion operator
-			expressionOperator := (*compositerFilterSet.Filters)[i].Type.TransformOperator()
-			if (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_CONTAINS || (*compositerFilterSet.Filters)[i].Type == COM_EXPRESSIONOPERATOR_ICONTAINS {
-				queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
+			expressionOperator := TransformOperator(compositerFilterSet.Filters[i].Type)
+			if compositerFilterSet.Filters[i].Type == archive.EXPRESSIONOPERATOR_CONTAINS || compositerFilterSet.Filters[i].Type == archive.EXPRESSIONOPERATOR_ICONTAINS {
+				queryBuffer.WriteString(fmt.Sprintf(" %s %s", compositerFilterSet.Filters[i].FieldName,
 					expressionOperator))
 				queryBuffer.WriteString(fmt.Sprintf("%v", reflect.ValueOf(fieldValue).Elem().Interface()))
 				queryBuffer.WriteString("%'")
 			} else {
 				if fieldValue == nil {
-					queryBuffer.WriteString(fmt.Sprintf(" %s %s %s", (*compositerFilterSet.Filters)[i].FieldName,
+					queryBuffer.WriteString(fmt.Sprintf(" %s %s %s", compositerFilterSet.Filters[i].FieldName,
 						expressionOperator,
 						"NULL"))
 				} else {
-					queryBuffer.WriteString(fmt.Sprintf(" %s %s", (*compositerFilterSet.Filters)[i].FieldName,
+					queryBuffer.WriteString(fmt.Sprintf(" %s %s", compositerFilterSet.Filters[i].FieldName,
 						expressionOperator))
 					queryBuffer.WriteString(fmt.Sprintf(" %v", reflect.ValueOf(fieldValue).Elem().Interface()))
 				}
@@ -1323,4 +1322,28 @@ func createCommonQuery(queryBuffer *bytes.Buffer, objectType ObjectType, archive
 	}
 
 	return nil
+}
+
+// TransformOperator transforms an ExpressionOperator to a String
+func TransformOperator(e archive.ExpressionOperator) string {
+	switch e {
+	case archive.EXPRESSIONOPERATOR_EQUAL:
+		return "="
+	case archive.EXPRESSIONOPERATOR_DIFFER:
+		return "!="
+	case archive.EXPRESSIONOPERATOR_GREATER:
+		return ">"
+	case archive.EXPRESSIONOPERATOR_GREATER_OR_EQUAL:
+		return ">="
+	case archive.EXPRESSIONOPERATOR_LESS:
+		return "<"
+	case archive.EXPRESSIONOPERATOR_LESS_OR_EQUAL:
+		return "<="
+	case archive.EXPRESSIONOPERATOR_CONTAINS:
+		return "LIKE '%"
+	case archive.EXPRESSIONOPERATOR_ICONTAINS:
+		return "NOT LIKE '%"
+	default:
+		return ""
+	}
 }

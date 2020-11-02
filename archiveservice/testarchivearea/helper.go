@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2018 CNES
+ * Copyright (c) 2020 CNES
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package data
+package testarchivearea
 
 import (
-	. "github.com/CNES/ccsdsmo-malgo/mal"
+  "github.com/CNES/ccsdsmo-malgo/mal"
 )
 
-// QueryFilter is the base structure for archive filters
-type QueryFilter interface {
-	Composite
-	QueryFilter() QueryFilter
-}
+const (
+  AREA_NUMBER mal.UShort = 1002
+  AREA_VERSION mal.UOctet = 1
+  AREA_NAME = mal.Identifier("TestArchiveArea")
+)

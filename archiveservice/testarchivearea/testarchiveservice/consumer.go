@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2018 CNES
+ * Copyright (c) 2020 CNES
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,57 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package errors
+package testarchiveservice
 
 import (
-	. "github.com/CNES/ccsdsmo-malgo/mal"
+  "errors"
+//  "github.com/CNES/ccsdsmo-malgo/mal"
+  malapi "github.com/CNES/ccsdsmo-malgo/mal/api"
+//  "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/testarchivearea"
 )
 
-// ServiceError : TODO
-type ServiceError struct {
-	ErrorNumber  *UInteger
-	ErrorComment *String
-	ErrorExtra   Element
-}
-
-func EncodeError(body Body, errorNumber UInteger, errorComment String, errorExtra Element) error {
-	// Encode UInteger
-	err := body.EncodeParameter(&errorNumber)
-	if err != nil {
-		return err
-	}
-
-	// Encode Element
-	err = body.EncodeLastParameter(errorExtra, true)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DecodeError(msg *Message) (*ServiceError, error) {
-	// Decode UInteger
-	errorNumber, err := msg.DecodeParameter(NullUInteger)
-	if err != nil {
-		return nil, err
-	}
-
-	// SL This information must not be encoded in the message
-	var errorComment Element = NewString("dummy")
-
-	// Decode Element
-	errorExtra, err := msg.DecodeLastParameter(NullElement, true)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create ServiceError
-	serviceError := &ServiceError{
-		errorNumber.(*UInteger),
-		errorComment.(*String),
-		errorExtra,
-	}
-
-	return serviceError, nil
+var Cctx *malapi.ClientContext
+func Init(cctxin *malapi.ClientContext) error {
+  if cctxin == nil {
+    return errors.New("Illegal nil client context in Init")
+  }
+  Cctx = cctxin
+  return nil
 }

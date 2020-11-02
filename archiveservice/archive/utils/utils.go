@@ -1,7 +1,7 @@
 /**
  * MIT License
  *
- * Copyright (c) 2018 CNES
+ * Copyright (c) 2018-2020 CNES
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,17 +27,17 @@ import (
 	"bytes"
 	"strings"
 
-	. "github.com/CNES/ccsdsmo-malgo/com"
-	. "github.com/CNES/ccsdsmo-malgo/mal"
-	. "github.com/CNES/ccsdsmo-malgo/mal/encoding/binary"
+	"github.com/CNES/ccsdsmo-malgo/com"
+	"github.com/CNES/ccsdsmo-malgo/mal"
+	"github.com/CNES/ccsdsmo-malgo/mal/encoding/binary"
 )
 
 // AdaptDomainToString transforms a list of Identifiers to a domain of this
 // type: first.second.third.[...]
-func AdaptDomainToString(identifierList IdentifierList) String {
-	var domain String
+func AdaptDomainToString(identifierList mal.IdentifierList) mal.String {
+	var domain mal.String
 	for i := 0; i < identifierList.Size(); i++ {
-		domain += String(*identifierList.GetElementAt(i).(*Identifier))
+		domain += mal.String(*identifierList.GetElementAt(i).(*mal.Identifier))
 		if i+1 < identifierList.Size() {
 			domain += "."
 		}
@@ -47,35 +47,35 @@ func AdaptDomainToString(identifierList IdentifierList) String {
 
 // AdaptDomainToIdentifierList transforms a domain of this
 // type: first.second.third.[...] to a list of Identifiers
-func AdaptDomainToIdentifierList(domain string) IdentifierList {
-	var identifierList = NewIdentifierList(0)
+func AdaptDomainToIdentifierList(domain string) mal.IdentifierList {
+	var identifierList = mal.NewIdentifierList(0)
 	var domains = strings.Split(domain, ".")
 	for i := 0; i < len(domains); i++ {
-		identifierList.AppendElement(NewIdentifier(domains[i]))
+		identifierList.AppendElement(mal.NewIdentifier(domains[i]))
 	}
 	return *identifierList
 }
 
-func DecodeObjectID(encodedObjectId []byte) (*ObjectId, error) {
+func DecodeObjectID(encodedObjectId []byte) (*com.ObjectId, error) {
 	// Create the factory
-	factory := new(FixedBinaryEncoding)
+	factory := new(binary.FixedBinaryEncoding)
 
 	// Create the decoder
 	decoder := factory.NewDecoder(encodedObjectId)
 
 	// Decode the ObjectId
-	elem, err := decoder.DecodeNullableElement(NullObjectId)
+	elem, err := decoder.DecodeNullableElement(com.NullObjectId)
 	if err != nil {
 		return nil, err
 	}
-	objectId := elem.(*ObjectId)
+	objectId := elem.(*com.ObjectId)
 
 	return objectId, nil
 }
 
-func DecodeElement(encodedObjectElement []byte) (Element, error) {
+func DecodeElement(encodedObjectElement []byte) (mal.Element, error) {
 	// Create the factory
-	factory := new(FixedBinaryEncoding)
+	factory := new(binary.FixedBinaryEncoding)
 
 	// Create the decoder
 	decoder := factory.NewDecoder(encodedObjectElement)
@@ -89,7 +89,7 @@ func DecodeElement(encodedObjectElement []byte) (Element, error) {
 	return element, nil
 }
 
-func DecodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, error) {
+func DecodeElements(_objectId []byte, _element []byte) (*com.ObjectId, mal.Element, error) {
 	// Decode the ObjectId
 	objectId, err := DecodeObjectID(_objectId)
 	if err != nil {
@@ -105,9 +105,9 @@ func DecodeElements(_objectId []byte, _element []byte) (*ObjectId, Element, erro
 	return objectId, element, nil
 }
 
-func EncodeElements(_element Element, _objectId *ObjectId) ([]byte, []byte, error) {
+func EncodeElements(_element mal.Element, _objectId *com.ObjectId) ([]byte, []byte, error) {
 	// Create the factory
-	factory := new(FixedBinaryEncoding)
+	factory := new(binary.FixedBinaryEncoding)
 
 	// Create the encoder
 	encoder := factory.NewEncoder(make([]byte, 0, 8192))
@@ -133,13 +133,13 @@ func EncodeElements(_element Element, _objectId *ObjectId) ([]byte, []byte, erro
 }
 
 // This part is useful for type short form conversion (from typeShortForm to listShortForm)
-func TypeShortFormToShortForm(objectType ObjectType) Long {
+func TypeShortFormToShortForm(objectType com.ObjectType) mal.Long {
 	return objectType.GetMALBodyType()
 }
 
 // ConvertToListShortForm converts an ObjectType to a Long (which
 // will be used for a List Short Form)
-func ConvertToListShortForm(objectType ObjectType) Long {
+func ConvertToListShortForm(objectType com.ObjectType) mal.Long {
 	return objectType.GetMALBodyListType()
 }
 

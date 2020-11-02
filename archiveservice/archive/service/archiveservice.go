@@ -39,35 +39,27 @@ import (
 	"sync"
 	"time"
 
-	. "github.com/CNES/ccsdsmo-malgo/com"
-	. "github.com/CNES/ccsdsmo-malgo/mal"
+	"github.com/CNES/ccsdsmo-malgo/com"
+	"github.com/CNES/ccsdsmo-malgo/com/archive"
+	"github.com/CNES/ccsdsmo-malgo/mal"
 
 	// Init TCP transport
 	_ "github.com/CNES/ccsdsmo-malgo/mal/transport/tcp"
 
 	// Blank imports to register all the mal and com elements
-	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
-	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/implementation"
-	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data/tests"
-	_ "github.com/CNES/ccsdsmo-malgo/com"
-	_ "github.com/CNES/ccsdsmo-malgo/mal"
+	_ "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/testarchivearea/testarchiveservice"
 
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/constants"
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/consumer"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/archive/provider"
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/data"
-
-	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/errors"
 	. "github.com/CNES/ccsdsmo-malgo-examples/archiveservice/service"
 )
 
 // ArchiveService : TODO:
 type ArchiveService struct {
-	AreaIdentifier    Identifier
-	ServiceIdentifier Identifier
-	AreaNumber        UShort
-	ServiceNumber     Integer
-	AreaVersion       UOctet
+	AreaIdentifier    mal.Identifier
+	ServiceIdentifier mal.Identifier
+	AreaNumber        mal.UShort
+	ServiceNumber     mal.UShort
+	AreaVersion       mal.UOctet
 
 	running bool
 	wg      sync.WaitGroup
@@ -76,11 +68,11 @@ type ArchiveService struct {
 // CreateService : TODO:
 func (*ArchiveService) CreateService() Service {
 	archiveService := &ArchiveService{
-		AreaIdentifier:    ARCHIVE_SERVICE_AREA_IDENTIFIER,
-		ServiceIdentifier: ARCHIVE_SERVICE_SERVICE_IDENTIFIER,
-		AreaNumber:        COM_AREA_NUMBER,
-		ServiceNumber:     ARCHIVE_SERVICE_SERVICE_NUMBER,
-		AreaVersion:       COM_AREA_VERSION,
+		AreaIdentifier:    com.AREA_NAME,
+		ServiceIdentifier: archive.SERVICE_NAME,
+		AreaNumber:        com.AREA_NUMBER,
+		ServiceNumber:     archive.SERVICE_NUMBER,
+		AreaVersion:       com.AREA_VERSION,
 		running:           true,
 		wg:                *new(sync.WaitGroup),
 	}
@@ -93,157 +85,159 @@ func (*ArchiveService) CreateService() Service {
 //======================================================================//
 
 // Retrieve : TODO:
-func (archiveService *ArchiveService) Retrieve(providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*ArchiveDetailsList, ElementList, *ServiceError, error) {
+func (archiveService *ArchiveService) Retrieve(providerURL string, objectType com.ObjectType, identifierList mal.IdentifierList, longList mal.LongList) (*archive.ArchiveDetailsList, mal.ElementList, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Retrieve Consumer")
+	fmt.Println("Creation : Retrieve operation")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
-	// OUT
-	consumer, archiveDetailsList, elementList, errorsList, err := StartRetrieveConsumer(providerURI,
-		objectType,
-		identifierList,
-		longList)
+	var providerURI = mal.NewURI(providerURL + "/archiveServiceProvider")
+
+	op, err := archive.NewRetrieveOperation(providerURI)
 	if err != nil {
-		return nil, nil, nil, err
-	} else if errorsList != nil {
-		return nil, nil, errorsList, nil
+		return nil, nil, err
+	}
+	err = op.Invoke(&objectType, &identifierList, &longList)
+	if err != nil {
+		return nil, nil, err
+	}
+	archiveDetailsList, elementList, err := op.GetResponse()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Close the consumer
-	consumer.Close()
-
-	return archiveDetailsList, elementList, nil, nil
+	return archiveDetailsList, elementList, nil
 }
 
 // Query : TODO:
-func (archiveService *ArchiveService) Query(providerURL string, boolean *Boolean, objectType ObjectType, archiveQueryList ArchiveQueryList, queryFilterList QueryFilterList) ([]interface{}, *ServiceError, error) {
+func (archiveService *ArchiveService) Query(providerURL string, boolean *mal.Boolean, objectType com.ObjectType, archiveQueryList archive.ArchiveQueryList, queryFilterList archive.QueryFilterList) ([]interface{}, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Query Consumer")
+	fmt.Println("Creation : Query operation")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
-	// OUT
-	consumer, responses, errorsList, err := StartQueryConsumer(providerURI,
-		boolean,
-		objectType,
-		archiveQueryList,
-		queryFilterList)
+	var providerURI = mal.NewURI(providerURL + "/archiveServiceProvider")
+	op, err := archive.NewQueryOperation(providerURI)
 	if err != nil {
-		return nil, nil, err
-	} else if errorsList != nil {
-		return nil, errorsList, nil
+		return nil, err
+	}
+	err = op.Progress(boolean, &objectType, &archiveQueryList, queryFilterList)
+	if err != nil {
+		return nil, err
 	}
 
-	// Close the consumer
-	consumer.Close()
+	// Create the interface that will receive all the responses
+	responses := []interface{}{}
 
-	return responses, nil, nil
+	for endUpdateLoop := false; !endUpdateLoop; {
+		// Call Update operation
+		respObjType, respIDList, respArchDetList, respElemList, err := op.GetUpdate()
+		if err != nil {
+			return responses, err
+		}
+		if respArchDetList != nil {
+			// Put the objects in the interface
+			responses = append(responses, respObjType, respIDList, respArchDetList, respElemList)
+		} else {
+			endUpdateLoop = true
+		}
+	}
+
+	// Call Response operation
+	respObjType, respIDList, respArchDetList, respElemList, err := op.GetResponse()
+	if err != nil {
+		return responses, err
+	}
+	if respArchDetList != nil {
+		// Put the objects in the interface
+		responses = append(responses, respObjType, respIDList, respArchDetList, respElemList)
+	}
+
+	return responses, nil
 }
 
 // Count : TODO:
-func (archiveService *ArchiveService) Count(providerURL string, objectType *ObjectType, archiveQueryList *ArchiveQueryList, queryFilterList QueryFilterList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Count(providerURL string, objectType *com.ObjectType, archiveQueryList *archive.ArchiveQueryList, queryFilterList archive.QueryFilterList) (*mal.LongList, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Count Consumer")
+	fmt.Println("Creation : Count operation")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
-	// OUT
-	consumer, longList, errorsList, err := StartCountConsumer(providerURI,
-		objectType,
-		archiveQueryList,
-		queryFilterList)
+	var providerURI = mal.NewURI(providerURL + "/archiveServiceProvider")
+	op, err := archive.NewCountOperation(providerURI)
 	if err != nil {
-		return nil, nil, err
-	} else if errorsList != nil {
-		return nil, errorsList, nil
+		return nil, err
+	}
+	err = op.Invoke(objectType, archiveQueryList, queryFilterList)
+	if err != nil {
+		return nil, err
+	}
+	longList, err := op.GetResponse()
+	if err != nil {
+		return nil, err
 	}
 
-	// Close the consumer
-	consumer.Close()
-
-	return longList, nil, nil
+	return longList, nil
 }
 
 // Store : TODO:
-func (archiveService *ArchiveService) Store(providerURL string, boolean *Boolean, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Store(providerURL string, boolean *mal.Boolean, objectType com.ObjectType, identifierList mal.IdentifierList, archiveDetailsList archive.ArchiveDetailsList, elementList mal.ElementList) (*mal.LongList, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Store Consumer")
+	fmt.Println("Creation : Store operation")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
-	// OUT
-	consumer, longList, errorsList, err := StartStoreConsumer(providerURI,
-		boolean,
-		objectType,
-		identifierList,
-		archiveDetailsList,
-		elementList)
+	var providerURI = mal.NewURI(providerURL + "/archiveServiceProvider")
+	op, err := archive.NewStoreOperation(providerURI)
 	if err != nil {
-		return nil, nil, err
-	} else if errorsList != nil {
-		return nil, errorsList, nil
+		return nil, err
+	}
+	longList, err := op.Request(boolean, &objectType, &identifierList, &archiveDetailsList, elementList)
+	if err != nil {
+		return nil, err
 	}
 
-	// Close the consumer
-	consumer.Close()
-
-	return longList, nil, nil
+	return longList, nil
 }
 
 // Update : TODO:
-func (archiveService *ArchiveService) Update(providerURL string, objectType ObjectType, identifierList IdentifierList, archiveDetailsList ArchiveDetailsList, elementList ElementList) (*ServiceError, error) {
+func (archiveService *ArchiveService) Update(providerURL string, objectType com.ObjectType, identifierList mal.IdentifierList, archiveDetailsList archive.ArchiveDetailsList, elementList mal.ElementList) error {
 	// Start Operation
 	// Maybe we should not have to return an error
-	fmt.Println("Creation : Update Consumer")
+	fmt.Println("Creation : Update operation")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
-	// OUT
-	consumer, errorsList, err := StartUpdateConsumer(providerURI,
-		objectType,
-		identifierList,
-		archiveDetailsList,
-		elementList)
+	var providerURI = mal.NewURI(providerURL + "/archiveServiceProvider")
+	op, err := archive.NewUpdateOperation(providerURI)
 	if err != nil {
-		return nil, err
-	} else if errorsList != nil {
-		return errorsList, nil
+		return err
+	}
+	err = op.Submit(&objectType, &identifierList, &archiveDetailsList, elementList)
+	if err != nil {
+		return err
 	}
 
-	// Close the consumer
-	consumer.Close()
-
-	return nil, nil
+	return nil
 }
 
 // Delete : TODO:
-func (archiveService *ArchiveService) Delete(providerURL string, objectType ObjectType, identifierList IdentifierList, longList LongList) (*LongList, *ServiceError, error) {
+func (archiveService *ArchiveService) Delete(providerURL string, objectType com.ObjectType, identifierList mal.IdentifierList, longList mal.LongList) (*mal.LongList, error) {
 	// Start Operation
 	// Maybe we should not have to return an error
 	fmt.Println("Creation : Delete Consumer")
 
 	// IN
-	var providerURI = NewURI(providerURL + "/archiveServiceProvider")
-	// OUT
-	consumer, respLongList, errorsList, err := StartDeleteConsumer(providerURI,
-		objectType,
-		identifierList,
-		longList)
+	var providerURI = mal.NewURI(providerURL + "/archiveServiceProvider")
+	op, err := archive.NewDeleteOperation(providerURI)
 	if err != nil {
-		return nil, nil, err
-	} else if errorsList != nil {
-		return nil, errorsList, nil
+		return nil, err
+	}
+	respLongList, err := op.Request(&objectType, &identifierList, &longList)
+	if err != nil {
+		return nil, err
 	}
 
-	// Close the consumer
-	consumer.Close()
-
-	return respLongList, nil, nil
+	return respLongList, nil
 }
 
 //======================================================================//
@@ -286,7 +280,7 @@ func (archiveService *ArchiveService) launchProvider(providerURL string) error {
 	// Inform the WaitGroup that this goroutine is finished at the end of this function
 	defer archiveService.wg.Done()
 	// Declare variables
-	var provider *Provider
+	var provider *archive.Provider
 	var err error
 
 	// Start Operation
